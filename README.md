@@ -23,9 +23,9 @@
 
 ### 폰
 
-| 대화함 | 대화방 | 이모티콘 |
+| 대화함 | 대화방 |
 |---|---|---|
-| ![대화함](docs/screenshots/android-phone-list.png) | ![대화방](docs/screenshots/android-phone.png) | ![이모티콘](docs/screenshots/emoticon.png) |
+| ![대화함](docs/screenshots/android-phone-list.png) | ![대화방](docs/screenshots/android-phone.png) |
 
 ---
 
