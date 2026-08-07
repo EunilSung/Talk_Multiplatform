@@ -28,7 +28,7 @@ fun BottomSheetHost(content: @Composable () -> Unit) {
             BottomSheet(
                 isVisible = request != null,
                 onDismiss = { manager.hide() },
-                bottomPadding = request?.bottomPadding ?: 70.dp,
+                bottomPadding = request?.bottomPadding ?: 0.dp,
             ) {
                 when (val req = request) {
                     is BottomSheetRequest.Custom -> req.content()

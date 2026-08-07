@@ -19,7 +19,7 @@ sealed interface BottomSheetRequest {
 
     data class Custom(
         val content: @Composable () -> Unit,
-        override val bottomPadding: Dp = 70.dp,
+        override val bottomPadding: Dp = 0.dp,
     ) : BottomSheetRequest
 }
 

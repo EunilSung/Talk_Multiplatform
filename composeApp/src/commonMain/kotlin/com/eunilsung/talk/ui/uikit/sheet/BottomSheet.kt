@@ -48,7 +48,12 @@ fun BottomSheet(
     isVisible: Boolean,
     onDismiss: () -> Unit,
     isModal: Boolean = true,
-    bottomPadding: Dp = 70.dp,
+    /**
+     * 콘텐츠 아래 **추가** 여백. 내비게이션바 인셋은 이 값과 별개로 항상 더해지므로,
+     * 홈 인디케이터·내비게이션바를 피하려고 여기에 값을 줄 필요는 없다.
+     * 기본 0 — 시트마다 필요한 여백은 콘텐츠가 직접 갖는 편이 예측 가능하다.
+     */
+    bottomPadding: Dp = 0.dp,
     content: @Composable () -> Unit
 ) {
     val scope = rememberCoroutineScope()

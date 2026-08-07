@@ -161,7 +161,6 @@ fun MediaPickerHost(
         isVisible = state.showGallerySheet,
         onDismiss = { state.showGallerySheet = false },
         isModal = false,
-        bottomPadding = 0.dp
     ) {
         // 기기 갤러리 전량이라 상한이 없다. remember 없이 두면 사진 탭 한 번에 전량 재변환.
         val galleryPhotos = remember(bindings.galleryPhotos) {
