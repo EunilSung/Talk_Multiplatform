@@ -24,7 +24,7 @@
 ### 폰
 
 | 대화함 | 대화방 |
-|---|---|---|
+|---|---|
 | ![대화함](docs/screenshots/android-phone-list.png) | ![대화방](docs/screenshots/android-phone.png) |
 
 ---
