@@ -29,9 +29,7 @@ fun ChatScrollController(
     groupedChats: List<com.eunilsung.talk.domain.model.GroupedChat>,
     currentChatRoomId: String,
     searchState: ChatSearchState,
-    entryScroll: SharedFlow<String?>?,
-    mySendPush: SharedFlow<String>?,
-    latestLoadedPush: SharedFlow<String>?,
+    signals: ChatRoomSignals,
     onAction: (ChatRoomActions) -> Unit,
 ) {
                 LaunchedEffect(listState) {
@@ -60,6 +58,7 @@ fun ChatScrollController(
                 }
 
                 val groupedForScroll = androidx.compose.runtime.rememberUpdatedState(groupedChats)
+                val entryScroll = signals.entryScroll
                 if (entryScroll != null) {
                     LaunchedEffect(entryScroll, currentChatRoomId) {
                         entryScroll.collect { markerChatId ->
@@ -130,6 +129,7 @@ fun ChatScrollController(
                     }
                 }
 
+                val mySendPush = signals.mySend
                 if (mySendPush != null) {
                     LaunchedEffect(mySendPush, currentChatRoomId) {
                         mySendPush.collect { sentRoomId ->
@@ -144,6 +144,7 @@ fun ChatScrollController(
                     }
                 }
 
+                val latestLoadedPush = signals.latestLoaded
                 if (latestLoadedPush != null) {
                     LaunchedEffect(latestLoadedPush, currentChatRoomId) {
                         latestLoadedPush.collect { loadedRoomId ->

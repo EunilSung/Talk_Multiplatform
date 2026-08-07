@@ -215,6 +215,24 @@ class ChatRoomScreen(
         val replyTarget by viewModel.replyTarget.collectAsState()
         val currentNotice by viewModel.currentNotice.collectAsState()
         val noticeBar by viewModel.noticeBar.collectAsState()
+        val signals = remember(viewModel) {
+            ChatRoomSignals(
+                newChat = viewModel.newChatPush,
+                mySend = viewModel.mySendPush,
+                latestLoaded = viewModel.latestLoadedPush,
+                entryScroll = viewModel.entryScroll,
+            )
+        }
+        val noticeBindings = remember(viewModel, currentNotice, noticeBar) {
+            NoticeBindings(
+                notice = currentNotice,
+                barState = noticeBar,
+                onLoad = { viewModel.loadNoticeBarState(it) },
+                onExpandedChange = { id, v -> viewModel.setNoticeExpanded(id, v) },
+                onDetailsChange = { id, v -> viewModel.setNoticeDetailsShown(id, v) },
+                onHide = { viewModel.hideNoticePermanently(it) },
+            )
+        }
         val chatSettings by viewModel.chatSettings.collectAsState()
         val recentPhotosResult by viewModel.recentPhotos.collectAsState()
         val galleryPhotos by viewModel.galleryPhotos.collectAsState()
@@ -287,18 +305,10 @@ class ChatRoomScreen(
             replyTarget = replyTarget,
             mediaPickerBindings = mediaPickerBindings,
             currentChatRoomId = chatRoomId,
-            newChatPush = viewModel.newChatPush,
-            mySendPush = viewModel.mySendPush,
-            latestLoadedPush = viewModel.latestLoadedPush,
-            entryScroll = viewModel.entryScroll,
+            signals = signals,
             enterToSend = chatSettings.enterToSend,
             chatFontSize = chatSettings.fontSize.sp,
-            notice = currentNotice,
-            noticeBar = noticeBar,
-            onNoticeBarLoad = { viewModel.loadNoticeBarState(it) },
-            onNoticeExpandedChange = { id, v -> viewModel.setNoticeExpanded(id, v) },
-            onNoticeDetailsChange = { id, v -> viewModel.setNoticeDetailsShown(id, v) },
-            onNoticeHide = { viewModel.hideNoticePermanently(it) },
+            noticeBindings = noticeBindings,
             bookmarksFlow = viewModel.bookmarks,
             initialEmoticonTab = remember { viewModel.lastEmoticonTab() },
             onEmoticonTabSelected = { viewModel.saveEmoticonTab(it) },
@@ -328,19 +338,10 @@ fun ChatRoomContent(
     replyTarget: Chat.Item? = null,
     mediaPickerBindings: MediaPickerBindings = MediaPickerBindings.Preview,
     currentChatRoomId: String = "",
-    newChatPush: SharedFlow<String>? = null,
-    mySendPush: SharedFlow<String>? = null,
-    latestLoadedPush: SharedFlow<String>? = null,
-    entryScroll: SharedFlow<String?>? = null,
+    signals: ChatRoomSignals = ChatRoomSignals(),
     enterToSend: Boolean = false,
     chatFontSize: TextUnit = 13.sp,
-    notice: Notice? = null,
-    /** 공지바 접힘·상세표시·숨김 — Settings 영속 상태를 VM 이 관리한다. */
-    noticeBar: NoticeBarUiState = NoticeBarUiState(),
-    onNoticeBarLoad: (String) -> Unit = {},
-    onNoticeExpandedChange: (String, Boolean) -> Unit = { _, _ -> },
-    onNoticeDetailsChange: (String, Boolean) -> Unit = { _, _ -> },
-    onNoticeHide: (String) -> Unit = {},
+    noticeBindings: NoticeBindings = NoticeBindings(),
     bookmarksFlow: StateFlow<List<Bookmark>> = MutableStateFlow(emptyList()),
     initialEmoticonTab: Int = 0,
     onEmoticonTabSelected: (Int) -> Unit = {},
@@ -443,6 +444,7 @@ fun ChatRoomContent(
     val latestChat = (uiState as? ChatRoomUiState.Success)?.groupedChats
         ?.firstOrNull { it.chat.chatStatue != Chat.Statue.SENDING && it.chat.chatStatue != Chat.Statue.FAIL }?.chat
     val latestChatState = androidx.compose.runtime.rememberUpdatedState(latestChat)
+    val newChatPush = signals.newChat
     if (newChatPush != null) {
         LaunchedEffect(newChatPush, currentChatRoomId) {
             newChatPush.collect { roomId ->
@@ -561,9 +563,7 @@ fun ChatRoomContent(
                                 groupedChats = uiState.groupedChats,
                                 currentChatRoomId = currentChatRoomId,
                                 searchState = searchState,
-                                entryScroll = entryScroll,
-                                mySendPush = mySendPush,
-                                latestLoadedPush = latestLoadedPush,
+                                signals = signals,
                                 onAction = onAction,
                             )
                             var lastShakenFocusKey by remember { mutableStateOf(-1) }
@@ -679,20 +679,21 @@ fun ChatRoomContent(
                     }
                 }
 
+                val notice = noticeBindings.notice
                 if (notice != null) {
                     val id = notice.identityKey
-                    LaunchedEffect(id) { onNoticeBarLoad(id) }
+                    LaunchedEffect(id) { noticeBindings.onLoad(id) }
 
-                    if (!noticeBar.hidden) {
+                    if (!noticeBindings.barState.hidden) {
                         NoticeBarCard(
                             notice = notice,
-                            expanded = noticeBar.expanded,
-                            showDetails = noticeBar.showDetails,
+                            expanded = noticeBindings.barState.expanded,
+                            showDetails = noticeBindings.barState.showDetails,
                             modifier = Modifier.align(Alignment.TopCenter),
-                            onShowDetailsChange = { v -> onNoticeDetailsChange(id, v) },
-                            onToggle = { onNoticeExpandedChange(id, !noticeBar.expanded) },
-                            onHideToFab = { onNoticeExpandedChange(id, false) },
-                            onHidePermanently = { onNoticeHide(id) },
+                            onShowDetailsChange = { v -> noticeBindings.onDetailsChange(id, v) },
+                            onToggle = { noticeBindings.onExpandedChange(id, !noticeBindings.barState.expanded) },
+                            onHideToFab = { noticeBindings.onExpandedChange(id, false) },
+                            onHidePermanently = { noticeBindings.onHide(id) },
                             onDelete = {
                                 dialog.confirm(
                                     title = strings.noticeDeleteTitle,
@@ -749,7 +750,7 @@ fun ChatRoomContent(
                 },
                 onNoticeClick = {
                     isDrawerOpen = false
-                    val content = notice?.content
+                    val content = noticeBindings.notice?.content
                     if (content?.isNotBlank() == true) {
                         noticeDialogText = content
                     } else {
