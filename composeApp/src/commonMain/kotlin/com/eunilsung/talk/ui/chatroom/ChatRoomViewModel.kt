@@ -757,9 +757,3 @@ class ChatRoomViewModel(
     }
 }
 
-/** 공지바의 접힘·상세표시·영구숨김 상태. */
-data class NoticeBarUiState(
-    val hidden: Boolean = false,
-    val expanded: Boolean = true,
-    val showDetails: Boolean = true,
-)

@@ -17,7 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 private val EmoticonChatSize = 120.dp
 
 @Composable
-fun EmoticonItem(
+fun ChatEmoticonItem(
     itemProps: ChatItemProps
 ) {
     val id = itemProps.chat.emoticon.id
@@ -51,8 +51,8 @@ fun EmoticonItem(
 
 @Preview(showBackground = true)
 @Composable
-fun EmoticonItemPreview() {
+fun ChatEmoticonItemPreview() {
     MaterialTheme {
-        EmoticonItem(ChatItemProps())
+        ChatEmoticonItem(ChatItemProps())
     }
 }

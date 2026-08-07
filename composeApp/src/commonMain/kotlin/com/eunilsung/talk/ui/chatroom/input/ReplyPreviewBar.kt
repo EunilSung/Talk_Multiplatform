@@ -1,4 +1,4 @@
-package com.eunilsung.talk.ui.chatroom.item
+package com.eunilsung.talk.ui.chatroom.input
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

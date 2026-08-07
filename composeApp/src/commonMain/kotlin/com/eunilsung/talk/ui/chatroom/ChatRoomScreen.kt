@@ -65,7 +65,7 @@ import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.ui.chatroom.item.ChatRoomDrawerContent
 import com.eunilsung.talk.ui.chatroom.item.ChatUserSelectPopup
 import com.eunilsung.talk.ui.chatroom.item.FullTextDialog
-import com.eunilsung.talk.ui.chatroom.item.MentionFieldState
+import com.eunilsung.talk.ui.chatroom.input.MentionFieldState
 import com.eunilsung.talk.ui.invite.InviteMode
 import com.eunilsung.talk.ui.invite.InviteScreen
 import com.eunilsung.talk.ui.main.LocalFullScreenOverlay

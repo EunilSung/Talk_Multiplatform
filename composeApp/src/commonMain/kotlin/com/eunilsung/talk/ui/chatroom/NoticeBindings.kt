@@ -22,3 +22,10 @@ data class NoticeBindings(
     val onDetailsChange: (identityKey: String, shown: Boolean) -> Unit = { _, _ -> },
     val onHide: (identityKey: String) -> Unit = {},
 )
+
+/** 공지바의 접힘·상세표시·영구숨김 상태. */
+data class NoticeBarUiState(
+    val hidden: Boolean = false,
+    val expanded: Boolean = true,
+    val showDetails: Boolean = true,
+)

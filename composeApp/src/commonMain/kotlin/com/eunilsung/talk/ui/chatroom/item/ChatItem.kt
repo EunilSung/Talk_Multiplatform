@@ -351,7 +351,7 @@ private fun ChatRow(itemProps: ChatItemProps) {
             }
             Chat.Type.EMOTICON -> {
                 val hasText = itemProps.chat.chatContent.isNotEmpty()
-                EmoticonItem(if (hasText) itemProps.copy(showTimeSlot = false) else itemProps)
+                ChatEmoticonItem(if (hasText) itemProps.copy(showTimeSlot = false) else itemProps)
                 if (hasText){
                     Spacer(modifier = Modifier.size(5.dp))
                     TextItem(itemProps)
@@ -362,7 +362,7 @@ private fun ChatRow(itemProps: ChatItemProps) {
                 ReplyItem(if (hasEmoticon) itemProps.copy(showTimeSlot = false) else itemProps)
                 if (hasEmoticon){
                     Spacer(modifier = Modifier.size(5.dp))
-                    EmoticonItem(itemProps)
+                    ChatEmoticonItem(itemProps)
                 }
             }
             Chat.Type.TEXT -> {

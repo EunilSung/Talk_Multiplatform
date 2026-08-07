@@ -1,9 +1,14 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local
 
 import com.russhwolf.settings.Settings
 
-/** 사용자가 직접 고른 프로필 사진의 로컬 경로 보관소. */
-object LocalProfilePhotos {
+/**
+ * 사용자가 직접 고른 프로필 사진의 경로 보관소 — Settings 에 영속한다.
+ *
+ * 시드나 대체 구현이 아니라 실제 저장소라 `data/local` 에 둔다
+ * (`Local*` 접두사는 이 프로젝트에서 "서버 대신 쓰는 샘플 구현"을 뜻한다).
+ */
+object ProfilePhotoStore {
 
     private const val PATH_KEY = "local.profile.photo."
     private const val SEQ_KEY = "local.profile.photo.seq."

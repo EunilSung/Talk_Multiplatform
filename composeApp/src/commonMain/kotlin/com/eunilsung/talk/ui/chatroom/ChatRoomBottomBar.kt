@@ -16,9 +16,9 @@ import androidx.compose.ui.unit.dp
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.ChatRoom
-import com.eunilsung.talk.ui.chatroom.item.ChatInputBar
-import com.eunilsung.talk.ui.chatroom.item.MentionFieldState
-import com.eunilsung.talk.ui.chatroom.item.ReplyPreviewBar
+import com.eunilsung.talk.ui.chatroom.input.ChatInputBar
+import com.eunilsung.talk.ui.chatroom.input.MentionFieldState
+import com.eunilsung.talk.ui.chatroom.input.ReplyPreviewBar
 import com.eunilsung.talk.ui.main.KeyBoardPane
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.emoticon.EmoticonItem
@@ -36,7 +36,7 @@ fun ChatRoomBottomBar(
     isSearchMode: Boolean,
     searchState: ChatSearchState,
     replyTarget: com.eunilsung.talk.domain.model.Chat.Item?,
-    mentionState: com.eunilsung.talk.ui.chatroom.item.MentionFieldState,
+    mentionState: com.eunilsung.talk.ui.chatroom.input.MentionFieldState,
     emoticon: com.eunilsung.talk.ui.uikit.emoticon.EmoticonPanelController,
     selectedEmoticon: com.eunilsung.talk.ui.uikit.emoticon.EmoticonItem?,
     onSelectedEmoticonChange: (com.eunilsung.talk.ui.uikit.emoticon.EmoticonItem?) -> Unit,

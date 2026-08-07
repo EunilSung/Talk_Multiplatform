@@ -1,4 +1,4 @@
-package com.eunilsung.talk.ui.chatroom.item
+package com.eunilsung.talk.ui.chatroom.input
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf

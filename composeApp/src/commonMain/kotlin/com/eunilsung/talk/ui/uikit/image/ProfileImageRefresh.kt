@@ -3,7 +3,7 @@ package com.eunilsung.talk.ui.uikit.image
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
-import com.eunilsung.talk.data.sample.LocalProfilePhotos
+import com.eunilsung.talk.data.local.ProfilePhotoStore
 import com.eunilsung.talk.data.sample.TestProfileImages
 
 /** 프로필 이미지 강제 갱신 버전 — 사진 교체 시 [bump] 호출로 재구성 유발. */
@@ -18,7 +18,7 @@ object ProfileImageRefresh {
 
 /** 프로필 이미지 경로. 우선순위: 직접 고른 사진 → 계정별 번들 이미지 → 없음. */
 fun profileImageUrl(userId: String, version: Int): String {
-    LocalProfilePhotos.pathFor(userId)?.let { return it }
+    ProfilePhotoStore.pathFor(userId)?.let { return it }
     TestProfileImages.uriFor(userId)?.let { return it }
     return ""
 }
