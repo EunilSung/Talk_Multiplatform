@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.testdata
+package com.eunilsung.talk.data.sample
 
 import multiplatformtalk.composeapp.generated.resources.Res
 

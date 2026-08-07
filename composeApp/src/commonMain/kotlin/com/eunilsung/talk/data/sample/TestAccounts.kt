@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.testdata
+package com.eunilsung.talk.data.sample
 
 /** 로컬 테스트 계정 목록 (`test1` ~ `test10`). 사용자 정보의 단일 출처. */
 object TestAccounts {

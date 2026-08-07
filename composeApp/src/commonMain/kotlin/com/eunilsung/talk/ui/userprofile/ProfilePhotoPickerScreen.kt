@@ -59,7 +59,7 @@ import com.eunilsung.talk.ui.uikit.BackHandler
 import com.eunilsung.talk.ui.uikit.dialog.Button2Dialog
 import com.eunilsung.talk.ui.uikit.mediapicker.MultimediaRecentPhoto
 import com.eunilsung.talk.ui.uikit.mediapicker.PhotoDetailDialog
-import com.eunilsung.talk.data.testdata.LocalProfilePhotos
+import com.eunilsung.talk.data.sample.LocalProfilePhotos
 import com.eunilsung.talk.ui.uikit.image.ProfileImageRefresh
 import com.eunilsung.talk.ui.uikit.mediapicker.SelectablePhotoCell
 import com.eunilsung.talk.ui.uikit.topbar.TopBarV1

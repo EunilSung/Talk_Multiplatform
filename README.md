@@ -80,7 +80,7 @@
 flowchart TD
     UI["ui/<br/>Screen · ViewModel · UiState · Actions"]
     DOMAIN["domain/<br/>model · repository(interface) · usecase"]
-    DATA["data/<br/>repository impl · mapper · local · testdata"]
+    DATA["data/<br/>sample(로컬 구현·시드) · mapper · local"]
     DB[("SQLDelight<br/>AppDatabase")]
 
     UI -->|의존| DOMAIN
@@ -96,7 +96,7 @@ composeApp/src/
 │   ├── kotlin/com/eunilsung/talk/
 │   │   ├── ui/          화면 (chatroom, chatroomlist, group, invite, setting …)
 │   │   ├── domain/      model · repository(interface 15) · usecase(57)
-│   │   ├── data/        구현체 · mapper · local(플랫폼 추상화) · testdata(시드)
+│   │   ├── data/        sample(로컬 저장소 구현 + 시드) · mapper · local(플랫폼 추상화)
 │   │   └── di/          Koin 모듈
 │   ├── sqldelight/      AppDatabase.sq
 │   └── composeResources/ strings(ko·en) · drawable
@@ -113,7 +113,8 @@ composeApp/src/
 
 서버가 없어도 "진짜처럼" 동작하게 만든 부분입니다.
 
-- **시드 데이터** (`data/testdata/`) — 계정 10명, 대화방 7개, 방마다 대화 스크립트. 최초 실행 시 DB에 적재됩니다.
+- **`data/sample/`** — 서버 자리를 대신하는 저장소 구현 12개와 시드 데이터.
+  시드는 계정 10명, 대화방 7개, 방마다 대화 스크립트로 구성되며 최초 실행 시 DB에 적재됩니다.
 - **단일 출처** — 대화방 목록의 안읽음·멘션 수를 하드코딩하지 않고 **대화 스크립트에서 도출**합니다.
   목록엔 12인데 방엔 5개뿐인 어긋남을 구조적으로 막았고, 테스트로 고정했습니다.
 - **실제 CRUD** — 대화 전송·공지 등록·투표·책갈피가 모두 SQLDelight 를 거칩니다. 앱 재시작 후에도 유지됩니다.

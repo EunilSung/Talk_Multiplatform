@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.testdata
+package com.eunilsung.talk.data.sample
 
 import com.eunilsung.talk.data.local.FileMetadata
 import com.eunilsung.talk.data.local.FileMetadataResolver
