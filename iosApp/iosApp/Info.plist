@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+		앱이 지원하는 언어 선언.
+		이 값이 없으면 iOS 는 개발 지역(en)만 지원한다고 보고, 기기 언어가 한국어여도
+		`Bundle.main.preferredLocalizations` 가 ["en"] 이 된다. 그러면 시스템이 만들어 주는
+		문자열이 전부 영어로 온다 — 갤러리 앨범 이름(PHAssetCollection.localizedTitle)이
+		"Recents / Videos / Screenshots" 로 나오던 원인.
+		Compose 리소스(values, values-ko)가 지원하는 언어와 동일하게 맞춘다.
+	-->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>ko</string>
+	</array>
+	<!-- 화면 잠금 Face ID 사용 설명 (없으면 Face ID 평가 시 크래시) -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>화면 잠금 해제에 Face ID를 사용합니다.</string>
+	<!-- 다운로드 파일(Documents/MultiplatformTalk)을 Files 앱 "내 iPhone 안 > Talk" 에서 보고 열 수 있게 노출 -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<!-- 카메라 / 갤러리 사용 설명 (ImagePickerKMP) — 거부 시 시스템 다이얼로그에 표시 -->
+	<key>NSCameraUsageDescription</key>
+	<string>대화방에서 사진을 촬영하기 위해 카메라 접근이 필요합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>대화방에 사진을 첨부하기 위해 갤러리 접근이 필요합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>촬영한 사진을 갤러리에 저장하기 위해 권한이 필요합니다.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>동영상 촬영 시 마이크 접근이 필요합니다.</string>
+	<!-- FCM 푸시 알림 (silent push) 백그라운드 수신용. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	<!--
+		URL Schemes 등록 — Share Extension / 외부 앱 / Safari 등이 `talk://` 로 시작하는 URL 을
+		호출하면 Talk 앱이 launch 됨. AppDelegate.application(_:open:options:) 에서 처리.
+	-->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.eunilsung.talk</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>talk</string>
+			</array>
+		</dict>
+	</array>
+	<!--
+		iOS 9+ 부터 UIApplication.openURL / canOpenURL 호출 시 사용 가능한 외부 scheme 들을 미리
+		선언해야 함. 등록 안 되어 있으면 시스템이 silently block (openURL 이 false 반환).
+		  - itms-services : Enterprise/Ad Hoc 앱 manifest 설치 트리거
+		  - itms-apps     : App Store 직링크
+	-->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>itms-services</string>
+		<string>itms-apps</string>
+	</array>
+</dict>
+</plist>

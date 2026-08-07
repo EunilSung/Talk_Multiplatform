@@ -1,0 +1,185 @@
+package com.eunilsung.talk.di
+
+import com.russhwolf.settings.Settings
+import com.eunilsung.talk.data.local.DatabaseDriverFactory
+import com.eunilsung.talk.data.local.NoticeUiStateStore
+import com.eunilsung.talk.data.mapper.ChatMapper
+import com.eunilsung.talk.data.mapper.ChatRoomMapper
+import com.eunilsung.talk.db.AppDatabase
+import com.eunilsung.talk.data.mapper.GroupMapper
+import com.eunilsung.talk.data.repository.ChatSettingsRepositoryImpl
+import com.eunilsung.talk.data.testdata.LocalChatRoomListRepositoryImpl
+import com.eunilsung.talk.data.testdata.ChatSenderOverride
+import com.eunilsung.talk.domain.repository.SenderOverrideRepository
+import com.eunilsung.talk.data.testdata.LocalChatRoomRepositoryImpl
+import com.eunilsung.talk.data.testdata.LocalGroupRepositoryImpl
+import com.eunilsung.talk.data.testdata.LocalInviteRepositoryImpl
+import com.eunilsung.talk.data.testdata.LocalLoginRepositoryImpl
+import com.eunilsung.talk.data.testdata.LocalMainRepositoryImpl
+import com.eunilsung.talk.data.testdata.LocalNotificationSettingsRepositoryImpl
+import com.eunilsung.talk.data.testdata.LocalPushTokenRepositoryImpl
+import com.eunilsung.talk.data.testdata.LocalUserProfileRepositoryImpl
+import com.eunilsung.talk.data.testdata.LocalVoteRepositoryImpl
+import com.eunilsung.talk.data.testdata.LocalVersionCheckRepositoryImpl
+import com.eunilsung.talk.ui.screenlock.ScreenLockViewModel
+import com.eunilsung.talk.domain.repository.ChatRoomRepository
+import com.eunilsung.talk.domain.repository.ChatRoomListRepository
+import com.eunilsung.talk.domain.repository.InviteRepository
+import com.eunilsung.talk.domain.repository.VersionCheckRepository
+import com.eunilsung.talk.domain.repository.ChatSettingsRepository
+import com.eunilsung.talk.domain.repository.LoginRepository
+import com.eunilsung.talk.domain.repository.NotificationSettingsRepository
+import com.eunilsung.talk.domain.repository.PushTokenRepository
+import com.eunilsung.talk.domain.repository.MainRepository
+import com.eunilsung.talk.domain.repository.VoteRepository
+import com.eunilsung.talk.domain.repository.GroupRepository
+import com.eunilsung.talk.domain.repository.UserProfileRepository
+import com.eunilsung.talk.domain.usecase.*
+import com.eunilsung.talk.ui.chatroom.ChatRoomViewModel
+import com.eunilsung.talk.ui.chatroomlist.group.ChatRoomRoomGroupManageViewModel
+import com.eunilsung.talk.ui.invite.InviteViewModel
+import com.eunilsung.talk.ui.invite.tab.group.InviteGroupViewModel
+import com.eunilsung.talk.ui.share.ShareViewModel
+import com.eunilsung.talk.ui.login.LoginViewModel
+import com.eunilsung.talk.ui.main.MainViewModel
+import com.eunilsung.talk.ui.group.GroupViewModel
+import com.eunilsung.talk.ui.userprofile.UserProfileViewModel
+import com.eunilsung.talk.ui.chatroomlist.ChatRoomListViewModel
+import com.eunilsung.talk.ui.setting.SettingViewModel
+import com.eunilsung.talk.ui.chatroom.vote.VoteViewModel
+import org.koin.core.module.dsl.singleOf
+import org.koin.compose.viewmodel.dsl.viewModelOf
+import org.koin.dsl.module
+
+val appModule = module {
+    single { Settings() }
+
+    single<AppDatabase> { 
+        val factory: DatabaseDriverFactory = get()
+        AppDatabase(factory.createDriver())
+    }
+    // FCM 토큰은 로그만 남긴다.
+    single<PushTokenRepository>(createdAtStart = true) { LocalPushTokenRepositoryImpl() }
+    single { com.eunilsung.talk.data.remote.push.PushPayloadParser() }
+
+    single { com.eunilsung.talk.data.remote.linkpreview.LinkPreviewRepository(get()) }
+
+    // 원격 XML 대신 즉시 "업데이트 불필요" 반환.
+    single<VersionCheckRepository> { LocalVersionCheckRepositoryImpl() }
+    singleOf(::VersionCheckUseCase)
+
+    viewModelOf(::LoginViewModel)
+    // TestAccounts(test1~test10 / 1234) 로 인증.
+    single<LoginRepository> { LocalLoginRepositoryImpl(get()) }
+    singleOf(::LoginUseCase)
+    singleOf(::DuplicateLoginUseCase)
+    singleOf(::LogoutUseCase)
+    singleOf(::LoginUseCases)
+
+    viewModelOf(::MainViewModel)
+    // 강제 로그아웃은 발생하지 않는다.
+    single<MainRepository> { LocalMainRepositoryImpl() }
+
+    viewModelOf(::GroupViewModel)
+    // TestAccounts / TestGroups 로 그룹 구성.
+    single<GroupRepository> { LocalGroupRepositoryImpl(get(), get(), get(), get()) }
+    singleOf(::GroupMapper)
+    singleOf(::GetGroupsUseCase)
+    singleOf(::FetchGroupsUseCase)
+    singleOf(::ToggleGroupExpandedUseCase)
+    singleOf(::RemoveUserFromGroupUseCase)
+    singleOf(::MoveUserToGroupUseCase)
+    singleOf(::RenameGroupUseCase)
+    singleOf(::DeleteGroupUseCase)
+    singleOf(::CreateGroupUseCase)
+    singleOf(::GroupUseCases)
+
+    viewModelOf(::InviteViewModel)
+    viewModelOf(::InviteGroupViewModel)
+    // ChatRoomEntity 에 직접 방을 만들고 참여자를 추가.
+    single<InviteRepository> { LocalInviteRepositoryImpl(get(), get(), get()) }
+    singleOf(::InviteUsersUseCase)
+    singleOf(::InviteUseCases)
+
+    viewModelOf(::ShareViewModel)
+
+    viewModelOf(::UserProfileViewModel)
+    // TestAccounts 를 프로필로 사용.
+    single<UserProfileRepository> { LocalUserProfileRepositoryImpl() }
+
+    viewModelOf(::ChatRoomViewModel)
+    singleOf(::NoticeUiStateStore)
+
+    singleOf(::ChatMapper)
+    // ChatEntity 에 대화를 직접 읽고 쓴다. (투표 저장소도 구현 타입이 필요해 둘 다 등록)
+    // 전송 주체 전환(샘플 전용) — 싱글턴.
+    single<SenderOverrideRepository> { ChatSenderOverride() }
+    single { LocalChatRoomRepositoryImpl(get(), get(), get(), get(), get(), get()) }
+    single<ChatRoomRepository> { get<LocalChatRoomRepositoryImpl>() }
+    singleOf(::GetChatsUseCase)
+    singleOf(::FetchChatsUseCase)
+    singleOf(::FetchMoreChatsUseCase)
+    singleOf(::FetchNewerChatsUseCase)
+    singleOf(::FetchChatRoomUsersUseCase)
+    singleOf(::SearchChatsUseCase)
+    singleOf(::LoadChatWithContextUseCase)
+    singleOf(::SendTextChatUseCase)
+    singleOf(::ResendFailedChatUseCase)
+    singleOf(::DeleteFailedChatUseCase)
+    singleOf(::SendEmpathyUseCase)
+    singleOf(::RecallChatUseCase)
+    singleOf(::LoadLatestChatsUseCase)
+    singleOf(::SendFileUseCase)
+    singleOf(::MarkChatAsReadUseCase)
+    singleOf(::RefreshChatUnreadCountsUseCase)
+    singleOf(::AddNoticeUseCase)
+    singleOf(::DeleteNoticeUseCase)
+    singleOf(::RequestNoticeUseCase)
+    singleOf(::FetchBookmarksUseCase)
+    singleOf(::AddBookmarkUseCase)
+    singleOf(::DeleteBookmarkUseCase)
+    singleOf(::ChatRoomUseCases)
+
+    viewModelOf(::ChatRoomListViewModel)
+    singleOf(::ChatRoomMapper)
+    // TestChatRooms 로 대화방/그룹 칩 구성.
+    single<ChatRoomListRepository> { LocalChatRoomListRepositoryImpl(get(), get(), get(), get()) }
+    singleOf(::GetChatRoomsUseCase)
+    singleOf(::FetchChatRoomsUseCase)
+    singleOf(::RenameChatRoomUseCase)
+    singleOf(::SetChatRoomAlarmUseCase)
+    singleOf(::SetChatRoomPinUseCase)
+    singleOf(::LeaveChatRoomUseCase)
+    singleOf(::ObserveNewChatRoomPushUseCase)
+    singleOf(::ObserveChatRoomUnreadTotalUseCase)
+    singleOf(::ObserveChatRoomFetchingUseCase)
+    singleOf(::ObserveChatGroupsUseCase)
+    singleOf(::AddRoomToGroupUseCase)
+    singleOf(::RemoveRoomFromGroupUseCase)
+    singleOf(::CreateChatGroupUseCase)
+    singleOf(::RenameChatGroupUseCase)
+    singleOf(::DeleteChatGroupUseCase)
+    singleOf(::ReorderChatGroupsUseCase)
+    singleOf(::ChatRoomListUseCases)
+    viewModelOf(::ChatRoomRoomGroupManageViewModel)
+
+    // 알림 설정은 로컬 저장만 한다.
+    single<NotificationSettingsRepository> { LocalNotificationSettingsRepositoryImpl(get(), get()) }
+    single<ChatSettingsRepository> { ChatSettingsRepositoryImpl(get()) }
+    single<com.eunilsung.talk.domain.repository.ScreenLockRepository> {
+        com.eunilsung.talk.data.repository.ScreenLockRepositoryImpl(get())
+    }
+    viewModelOf(::ScreenLockViewModel)
+    viewModelOf(::SettingViewModel)
+
+    viewModelOf(::VoteViewModel)
+    // 투표/투표 결과는 VoteEntity 에 저장.
+    single<VoteRepository> { LocalVoteRepositoryImpl(get(), get()) }
+    singleOf(::GetVotesUseCase)
+    singleOf(::GetVoteUseCase)
+    singleOf(::CreateVoteUseCase)
+    singleOf(::SubmitVoteUseCase)
+    singleOf(::ReVoteUseCase)
+    singleOf(::CloseVoteUseCase)
+    singleOf(::VoteUseCases)
+}

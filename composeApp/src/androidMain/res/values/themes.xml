@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.App" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- 스플래시 화면 테마 (앱 시작 시 적용) -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- 배경색: AppColors.Bg — 라이트 #FFFFFF / 다크 #121417 (values-night) -->
+        <item name="windowSplashScreenBackground">@color/splash_bg</item>
+        <!-- 아이콘 미표시 — 투명 지정(미지정 시 런처 아이콘이 폴백으로 뜨므로 transparent 로 비움) -->
+        <item name="windowSplashScreenAnimatedIcon">@color/transparent</item>
+
+        <!-- [중요] 스플래시가 끝나면 위에서 정의한 Theme.App으로 전환됩니다 -->
+        <item name="postSplashScreenTheme">@style/Theme.App</item>
+    </style>
+</resources>

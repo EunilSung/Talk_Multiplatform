@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "511316176800",
+    "project_id": "multiplatformtalk",
+    "storage_bucket": "multiplatformtalk.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:511316176800:android:111a2288ef9ea145523ec5",
+        "android_client_info": {
+          "package_name": "com.eunilsung.talk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGBp58FW9fhpO0Xir12G1oSOdOK_ixGug"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,420 @@
+<resources>
+    <string name="alarm">Alarm</string>
+    <string name="id">ID</string>
+    <string name="pw">PW</string>
+    <string name="save_pw">Save Password</string>
+    <string name="login">Login</string>
+    <string name="login_fail">Login Fail</string>
+    <string name="login_forced_logout">You have logged in from another device and have been logged out</string>
+    <string name="no_server_response">No server response</string>
+    <string name="login_time_out">Login Time Out</string>
+    <string name="server_connect_unstable">Service connection is not good\nPlease try again in a moment</string>
+    <string name="connect_error">Connect Error</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="done">Done</string>
+    <string name="name">Name</string>
+    <string name="department">Department</string>
+    <string name="all">All</string>
+    <string name="unread">Unread</string>
+    <string name="content">Content</string>
+    <string name="leave">Leave</string>
+    <string name="me_badge">Me</string>
+
+    <string name="group">Group</string>
+    <string name="tab_my_group">My Group</string>
+    <string name="tab_more">More</string>
+    <string name="group_search_hint">Search Group by Name, Phone Number</string>
+    <string name="group_name">Group Name</string>
+    <string name="group_name_hint">Fill In Group Name</string>
+
+    <string name="organ">Organ</string>
+    <string name="organ_search_hint">Search Organ</string>
+
+    <string name="message_list">Message List</string>
+    <string name="message_search_name_hint">Search Message by Name</string>
+    <string name="message_search_content_hint">Search Message by Content</string>
+    <string name="message_do">Write Message</string>
+    <string name="message_received">Received</string>
+    <string name="message_sent">Sent</string>
+    <string name="message_alarm">Alarm</string>
+    <string name="message_delete">Delete Message</string>
+    <string name="message_send_title">Message Send</string>
+    <string name="message_read_title">Message Read</string>
+
+    <string name="chatroom_list">Chatroom List</string>
+    <string name="chatroom_list_search_hint">Search Chatroom by Name</string>
+    <string name="chat_do">Start Chat</string>
+    <string name="chat_rooom_out">Leave Chatroom</string>
+
+    <string name="setting">Setting</string>
+    <string name="more">More</string>
+
+    <string name="call_do">Call</string>
+    <string name="contact_do">Contact</string>
+    <string name="group_do">Group</string>
+    <string name="local_call">Local Call</string>
+    <string name="phone">Phone</string>
+    <string name="email">Email</string>
+    <string name="fax">Fax</string>
+
+    <!-- 그룹 헤더 롱클릭 메뉴 -->
+    <string name="group_chat">Group Chat</string>
+    <string name="group_message">Group Message</string>
+    <string name="group_add">Add Group</string>
+    <string name="group_rename">Rename Group</string>
+    <string name="group_delete">Delete Group</string>
+
+    <!-- 그룹 사용자 롱클릭 메뉴 -->
+    <string name="user_chat">Chat</string>
+    <string name="user_message">Send Message</string>
+    <string name="user_copy_to_group">Copy to Group</string>
+    <string name="user_move_group">Move Group</string>
+    <string name="user_remove_from_group">Remove from Group</string>
+    <string name="user_add_to_group">Add to Group</string>
+
+    <!-- 부서 chip 클릭 메뉴 -->
+    <string name="dept_chat_no_sub">Department Chat (excluding sub-departments)</string>
+    <string name="dept_message_no_sub">Department Message (excluding sub-departments)</string>
+
+    <!-- 대화방 롱클릭 메뉴 -->
+    <string name="chat_room_rename">Rename Chat Room</string>
+    <string name="chat_room_pin">Pin Chat Room</string>
+    <string name="chat_room_unpin">Unpin Chat Room</string>
+    <string name="chat_room_alarm_off">Turn Off Notifications</string>
+    <string name="chat_room_alarm_on">Turn On Notifications</string>
+    <string name="chat_room_leave">Leave</string>
+    <string name="chat_room_add_to_group">Add to Chat Group</string>
+    <string name="chat_room_remove_from_group">Remove from Chat Group</string>
+    <string name="toast_chat_room_added_to_group">Added to %1$s</string>
+    <string name="toast_chat_room_removed_from_group">Removed from group</string>
+
+    <!-- 대화함 빈 상태 -->
+    <string name="chatroom_unread_empty_title">All caught up!</string>
+    <string name="chatroom_unread_empty_desc">You\'ve read all your messages.</string>
+    <string name="chatroom_group_empty_title">No chat rooms in this group.</string>
+    <string name="chatroom_group_empty_desc">Organize your chat rooms into groups for easy management.</string>
+
+    <!-- 대화 그룹 관리 -->
+    <string name="chat_group_manage_title">Chat Group Management</string>
+    <string name="chat_group_manage_limit">※ Up to 10 groups can be created.</string>
+    <string name="chat_group_create">Create Group</string>
+    <string name="chat_group_name_hint">Group name</string>
+    <string name="chat_group_name_label">Group name</string>
+    <string name="chat_group_name_placeholder">Enter a group name</string>
+    <string name="chat_group_rename_title">Rename Group</string>
+    <string name="chat_group_edit_title">Edit Group</string>
+    <string name="chat_group_delete_button">Delete Group</string>
+    <string name="chat_group_delete_title">Delete Chat Group</string>
+    <string name="chat_group_delete_confirm">Delete this group? Chat rooms will not be left even if the group is deleted.</string>
+
+    <!-- 쪽지 리스트 롱클릭 메뉴 -->
+    <string name="msg_manage">Manage Message</string>
+    <string name="msg_user_info">Personal Info</string>
+    <string name="msg_protect">Protection Settings</string>
+    <string name="msg_unprotect">Remove Protection</string>
+    <string name="msg_delete_one">Delete Message</string>
+    <string name="msg_delete_all">Delete All</string>
+    <string name="msg_recall">Recall Message</string>
+
+    <!-- 확인 다이얼로그 메시지 -->
+    <string name="confirm_msg_delete">Delete this message?</string>
+    <string name="confirm_msg_delete_all">Delete all messages?</string>
+    <string name="confirm_group_delete">Delete this group?</string>
+    <string name="confirm_user_remove_from_group">Remove this user from the group?</string>
+    <string name="confirm_chat_room_leave">Leave this chat room?</string>
+
+    <!-- 토스트 -->
+    <string name="toast_added_to_group">Added to %1$s</string>
+    <string name="toast_add_to_group_failed">Failed to add</string>
+    <string name="toast_user_already_in_group">User is already in the group</string>
+    <string name="toast_user_removed_from_group">Removed from group</string>
+    <string name="toast_remove_from_group_failed">Failed to remove</string>
+    <string name="toast_user_moved_to_group">Moved to %1$s</string>
+    <string name="toast_move_group_failed">Failed to move</string>
+    <string name="toast_group_renamed">Group renamed to %1$s</string>
+    <string name="toast_group_rename_failed">Failed to rename group</string>
+    <string name="toast_group_deleted">Group deleted</string>
+    <string name="toast_group_delete_failed">Failed to delete group</string>
+    <string name="toast_group_created">Group "%1$s" created</string>
+    <string name="toast_group_create_failed">Failed to create group</string>
+    <string name="toast_no_user_selected">No users selected</string>
+    <string name="toast_chat_create_failed">Failed to create chat room</string>
+    <string name="group_name_invalid_empty">Please enter a group name</string>
+    <string name="group_name_invalid_too_long">Group name can be up to %1$d characters</string>
+    <string name="group_name_invalid_chars">Special characters are not allowed</string>
+    <string name="group_name_invalid_duplicate">Group name already exists</string>
+
+    <!-- 그룹 종류 -->
+    <string name="default_group">Default Group</string>
+    <string name="my_profile">My Profile</string>
+
+    <!-- 쪽지 보호(잠금) -->
+    <string name="toast_message_locked">Message protected</string>
+    <string name="toast_message_unlocked">Message unprotected</string>
+    <string name="toast_message_protect_failed">Failed to change protection</string>
+
+    <!-- 쪽지 삭제 -->
+    <string name="toast_message_deleted">Message deleted</string>
+    <string name="toast_message_delete_failed">Failed to delete message</string>
+    <string name="toast_message_locked_cannot_delete">Protected messages cannot be deleted</string>
+    <string name="toast_messages_bulk_deleted">%1$d messages deleted</string>
+    <string name="toast_messages_bulk_deleted_with_skipped">%1$d deleted (%2$d protected skipped)</string>
+    <string name="toast_messages_bulk_partial">%1$d deleted, %2$d failed</string>
+    <string name="toast_messages_all_locked">Selected messages are all protected</string>
+    <string name="confirm_delete_selected_messages">Delete selected messages?</string>
+
+    <!-- 쪽지 회수 -->
+    <string name="confirm_msg_recall">Recall this message?</string>
+    <string name="toast_message_recalled">Message recalled</string>
+    <string name="toast_message_recall_failed">Failed to recall message</string>
+    <string name="msg_recalled_by_sender">This message was recalled by the sender</string>
+
+    <!-- 대화방 이름 변경 -->
+    <string name="toast_chat_room_renamed">Chat room renamed to %1$s</string>
+    <string name="toast_chat_room_rename_failed">Failed to rename chat room</string>
+    <string name="chat_room_name_invalid_empty">Please enter a chat room name</string>
+    <string name="chat_room_name_invalid_too_long">Chat room name can be up to %1$d characters</string>
+
+    <!-- 대화방 알림 토글 -->
+    <string name="toast_chat_room_alarm_muted">Chat room notifications muted</string>
+    <string name="toast_chat_room_alarm_unmuted">Chat room notifications enabled</string>
+    <string name="toast_chat_room_alarm_failed">Failed to change notification setting</string>
+
+    <!-- 대화방 상단고정 -->
+    <string name="toast_chat_room_pinned">Chat room pinned to top</string>
+    <string name="toast_chat_room_unpinned">Chat room unpinned</string>
+
+    <!-- 대화방 나가기 -->
+    <string name="toast_chat_room_left">You left the chat room</string>
+    <string name="toast_chat_room_leave_failed">Failed to leave chat room</string>
+
+    <!-- 대화 회수 -->
+    <string name="chat_recalled">Recalled Chat</string>
+
+    <string name="photo">Photo</string>
+    <string name="file">File</string>
+    <!-- Chat room list last-message preview — photos have no body text -->
+    <string name="chat_preview_photo">Sent a photo.</string>
+    <string name="chat_preview_file">File: %1$s</string>
+    <string name="chat_preview_vote">Vote: %1$s</string>
+    <string name="chat_preview_vote_closed">Vote closed: %1$s</string>
+    <string name="chat_preview_notice">Notice: %1$s</string>
+    <string name="chat_preview_notice_deleted">Notice deleted: %1$s</string>
+    <string name="view_all">View All</string>
+    <string name="recent_photo">Recent Photo</string>
+    <string name="send">Send</string>
+    <string name="chat_hint">Fill in Message</string>
+
+    <string name="msg_receiver">Receiver</string>
+    <string name="msg_receiver_cc">CC</string>
+    <string name="msg_receiver_bcc">BCC</string>
+    <string name="msg_receiver_no">No Receiver</string>
+
+    <string name="chat_read_check">Read Here</string>
+
+    <string name="invite">Invite</string>
+    <string name="share">Share</string>
+
+    <string name="vote">Vote</string>
+    <string name="notice">Notice</string>
+
+    <!-- Settings -->
+    <string name="setting_security">Login/Security</string>
+    <string name="setting_notification">Notifications</string>
+    <string name="setting_chat">Chat</string>
+    <string name="setting_message">Message</string>
+    <string name="setting_app_info">App Info</string>
+    <string name="setting_app_version">App Version</string>
+    <string name="setting_noti_message">Message Alerts</string>
+    <string name="setting_noti_preview">Preview</string>
+    <string name="setting_noti_preview_desc">Show message content in notifications</string>
+    <string name="setting_noti_time_setting">Setting Push Time</string>
+    <string name="setting_noti_time_setting_desc">Setting Push Time\nCan get notified at the specified time</string>
+    <string name="setting_noti_pc_login_only">PC Login Only</string>
+    <string name="setting_noti_sound">Sound Alert</string>
+    <string name="setting_noti_vibrate">Vibration Alert</string>
+    <string name="setting_noti_sound_item">Notification Sound</string>
+    <string name="setting_noti_sound_title">Notification Sound</string>
+    <string name="setting_msg_reply_include">Include original text when replying (default)</string>
+    <string name="setting_msg_receipt">Read receipt (default)</string>
+    <string name="setting_chat_enter_send">Send message with Enter key</string>
+    <string name="setting_font_size">Font Size</string>
+    <string name="logout">Log out</string>
+    <string name="confirm_logout">Log out?</string>
+    <string name="confirm_remote_logout">Remote log out?</string>
+    <string name="logout_mobile_desc">Log out from this mobile device</string>
+    <string name="logout_pc_desc">Log out from PC</string>
+    <string name="font_size_preview">Hello. This is a font size preview.</string>
+
+    <!-- Chat room -->
+    <string name="chat_search_hint">Search messages</string>
+    <string name="chat_resend_title">Resend message</string>
+    <string name="chat_resend_message">Resend this message?</string>
+    <string name="chat_resend">Resend</string>
+    <string name="chat_delete_title">Delete message</string>
+    <string name="chat_delete_message">Delete this message?</string>
+    <string name="chat_recall_title">Recall message</string>
+    <string name="chat_recall_message">Recall this message?</string>
+    <string name="chat_menu_copy">Copy</string>
+    <string name="chat_menu_reply">Reply</string>
+    <string name="chat_menu_notice">Set as notice</string>
+    <string name="chat_menu_recall">Recall</string>
+    <string name="chat_bookmark_set">Add bookmark</string>
+    <string name="chat_bookmark_unset">Remove bookmark</string>
+    <string name="notice_delete_title">Delete notice</string>
+    <string name="notice_delete_message">Delete this notice?</string>
+    <string name="notice_delete_label">Delete notice</string>
+    <string name="notice_reopen_never">Don\'t show again</string>
+    <string name="notice_collapse">Collapse</string>
+    <string name="toast_no_notice">No notice registered.</string>
+    <string name="notice_added_msg">A notice has been posted.</string>
+    <string name="notice_deleted_msg">The notice has been deleted.</string>
+    <string name="notice_view">View notice</string>
+    <string name="bookmark_title">Bookmarks</string>
+    <string name="bookmark_empty">No bookmarks</string>
+    <string name="bookmark_remove">Remove</string>
+    <string name="empathy_list_title">Reactions</string>
+    <string name="empathy_empty">No reactions yet</string>
+
+    <!-- Vote -->
+    <string name="vote_create">Create Vote</string>
+    <string name="vote_result">Vote Results</string>
+    <string name="vote_title_label">Title</string>
+    <string name="vote_title_hint">Enter a vote title</string>
+    <string name="vote_option_label">Options</string>
+    <string name="vote_option_hint">Enter an option</string>
+    <string name="vote_option_add">Add option</string>
+    <string name="vote_settings_label">Settings</string>
+    <string name="vote_multi_select">Allow multiple choices</string>
+    <string name="vote_multi_info">Multiple choices</string>
+    <string name="vote_single_info">Single choice</string>
+    <string name="vote_see_result">See results</string>
+    <string name="vote_view_result">View vote results</string>
+    <string name="vote_do">Vote</string>
+    <string name="vote_do_or_view">Go to vote</string>
+    <string name="vote_redo">Vote again</string>
+    <string name="vote_close">Close vote</string>
+    <string name="vote_closed_msg">Voting has ended.</string>
+    <string name="vote_rank_first">#1</string>
+    <string name="vote_empty">No votes yet</string>
+    <string name="vote_ongoing">Ongoing votes</string>
+    <string name="vote_closed_section">Closed votes</string>
+    <string name="vote_none">None</string>
+    <string name="vote_status_ongoing">Ongoing</string>
+    <string name="vote_status_closed">Closed</string>
+    <string name="vote_ended">Ended</string>
+    <string name="vote_total">%1$d votes total</string>
+    <string name="vote_participants">%1$d participated</string>
+
+    <!-- Message -->
+    <string name="msg_reply">Reply</string>
+    <string name="msg_reply_all">Reply All</string>
+    <string name="msg_forward">Forward</string>
+    <string name="msg_title_label">Title</string>
+    <string name="msg_title_hint">Enter a title</string>
+    <string name="msg_receipt_check">Read receipt</string>
+    <string name="msg_uploading">Uploading file</string>
+    <string name="attach_files">Attachments (%1$d)</string>
+    <string name="retry">Retry</string>
+
+    <!-- Common (uikit) -->
+    <string name="date_no_selectable">No selectable dates</string>
+    <string name="date_year_month">%1$d.%2$d</string>
+    <string name="weekday_sun">Sun</string>
+    <string name="weekday_mon">Mon</string>
+    <string name="weekday_tue">Tue</string>
+    <string name="weekday_wed">Wed</string>
+    <string name="weekday_thu">Thu</string>
+    <string name="weekday_fri">Fri</string>
+    <string name="weekday_sat">Sat</string>
+    <string name="photo_permission_title">Photo access required</string>
+    <string name="photo_permission_message">Photo access is required.\nPlease allow permission.</string>
+    <string name="file_label">File</string>
+    <string name="download">Download</string>
+    <string name="open">Open</string>
+
+    <!-- main / profile / invite -->
+    <string name="update_downloading">Downloading update...</string>
+    <string name="please_wait">Please wait a moment.</string>
+    <string name="update_required">Update required</string>
+    <string name="update_required_desc">Please update to the latest version\nto continue.</string>
+    <string name="update">Update</string>
+    <string name="profile_photo_select">Select profile photo</string>
+    <string name="no_photos">No photos to show.</string>
+    <string name="confirm_count">OK (%1$d)</string>
+    <string name="toast_app_not_installed">App is not installed</string>
+    <string name="toast_webmail_failed">Cannot open webmail</string>
+    <string name="toast_feature_in_dev">This feature is under development</string>
+    <string name="more_work_channel">Work Channel</string>
+    <string name="more_webmail">Webmail</string>
+    <string name="more_e_approval">e-Approval</string>
+    <string name="more_resource_mgmt">Resources</string>
+    <string name="drawer_participants">Participants</string>
+
+    <!-- 알림 시간 설정 -->
+    <string name="noti_time_title">Notification time</string>
+    <string name="noti_time_start">Start time</string>
+    <string name="noti_time_end">End time</string>
+    <string name="noti_time_invalid">Start time must be earlier than end time.</string>
+    <string name="noti_time_overnight">The end time is set to the next day.</string>
+    <string name="apply">Apply</string>
+    <string name="no_title">(No title)</string>
+    <string name="connection_reconnecting">Reconnecting…</string>
+
+    <!-- 화면 잠금 (ScreenLock) -->
+    <string name="lock_screen_title">Screen Lock</string>
+    <string name="lock_type_none">Off</string>
+    <string name="lock_type_password">Password</string>
+    <string name="lock_type_pattern">Pattern</string>
+    <string name="lock_biometric_fingerprint">Fingerprint</string>
+    <string name="lock_biometric_faceid">Face ID</string>
+    <string name="lock_change_password">Change password</string>
+    <string name="lock_change_pattern">Change pattern</string>
+    <string name="lock_show_pattern">Show pattern</string>
+    <string name="lock_warning">If you forget your password or pattern, you must delete and reinstall the app, and existing conversations will be deleted.</string>
+    <string name="lock_setup_password_new">Enter a new password.</string>
+    <string name="lock_setup_pattern_new">Draw a new pattern.</string>
+    <string name="lock_setup_password_title">Set password</string>
+    <string name="lock_setup_pattern_title">Set pattern</string>
+    <string name="lock_setup_password_confirm">Enter the password again.</string>
+    <string name="lock_setup_password_mismatch">Passwords don\'t match. Please try again.</string>
+    <string name="lock_setup_pattern_confirm">Draw the pattern again.</string>
+    <string name="lock_setup_pattern_mismatch">Patterns don\'t match. Please try again.</string>
+    <string name="lock_pattern_too_short">Connect at least %1$d dots.</string>
+    <string name="lock_unlock_title_password">Password</string>
+    <string name="lock_unlock_title_pattern">Pattern</string>
+    <string name="lock_unlock_password_hint">Enter your password.</string>
+    <string name="lock_unlock_pattern_hint">Draw your unlock pattern.</string>
+    <string name="lock_unlock_mismatch">Doesn\'t match. Please try again.</string>
+    <string name="lock_biometric_prompt_title">Unlock</string>
+    <string name="lock_biometric_prompt_sub_fingerprint">Unlock with your fingerprint.</string>
+    <string name="lock_biometric_prompt_sub_faceid">Unlock with Face ID.</string>
+    <string name="lock_biometric_negative_password">Use password</string>
+    <string name="lock_unlock_with_fingerprint">Unlock with fingerprint</string>
+    <string name="lock_unlock_with_faceid">Unlock with Face ID</string>
+
+    <string name="a11y_photo_cell">Photo</string>
+    <string name="a11y_video_cell">Video</string>
+    <string name="a11y_selection_order">Selected, order %1$d</string>
+    <string name="a11y_not_selected">Not selected</string>
+    <string name="no_chat_partner">No participants</string>
+    <string name="date_ampm_am">AM</string>
+    <string name="date_ampm_pm">PM</string>
+    <string name="date_month_day">%1$d/%2$d</string>
+    <string name="date_year_month_day">%1$d/%2$d/%3$d</string>
+    <string name="toast_download_failed">Download failed</string>
+    <string name="toast_file_open_failed">Cannot open the file</string>
+    <string name="toast_invite_failed">Failed to invite.</string>
+    <string name="toast_send_failed">Failed to send.</string>
+    <string name="invite_to_chat_room">Invite to Chat Room</string>
+    <string name="invite_new_chat_room">New Chat Room</string>
+    <string name="video">Video</string>
+    <string name="profile_photo_change">Change profile photo</string>
+    <string name="toast_saved_to_gallery">Saved '%1$s' to gallery</string>
+    <string name="toast_save_failed">Failed to save %1$s</string>
+    <string name="vote_create_action">Create</string>
+    <string name="date_yesterday">Yesterday</string>
+    <string name="date_time">%1$s %2$d:%3$s</string>
+</resources>

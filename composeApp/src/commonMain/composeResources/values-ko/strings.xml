@@ -1,0 +1,420 @@
+<resources>
+    <string name="alarm">알림</string>
+    <string name="id">아이디</string>
+    <string name="pw">비밀번호</string>
+    <string name="save_pw">비밀번호 저장</string>
+    <string name="login">로그인</string>
+    <string name="login_fail">로그인 실패</string>
+    <string name="login_forced_logout">다른 기기에서 로그인하여 로그아웃되었습니다</string>
+    <string name="no_server_response">서버 응답이 없습니다</string>
+    <string name="login_time_out">로그인 시간이 초과되었습니다.</string>
+    <string name="server_connect_unstable">서비스 연결상태가 좋지 않습니다\n잠시 후 다시 시도해 주세요</string>
+    <string name="connect_error">연결 오류</string>
+    <string name="ok">확인</string>
+    <string name="cancel">취소</string>
+    <string name="delete">삭제</string>
+    <string name="done">완료</string>
+    <string name="name">이름</string>
+    <string name="department">부서</string>
+    <string name="all">전체</string>
+    <string name="unread">안읽음</string>
+    <string name="content">내용</string>
+    <string name="leave">나가기</string>
+    <string name="me_badge">나</string>
+
+    <string name="group">내 그룹</string>
+    <string name="tab_my_group">내그룹</string>
+    <string name="tab_more">더보기</string>
+    <string name="group_search_hint">내 그룹에서 이름(초성), 전화번호 검색</string>
+    <string name="group_name">그룹명</string>
+    <string name="group_name_hint">그룹명 입력</string>
+
+    <string name="organ">조직도</string>
+    <string name="organ_search_hint">조직도 검색</string>
+
+    <string name="message_list">쪽지함</string>
+    <string name="message_search_name_hint">이름으로 검색</string>
+    <string name="message_search_content_hint">내용으로 검색</string>
+    <string name="message_do">쪽지 쓰기</string>
+    <string name="message_received">받은쪽지</string>
+    <string name="message_sent">보낸쪽지</string>
+    <string name="message_alarm">알림쪽지</string>
+    <string name="message_delete">쪽지 삭제</string>
+    <string name="message_send_title">쪽지쓰기</string>
+    <string name="message_read_title">쪽지읽기</string>
+
+    <string name="chatroom_list">대화함</string>
+    <string name="chatroom_list_search_hint">대화방 이름 검색</string>
+    <string name="chat_do">대화 하기</string>
+    <string name="chat_rooom_out">대화방 나가기</string>
+
+    <string name="setting">환경설정</string>
+    <string name="more">더보기</string>
+
+    <string name="call_do">전화걸기</string>
+    <string name="contact_do">연락처 저장</string>
+    <string name="group_do">그룹관리</string>
+    <string name="local_call">내선전화</string>
+    <string name="phone">핸드폰</string>
+    <string name="email">이메일</string>
+    <string name="fax">팩스</string>
+
+    <!-- 그룹 헤더 롱클릭 메뉴 -->
+    <string name="group_chat">그룹 대화하기</string>
+    <string name="group_message">그룹 쪽지쓰기</string>
+    <string name="group_add">그룹추가</string>
+    <string name="group_rename">그룹 이름변경</string>
+    <string name="group_delete">그룹삭제</string>
+
+    <!-- 그룹 사용자 롱클릭 메뉴 -->
+    <string name="user_chat">대화하기</string>
+    <string name="user_message">쪽지쓰기</string>
+    <string name="user_copy_to_group">그룹에 복사</string>
+    <string name="user_move_group">그룹이동</string>
+    <string name="user_remove_from_group">그룹에서 삭제</string>
+    <string name="user_add_to_group">그룹에 추가</string>
+
+    <!-- 부서 chip 클릭 메뉴 -->
+    <string name="dept_chat_no_sub">부서 대화하기(하위부서 미포함)</string>
+    <string name="dept_message_no_sub">부서 쪽지쓰기(하위부서 미포함)</string>
+
+    <!-- 대화방 롱클릭 메뉴 -->
+    <string name="chat_room_rename">대화방 이름 설정</string>
+    <string name="chat_room_pin">대화방 상단고정 설정</string>
+    <string name="chat_room_unpin">대화방 상단고정 해제</string>
+    <string name="chat_room_alarm_off">대화방 알림 끄기</string>
+    <string name="chat_room_alarm_on">대화방 알림 켜기</string>
+    <string name="chat_room_leave">나가기</string>
+    <string name="chat_room_add_to_group">대화 그룹에 추가</string>
+    <string name="chat_room_remove_from_group">대화 그룹에서 해제</string>
+    <string name="toast_chat_room_added_to_group">%1$s 그룹에 추가되었습니다</string>
+    <string name="toast_chat_room_removed_from_group">그룹에서 해제되었습니다</string>
+
+    <!-- 대화함 빈 상태 -->
+    <string name="chatroom_unread_empty_title">안읽음 클리어!</string>
+    <string name="chatroom_unread_empty_desc">메시지를 모두 읽었어요.</string>
+    <string name="chatroom_group_empty_title">그룹에 추가된 대화방이 없습니다.</string>
+    <string name="chatroom_group_empty_desc">대화방을 그룹으로 정리하여 유용하게 관리하세요.</string>
+
+    <!-- 대화 그룹 관리 -->
+    <string name="chat_group_manage_title">대화 그룹 관리</string>
+    <string name="chat_group_manage_limit">※ 그룹은 최대 10개까지 생성 가능합니다.</string>
+    <string name="chat_group_create">그룹 만들기</string>
+    <string name="chat_group_name_hint">그룹 이름</string>
+    <string name="chat_group_name_label">그룹명</string>
+    <string name="chat_group_name_placeholder">그룹명을 입력하세요</string>
+    <string name="chat_group_rename_title">그룹 이름 변경</string>
+    <string name="chat_group_edit_title">그룹 편집</string>
+    <string name="chat_group_delete_button">그룹 삭제하기</string>
+    <string name="chat_group_delete_title">대화 그룹 삭제</string>
+    <string name="chat_group_delete_confirm">그룹을 삭제하시겠습니까?\n그룹이 삭제되어도 대화방은 나가기 되지 않습니다.</string>
+
+    <!-- 쪽지 리스트 롱클릭 메뉴 -->
+    <string name="msg_manage">쪽지관리</string>
+    <string name="msg_user_info">개인정보</string>
+    <string name="msg_protect">보호설정</string>
+    <string name="msg_unprotect">보호해제</string>
+    <string name="msg_delete_one">쪽지삭제</string>
+    <string name="msg_delete_all">모두삭제</string>
+    <string name="msg_recall">쪽지회수</string>
+
+    <!-- 확인 다이얼로그 메시지 -->
+    <string name="confirm_msg_delete">쪽지를 삭제하시겠습니까?</string>
+    <string name="confirm_msg_delete_all">모든 쪽지를 삭제하시겠습니까?</string>
+    <string name="confirm_group_delete">그룹을 삭제하시겠습니까?</string>
+    <string name="confirm_user_remove_from_group">사용자를 그룹에서 삭제하시겠습니까?</string>
+    <string name="confirm_chat_room_leave">대화방에서 나가시겠습니까?</string>
+
+    <!-- 토스트 -->
+    <string name="toast_added_to_group">%1$s 에 추가 완료</string>
+    <string name="toast_add_to_group_failed">추가에 실패했습니다</string>
+    <string name="toast_user_already_in_group">이미 추가된 사용자 입니다</string>
+    <string name="toast_user_removed_from_group">그룹에서 삭제 완료</string>
+    <string name="toast_remove_from_group_failed">삭제에 실패했습니다</string>
+    <string name="toast_user_moved_to_group">%1$s 으로 이동 완료</string>
+    <string name="toast_move_group_failed">이동에 실패했습니다</string>
+    <string name="toast_group_renamed">그룹 이름이 %1$s 으로 변경되었습니다</string>
+    <string name="toast_group_rename_failed">그룹 이름 변경에 실패했습니다</string>
+    <string name="toast_group_deleted">그룹이 삭제되었습니다</string>
+    <string name="toast_group_delete_failed">그룹 삭제에 실패했습니다</string>
+    <string name="toast_group_created">"%1$s" 그룹이 생성되었습니다</string>
+    <string name="toast_group_create_failed">그룹 생성에 실패했습니다</string>
+    <string name="toast_no_user_selected">선택된 사용자가 없습니다</string>
+    <string name="toast_chat_create_failed">대화방 생성에 실패했습니다</string>
+    <string name="group_name_invalid_empty">그룹 이름을 입력해주세요</string>
+    <string name="group_name_invalid_too_long">그룹 이름은 최대 %1$d자까지 입력 가능합니다</string>
+    <string name="group_name_invalid_chars">사용할 수 없는 특수문자가 포함되어 있습니다</string>
+    <string name="group_name_invalid_duplicate">이미 존재하는 그룹 이름입니다</string>
+
+    <!-- 그룹 종류 -->
+    <string name="default_group">기본그룹</string>
+    <string name="my_profile">내 프로필</string>
+
+    <!-- 쪽지 보호(잠금) -->
+    <string name="toast_message_locked">쪽지가 보호되었습니다</string>
+    <string name="toast_message_unlocked">쪽지 보호가 해제되었습니다</string>
+    <string name="toast_message_protect_failed">보호 설정 변경에 실패했습니다</string>
+
+    <!-- 쪽지 삭제 -->
+    <string name="toast_message_deleted">쪽지가 삭제되었습니다</string>
+    <string name="toast_message_delete_failed">쪽지 삭제에 실패했습니다</string>
+    <string name="toast_message_locked_cannot_delete">보호된 쪽지는 삭제할 수 없습니다</string>
+    <string name="toast_messages_bulk_deleted">쪽지 %1$d개가 삭제되었습니다</string>
+    <string name="toast_messages_bulk_deleted_with_skipped">쪽지 %1$d개 삭제 (보호 %2$d개 제외)</string>
+    <string name="toast_messages_bulk_partial">쪽지 %1$d개 삭제, %2$d개 실패</string>
+    <string name="toast_messages_all_locked">선택한 쪽지가 모두 보호되어 있습니다</string>
+    <string name="confirm_delete_selected_messages">선택한 쪽지들을 삭제하시겠습니까?</string>
+
+    <!-- 쪽지 회수 -->
+    <string name="confirm_msg_recall">이 쪽지를 회수하시겠습니까?</string>
+    <string name="toast_message_recalled">쪽지가 회수되었습니다</string>
+    <string name="toast_message_recall_failed">쪽지 회수에 실패했습니다</string>
+    <string name="msg_recalled_by_sender">송신자에 의해 회수된 메시지 입니다</string>
+
+    <!-- 대화방 이름 변경 -->
+    <string name="toast_chat_room_renamed">대화방 이름이 %1$s 으로 변경되었습니다</string>
+    <string name="toast_chat_room_rename_failed">대화방 이름 변경에 실패했습니다</string>
+    <string name="chat_room_name_invalid_empty">대화방 이름을 입력해주세요</string>
+    <string name="chat_room_name_invalid_too_long">대화방 이름은 최대 %1$d자까지 입력 가능합니다</string>
+
+    <!-- 대화방 알림 토글 -->
+    <string name="toast_chat_room_alarm_muted">대화방 알림이 꺼졌습니다</string>
+    <string name="toast_chat_room_alarm_unmuted">대화방 알림이 켜졌습니다</string>
+    <string name="toast_chat_room_alarm_failed">알림 설정 변경에 실패했습니다</string>
+
+    <!-- 대화방 상단고정 -->
+    <string name="toast_chat_room_pinned">대화방이 상단에 고정되었습니다</string>
+    <string name="toast_chat_room_unpinned">상단고정이 해제되었습니다</string>
+
+    <!-- 대화방 나가기 -->
+    <string name="toast_chat_room_left">대화방에서 나갔습니다</string>
+    <string name="toast_chat_room_leave_failed">대화방 나가기에 실패했습니다</string>
+
+    <!-- 대화 회수 -->
+    <string name="chat_recalled">회수된 메시지 입니다</string>
+
+    <string name="photo">사진</string>
+    <string name="file">파일</string>
+    <!-- 대화방 리스트의 마지막 대화 미리보기 — 사진은 본문이 없어 대체 문구를 쓴다 -->
+    <string name="chat_preview_photo">사진을 보냈습니다.</string>
+    <string name="chat_preview_file">파일: %1$s</string>
+    <string name="chat_preview_vote">투표: %1$s</string>
+    <string name="chat_preview_vote_closed">투표 종료: %1$s</string>
+    <string name="chat_preview_notice">공지: %1$s</string>
+    <string name="chat_preview_notice_deleted">공지 삭제: %1$s</string>
+    <string name="view_all">전체보기</string>
+    <string name="recent_photo">최근사진</string>
+    <string name="send">전송</string>
+    <string name="chat_hint">메시지 입력</string>
+
+    <string name="msg_receiver">받는사람</string>
+    <string name="msg_receiver_cc">참조</string>
+    <string name="msg_receiver_bcc">숨은참조</string>
+    <string name="msg_receiver_no">받는사람이 없습니다</string>
+
+    <string name="chat_read_check">여기까지 읽었습니다</string>
+
+    <string name="invite">초대하기</string>
+    <string name="share">공유하기</string>
+
+    <string name="vote">투표</string>
+    <string name="notice">공지</string>
+
+    <!-- 설정 -->
+    <string name="setting_security">로그인/보안</string>
+    <string name="setting_notification">알림</string>
+    <string name="setting_chat">대화</string>
+    <string name="setting_message">쪽지</string>
+    <string name="setting_app_info">앱 정보</string>
+    <string name="setting_app_version">앱 버전</string>
+    <string name="setting_noti_message">메시지 알림</string>
+    <string name="setting_noti_preview">미리보기</string>
+    <string name="setting_noti_preview_desc">도착알림 시 메시지 내용을 보여줍니다</string>
+    <string name="setting_noti_time_setting">Push 알림 시간 설정</string>
+    <string name="setting_noti_time_setting_desc">Push 알림 수신 시간대를 설정합니다.\n설정한 시간동안에만 Push를 수신 할 수 있습니다.</string>
+    <string name="setting_noti_pc_login_only">PC 로그인 후 알림 받지 않음</string>
+    <string name="setting_noti_sound">소리 알림</string>
+    <string name="setting_noti_vibrate">진동 알림</string>
+    <string name="setting_noti_sound_item">알림음</string>
+    <string name="setting_noti_sound_title">알림 소리</string>
+    <string name="setting_msg_reply_include">회신 시 내용포함 기본설정</string>
+    <string name="setting_msg_receipt">쪽지 수신확인 기본 설정</string>
+    <string name="setting_chat_enter_send">Enter키 눌러서 대화 전송</string>
+    <string name="setting_font_size">글자 크기</string>
+    <string name="logout">로그아웃</string>
+    <string name="confirm_logout">로그아웃 하시겠습니까?</string>
+    <string name="confirm_remote_logout">원격 로그아웃 하시겠습니까?</string>
+    <string name="logout_mobile_desc">모바일 기기에서 로그아웃 합니다</string>
+    <string name="logout_pc_desc">PC 기기에서 로그아웃 합니다</string>
+    <string name="font_size_preview">안녕하세요. 글자 크기 미리보기 입니다.</string>
+
+    <!-- 대화방 -->
+    <string name="chat_search_hint">대화 내용 검색</string>
+    <string name="chat_resend_title">메시지 재전송</string>
+    <string name="chat_resend_message">메시지를 다시 전송하시겠습니까?</string>
+    <string name="chat_resend">재전송</string>
+    <string name="chat_delete_title">메시지 삭제</string>
+    <string name="chat_delete_message">메시지를 삭제하시겠습니까?</string>
+    <string name="chat_recall_title">메시지 회수</string>
+    <string name="chat_recall_message">메시지를 회수하시겠습니까?</string>
+    <string name="chat_menu_copy">복사</string>
+    <string name="chat_menu_reply">답장</string>
+    <string name="chat_menu_notice">공지등록</string>
+    <string name="chat_menu_recall">회수</string>
+    <string name="chat_bookmark_set">책갈피 설정</string>
+    <string name="chat_bookmark_unset">책갈피 해제</string>
+    <string name="notice_delete_title">공지 삭제</string>
+    <string name="notice_delete_message">공지를 삭제하시겠습니까?</string>
+    <string name="notice_delete_label">공지삭제</string>
+    <string name="notice_reopen_never">다시 열지 않음</string>
+    <string name="notice_collapse">접어두기</string>
+    <string name="toast_no_notice">등록된 공지가 없습니다.</string>
+    <string name="notice_added_msg">공지가 등록되었습니다.</string>
+    <string name="notice_deleted_msg">공지가 삭제되었습니다.</string>
+    <string name="notice_view">글 확인하기</string>
+    <string name="bookmark_title">책갈피</string>
+    <string name="bookmark_empty">등록된 책갈피가 없습니다</string>
+    <string name="bookmark_remove">해제</string>
+    <string name="empathy_list_title">공감 리스트</string>
+    <string name="empathy_empty">공감한 사용자가 없습니다</string>
+
+    <!-- 투표 -->
+    <string name="vote_create">투표 만들기</string>
+    <string name="vote_result">투표 결과</string>
+    <string name="vote_title_label">제목</string>
+    <string name="vote_title_hint">투표 제목을 입력하세요</string>
+    <string name="vote_option_label">항목</string>
+    <string name="vote_option_hint">항목 입력</string>
+    <string name="vote_option_add">항목 추가</string>
+    <string name="vote_settings_label">설정</string>
+    <string name="vote_multi_select">복수 선택 허용</string>
+    <string name="vote_multi_info">복수 선택 가능</string>
+    <string name="vote_single_info">1개 선택</string>
+    <string name="vote_see_result">결과 보기</string>
+    <string name="vote_view_result">투표결과 확인하기</string>
+    <string name="vote_do">투표하기</string>
+    <string name="vote_do_or_view">투표하러 가기</string>
+    <string name="vote_redo">투표 다시하기</string>
+    <string name="vote_close">투표종료</string>
+    <string name="vote_closed_msg">투표가 종료되었습니다.</string>
+    <string name="vote_rank_first">1위</string>
+    <string name="vote_empty">등록된 투표가 없습니다</string>
+    <string name="vote_ongoing">진행중인 투표</string>
+    <string name="vote_closed_section">종료된 투표</string>
+    <string name="vote_none">없음</string>
+    <string name="vote_status_ongoing">진행중</string>
+    <string name="vote_status_closed">종료</string>
+    <string name="vote_ended">종료됨</string>
+    <string name="vote_total">총 %1$d표</string>
+    <string name="vote_participants">%1$d명 참여</string>
+
+    <!-- 쪽지 -->
+    <string name="msg_reply">회신</string>
+    <string name="msg_reply_all">전체회신</string>
+    <string name="msg_forward">전달</string>
+    <string name="msg_title_label">제목</string>
+    <string name="msg_title_hint">제목을 입력하세요</string>
+    <string name="msg_receipt_check">수신확인</string>
+    <string name="msg_uploading">파일 업로드 중</string>
+    <string name="attach_files">첨부 파일 (%1$d)</string>
+    <string name="retry">다시 시도</string>
+
+    <!-- 공용(uikit) -->
+    <string name="date_no_selectable">선택 가능한 날짜가 없습니다</string>
+    <string name="date_year_month">%1$d년 %2$d월</string>
+    <string name="weekday_sun">일</string>
+    <string name="weekday_mon">월</string>
+    <string name="weekday_tue">화</string>
+    <string name="weekday_wed">수</string>
+    <string name="weekday_thu">목</string>
+    <string name="weekday_fri">금</string>
+    <string name="weekday_sat">토</string>
+    <string name="photo_permission_title">사진 접근 권한 필요</string>
+    <string name="photo_permission_message">사진 접근 권한이 필요합니다.\n권한을 허용해주세요.</string>
+    <string name="file_label">파일</string>
+    <string name="download">다운로드</string>
+    <string name="open">열기</string>
+
+    <!-- main / 프로필 / 초대 -->
+    <string name="update_downloading">업데이트 다운로드 중...</string>
+    <string name="please_wait">잠시만 기다려주세요.</string>
+    <string name="update_required">업데이트가 필요합니다</string>
+    <string name="update_required_desc">최신 버전으로 업데이트 후\n사용해주세요.</string>
+    <string name="update">업데이트</string>
+    <string name="profile_photo_select">프로필 사진 선택</string>
+    <string name="no_photos">표시할 사진이 없습니다.</string>
+    <string name="confirm_count">확인 (%1$d)</string>
+    <string name="toast_app_not_installed">앱이 설치되어 있지 않습니다</string>
+    <string name="toast_webmail_failed">웹메일을 열 수 없습니다</string>
+    <string name="toast_feature_in_dev">현재 개발 중인 기능입니다</string>
+    <string name="more_work_channel">워크채널</string>
+    <string name="more_webmail">웹메일</string>
+    <string name="more_e_approval">전자결재</string>
+    <string name="more_resource_mgmt">자원관리</string>
+    <string name="drawer_participants">참여자</string>
+
+    <!-- 알림 시간 설정 -->
+    <string name="noti_time_title">알림 시간 설정</string>
+    <string name="noti_time_start">시작 시간</string>
+    <string name="noti_time_end">종료 시간</string>
+    <string name="noti_time_invalid">시작 시간이 종료 시간보다 늦을 수 없습니다.</string>
+    <string name="noti_time_overnight">종료 시간이 다음 날로 설정됩니다.</string>
+    <string name="apply">적용</string>
+    <string name="no_title">제목없음</string>
+    <string name="connection_reconnecting">연결 중…</string>
+
+    <!-- 화면 잠금 (ScreenLock) -->
+    <string name="lock_screen_title">화면 잠금</string>
+    <string name="lock_type_none">사용 안 함</string>
+    <string name="lock_type_password">비밀번호</string>
+    <string name="lock_type_pattern">패턴</string>
+    <string name="lock_biometric_fingerprint">지문</string>
+    <string name="lock_biometric_faceid">Face ID</string>
+    <string name="lock_change_password">비밀번호 변경</string>
+    <string name="lock_change_pattern">패턴 변경</string>
+    <string name="lock_show_pattern">패턴 표시</string>
+    <string name="lock_warning">비밀번호 또는 패턴을 잊어버린 경우 앱을 삭제하고 재설치 해야하며, 재설치 시 기존 대화 내용은 삭제됩니다.</string>
+    <string name="lock_setup_password_new">새 비밀번호를 입력해주세요.</string>
+    <string name="lock_setup_pattern_new">새 패턴을 입력해주세요.</string>
+    <string name="lock_setup_password_title">비밀번호 설정</string>
+    <string name="lock_setup_pattern_title">패턴 설정</string>
+    <string name="lock_setup_password_confirm">비밀번호를 다시 입력해주세요.</string>
+    <string name="lock_setup_password_mismatch">비밀번호가 일치하지 않습니다. 다시 입력해주세요.</string>
+    <string name="lock_setup_pattern_confirm">패턴을 다시 그려주세요.</string>
+    <string name="lock_setup_pattern_mismatch">패턴이 일치하지 않습니다. 다시 그려주세요.</string>
+    <string name="lock_pattern_too_short">점 %1$d개 이상 연결해주세요.</string>
+    <string name="lock_unlock_title_password">암호</string>
+    <string name="lock_unlock_title_pattern">패턴</string>
+    <string name="lock_unlock_password_hint">비밀번호를 입력해주세요.</string>
+    <string name="lock_unlock_pattern_hint">잠금해제 패턴을 입력해주세요.</string>
+    <string name="lock_unlock_mismatch">잠금해제 정보가 일치하지 않습니다.</string>
+    <string name="lock_biometric_prompt_title">잠금 해제</string>
+    <string name="lock_biometric_prompt_sub_fingerprint">지문으로 잠금을 해제합니다.</string>
+    <string name="lock_biometric_prompt_sub_faceid">Face ID로 잠금을 해제합니다.</string>
+    <string name="lock_biometric_negative_password">비밀번호 입력</string>
+    <string name="lock_unlock_with_fingerprint">지문으로 잠금 해제</string>
+    <string name="lock_unlock_with_faceid">Face ID로 잠금 해제</string>
+
+    <string name="a11y_photo_cell">사진</string>
+    <string name="a11y_video_cell">동영상</string>
+    <string name="a11y_selection_order">선택됨, %1$d번째</string>
+    <string name="a11y_not_selected">선택 안 됨</string>
+    <string name="no_chat_partner">대화상대 없음</string>
+    <string name="date_ampm_am">오전</string>
+    <string name="date_ampm_pm">오후</string>
+    <string name="date_month_day">%1$d월 %2$d일</string>
+    <string name="date_year_month_day">%1$d년 %2$d월 %3$d일</string>
+    <string name="toast_download_failed">파일 다운로드 실패</string>
+    <string name="toast_file_open_failed">파일을 열 수 없습니다</string>
+    <string name="toast_invite_failed">초대에 실패했습니다.</string>
+    <string name="toast_send_failed">전송에 실패했습니다.</string>
+    <string name="invite_to_chat_room">대화방 초대</string>
+    <string name="invite_new_chat_room">새 대화방</string>
+    <string name="video">동영상</string>
+    <string name="profile_photo_change">프로필 사진 변경</string>
+    <string name="toast_saved_to_gallery">'%1$s' 갤러리에 저장됨</string>
+    <string name="toast_save_failed">%1$s 저장 실패</string>
+    <string name="vote_create_action">만들기</string>
+    <string name="date_yesterday">어제</string>
+    <string name="date_time">%1$s %2$d:%3$s</string>
+</resources>

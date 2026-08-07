@@ -1,0 +1,479 @@
+CREATE TABLE GroupEntity (
+    myId TEXT NOT NULL,
+    groupId TEXT NOT NULL,
+    name TEXT NOT NULL,
+    alineCode TEXT NOT NULL,
+    PRIMARY KEY (myId, groupId)
+);
+
+CREATE TABLE GroupUserEntity (
+    myId TEXT NOT NULL,
+    groupId TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    startOffset TEXT,
+    alias TEXT,
+    isAlarm TEXT,
+    userName TEXT NOT NULL,
+    pcStatus TEXT,
+    phoneNumber TEXT,
+    email TEXT,
+    birthday TEXT,
+    solarLunar TEXT,
+    departmentName TEXT,
+    positionName TEXT,
+    responsibilities TEXT,
+    statusMessage TEXT,
+    positionCode TEXT,
+    positionSortCode TEXT,
+    employeeNumber TEXT,
+    etcStatus TEXT,
+    userType TEXT,
+    departmentTopCode TEXT,
+    offset21 TEXT,
+    offset22 TEXT,
+    offset23 TEXT,
+    offset24 TEXT,
+    offset25 TEXT,
+    offset26 TEXT,
+    pcMobileStatus TEXT,
+    mobileStatus TEXT,
+    PRIMARY KEY (myId, userId, groupId),
+    FOREIGN KEY (myId, groupId) REFERENCES GroupEntity(myId, groupId) ON DELETE CASCADE
+);
+
+CREATE TABLE OrganDepartmentEntity (
+    myId TEXT NOT NULL,
+    departmentCode TEXT NOT NULL,
+    name TEXT NOT NULL,
+    parentsCode TEXT NOT NULL,
+    sortPositionCode TEXT NOT NULL,
+    departmentTree TEXT NOT NULL,
+    departmentLevel TEXT NOT NULL,
+    PRIMARY KEY (myId, departmentCode)
+);
+
+CREATE TABLE OrganUserEntity (
+    myId TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    classCode TEXT NOT NULL,
+    userOffset TEXT,
+    userName TEXT NOT NULL,
+    positionCode TEXT,
+    positionName TEXT,
+    isBasicClass TEXT,
+    pcStatus TEXT,
+    phoneNumber TEXT,
+    email TEXT,
+    positionSortCode TEXT,
+    employeeNumber TEXT,
+    userSortCode TEXT,
+    userType TEXT,
+    parentClassCode TEXT,
+    dummy15 TEXT,
+    dummy16 TEXT,
+    dummy17 TEXT,
+    dummy18 TEXT,
+    dummy19 TEXT,
+    dummy20 TEXT,
+    etcPresenceStatus TEXT,
+    statusMessage TEXT,
+    pcMobileStatus TEXT,
+    mobileStatus TEXT,
+    userFullName TEXT,
+    departmentName TEXT,
+    responsibilities TEXT,
+    organ28 TEXT,
+    organ29 TEXT,
+    organ30 TEXT,
+    organ31 TEXT,
+    organ32 TEXT,
+    organ33 TEXT,
+    organ34 TEXT,
+    organ35 TEXT,
+    organ36 TEXT,
+    birthday TEXT,
+    organ38 TEXT,
+    PRIMARY KEY (myId, userId, classCode)
+);
+
+CREATE TABLE ChatRoomEntity (
+    myId TEXT NOT NULL,
+    roomId TEXT NOT NULL,
+    title TEXT,
+    unReadCount TEXT,
+    isAlarm TEXT,
+    firstChatId TEXT,
+    lastChatDate TEXT,
+    lastChatId TEXT,
+    lastChatContent TEXT,
+    totalUserList TEXT,
+    totalUserCount TEXT,
+    exitUserList TEXT,
+    exitUserCount TEXT,
+    pinDate TEXT,
+    mentionCount TEXT,
+    orgMessageId TEXT,
+    clsUsr TEXT,
+    enableMode TEXT,
+    PRIMARY KEY (myId, roomId)
+);
+
+insertGroup:
+INSERT OR REPLACE INTO GroupEntity VALUES ?;
+
+updateGroupName:
+UPDATE GroupEntity SET name = :name WHERE myId = :myId AND groupId = :groupId;
+
+insertGroupUser:
+INSERT OR REPLACE INTO GroupUserEntity VALUES ?;
+
+selectGroupsByMyId:
+SELECT * FROM GroupEntity WHERE myId = ?;
+
+selectUsersByGroupId:
+SELECT * FROM GroupUserEntity WHERE myId = ? AND groupId = ?;
+
+deleteGroupsByMyId:
+DELETE FROM GroupEntity WHERE myId = ?;
+
+deleteUsersByMyId:
+DELETE FROM GroupUserEntity WHERE myId = ?;
+
+deleteGroupUser:
+DELETE FROM GroupUserEntity WHERE myId = ? AND groupId = ? AND userId = ?;
+
+selectGroupUser:
+SELECT * FROM GroupUserEntity WHERE myId = ? AND groupId = ? AND userId = ?;
+
+deleteGroupById:
+DELETE FROM GroupEntity WHERE myId = ? AND groupId = ?;
+
+deleteGroupUsersByGroupId:
+DELETE FROM GroupUserEntity WHERE myId = ? AND groupId = ?;
+
+-- Presence 푸시 (32/42) 수신 시 — userId 매칭되는 모든 그룹의 행 일괄 update.
+updateGroupUserPcStatus:
+UPDATE GroupUserEntity SET pcStatus = ? WHERE myId = ? AND userId = ?;
+
+updateGroupUserMobileStatus:
+UPDATE GroupUserEntity SET mobileStatus = ? WHERE myId = ? AND userId = ?;
+
+insertOrganDepartment:
+INSERT OR REPLACE INTO OrganDepartmentEntity VALUES ?;
+
+selectOrganDepartmentsByMyId:
+SELECT * FROM OrganDepartmentEntity WHERE myId = ?;
+
+deleteOrganDepartmentsByMyId:
+DELETE FROM OrganDepartmentEntity WHERE myId = ?;
+
+insertOrganUser:
+INSERT OR REPLACE INTO OrganUserEntity VALUES ?;
+
+selectOrganUsersByMyId:
+SELECT * FROM OrganUserEntity WHERE myId = ?;
+
+selectOrganUsersByDepartment:
+SELECT * FROM OrganUserEntity WHERE myId = ? AND classCode = ?;
+
+deleteOrganUsersByMyId:
+DELETE FROM OrganUserEntity WHERE myId = ?;
+
+deleteOrganUsersByDepartment:
+DELETE FROM OrganUserEntity WHERE myId = ? AND classCode = ?;
+
+-- Presence 푸시 (32/42) 수신 시 — userId 매칭되는 모든 부서의 행 일괄 update.
+updateOrganUserPcStatus:
+UPDATE OrganUserEntity SET pcStatus = ? WHERE myId = ? AND userId = ?;
+
+updateOrganUserMobileStatus:
+UPDATE OrganUserEntity SET mobileStatus = ? WHERE myId = ? AND userId = ?;
+
+insertChatRoom:
+INSERT OR REPLACE INTO ChatRoomEntity VALUES ?;
+
+selectChatRoomsByMyId:
+SELECT * FROM ChatRoomEntity WHERE myId = ? ORDER BY lastChatDate DESC;
+
+deleteChatRoomsByMyId:
+DELETE FROM ChatRoomEntity WHERE myId = ?;
+
+deleteChatRoomById:
+DELETE FROM ChatRoomEntity WHERE myId = :myId AND roomId = :roomId;
+
+updateChatRoomTitle:
+UPDATE ChatRoomEntity SET title = :title WHERE myId = :myId AND roomId = :roomId;
+
+updateChatRoomAlarm:
+UPDATE ChatRoomEntity SET isAlarm = :isAlarm WHERE myId = :myId AND roomId = :roomId;
+
+updateChatRoomEnableMode:
+UPDATE ChatRoomEntity SET enableMode = :enableMode WHERE myId = :myId AND roomId = :roomId;
+
+updateChatRoomUnreadCount:
+UPDATE ChatRoomEntity SET unReadCount = :unReadCount WHERE myId = :myId AND roomId = :roomId;
+
+CREATE TABLE MessageDetailEntity (
+    myId TEXT NOT NULL,
+    messageId TEXT NOT NULL,
+    boxType TEXT NOT NULL,
+    senderId TEXT NOT NULL,
+    senderName TEXT NOT NULL,
+    senderClassAndPosition TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    sentDate TEXT NOT NULL,
+    isRead TEXT NOT NULL,
+    isLocked TEXT NOT NULL,
+    isRecalled TEXT NOT NULL,
+    direction TEXT NOT NULL,
+    msgType TEXT NOT NULL DEFAULT '0',
+    opt1 TEXT NOT NULL DEFAULT '',
+    opt2 TEXT NOT NULL DEFAULT '',
+    opt3 TEXT NOT NULL DEFAULT '',
+    opt4 TEXT NOT NULL DEFAULT '',
+    opt5 TEXT NOT NULL DEFAULT '',
+    receiversJson TEXT NOT NULL,
+    attachmentsJson TEXT NOT NULL,
+    PRIMARY KEY (myId, messageId, boxType)
+);
+
+insertMessageDetail:
+INSERT OR REPLACE INTO MessageDetailEntity VALUES ?;
+
+selectMessageDetail:
+SELECT * FROM MessageDetailEntity WHERE myId = ? AND messageId = ? AND boxType = ?;
+
+deleteMessageDetailsByMyId:
+DELETE FROM MessageDetailEntity WHERE myId = ?;
+
+updateMessageDetailLock:
+UPDATE MessageDetailEntity SET isLocked = :isLocked
+WHERE myId = :myId AND messageId = :messageId AND boxType = :boxType;
+
+deleteMessageDetail:
+DELETE FROM MessageDetailEntity
+WHERE myId = :myId AND messageId = :messageId AND boxType = :boxType;
+
+updateMessageDetailRecall:
+UPDATE MessageDetailEntity SET isRecalled = :isRecalled
+WHERE myId = :myId AND messageId = :messageId AND boxType = :boxType;
+
+updateMessageDetailRead:
+UPDATE MessageDetailEntity SET isRead = :isRead
+WHERE myId = :myId AND messageId = :messageId AND boxType = :boxType;
+
+CREATE TABLE ChatEntity (
+    myId TEXT NOT NULL,
+    chatRoomId TEXT NOT NULL,
+    chatId TEXT NOT NULL,
+    chatType TEXT NOT NULL DEFAULT '0',
+    title TEXT,
+    chatContent TEXT,
+    chatStatue TEXT NOT NULL DEFAULT '0',
+    date TEXT,
+    unReadCount TEXT,
+    imagePath TEXT,
+    imageSize TEXT,
+    originalFileName TEXT,
+    isRecalled TEXT,
+    userJson TEXT NOT NULL,
+    empathyJson TEXT NOT NULL,
+    replyChatJson TEXT NOT NULL,
+    emoticonJson TEXT NOT NULL,
+    voteJson TEXT,
+    voteCompleteJson TEXT,
+    PRIMARY KEY (myId, chatRoomId, chatId)
+);
+
+insertChat:
+INSERT OR REPLACE INTO ChatEntity VALUES ?;
+
+selectRecentChatsByRoom:
+SELECT * FROM ChatEntity
+WHERE myId = :myId AND chatRoomId = :chatRoomId
+ORDER BY date DESC
+LIMIT :pageSize;
+
+selectChatsBeforeDate:
+SELECT * FROM ChatEntity
+WHERE myId = :myId AND chatRoomId = :chatRoomId AND date < :beforeDate
+ORDER BY date DESC
+LIMIT :pageSize;
+
+selectChatsAfterDate:
+SELECT * FROM ChatEntity
+WHERE myId = :myId AND chatRoomId = :chatRoomId AND date > :afterDate
+ORDER BY date ASC
+LIMIT :pageSize;
+
+selectLastChatId:
+SELECT chatId FROM ChatEntity
+WHERE myId = :myId AND chatRoomId = :chatRoomId
+ORDER BY date DESC LIMIT 1;
+
+-- 서버가 실제로 가진(전송 완료된) 마지막 대화 chatId. SENDING('0')/FAIL('1') 제외.
+-- 정상 진입(미확정 없음) 앵커 및 미확정 전송의 인과적 기준 앵커 캡처에 사용.
+selectLastCompleteChatId:
+SELECT chatId FROM ChatEntity
+WHERE myId = :myId AND chatRoomId = :chatRoomId AND chatStatue <> '0' AND chatStatue <> '1'
+ORDER BY date DESC LIMIT 1;
+
+-- 검색 조건 매칭 chatID / date 목록 (DESC by date, LIMIT 500).
+-- 각 필터는 빈 문자열이면 무시 (`(:param = '' OR ...)` 패턴).
+--   :query    = 본문(chatContent) 부분일치
+--   :userId   = 송신자 user.id (userJson 의 "id":"..." 슬롯) 일치
+--   :dateFrom = date 의 하한 (inclusive, "yyyy-MM-dd HH:mm:ss:SSS" 형식 그대로 비교)
+--   :dateTo   = date 의 상한 (inclusive)
+selectMatchingChats:
+SELECT chatId, date FROM ChatEntity
+WHERE myId = :myId AND chatRoomId = :chatRoomId
+  AND (:query = '' OR chatContent LIKE '%' || :query || '%')
+  AND (:userId = '' OR userJson LIKE '%"id":"' || :userId || '"%')
+  AND (:dateFrom = '' OR date >= :dateFrom)
+  AND (:dateTo = '' OR date <= :dateTo)
+ORDER BY date DESC
+LIMIT 500;
+
+-- 특정 chatID 의 단일 chat 조회 (검색 결과로부터 컨텍스트 로드 시 사용).
+selectChatById:
+SELECT * FROM ChatEntity
+WHERE myId = :myId AND chatRoomId = :chatRoomId AND chatId = :chatId
+LIMIT 1;
+
+-- 공감 패킷 수신 시 — 대상 chat 의 empathyJson 컬럼만 갱신.
+-- 행이 아직 DB 에 없는 경우 (페이지네이션 영역 밖) 0 row affected — 무시.
+updateChatEmpathy:
+UPDATE ChatEntity SET empathyJson = :empathyJson
+WHERE myId = :myId AND chatRoomId = :chatRoomId AND chatId = :chatId;
+
+-- 회수(RECALL) 패킷 수신 시 — 대상 chat 의 isRecalled 컬럼만 "1" 로 갱신.
+--   다른 컬럼(chatContent/user/date/empathy/reply 등) 은 보존 — 회수 표시는 UI 가 isRecalled 플래그로만 분기.
+updateChatRecalled:
+UPDATE ChatEntity SET isRecalled = :isRecalled
+WHERE myId = :myId AND chatRoomId = :chatRoomId AND chatId = :chatId;
+
+-- 안읽음 카운트 재동기화 시 — 대상 chat 의 unReadCount 컬럼만 갱신.
+--   메모리(_currentRoom)뿐 아니라 DB 도 함께 갱신해야, 이후 DB 재로드(replaceMemoryWithLatestFromDb)
+--   시에도 정확한 값이 유지됨(수신시점 stale 카운트로 되돌아가는 깜빡임 방지).
+updateChatUnreadCount:
+UPDATE ChatEntity SET unReadCount = :unReadCount
+WHERE myId = :myId AND chatRoomId = :chatRoomId AND chatId = :chatId;
+
+-- 실패한 대화의 재전송 / 삭제 시 — 단일 chat 행만 제거.
+--   send 시 클라가 chatID 를 생성하므로 동일 chatID 가 다시 들어올 일은 없음 (재전송 시 새 chatID).
+deleteChatById:
+DELETE FROM ChatEntity WHERE myId = :myId AND chatRoomId = :chatRoomId AND chatId = :chatId;
+
+deleteChatsByRoom:
+DELETE FROM ChatEntity WHERE myId = ? AND chatRoomId = ?;
+
+deleteChatsByMyId:
+DELETE FROM ChatEntity WHERE myId = ?;
+
+CREATE TABLE UserProfileEntity (
+    myId TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    name TEXT NOT NULL,
+    nameEn TEXT NOT NULL,
+    companyId TEXT NOT NULL,
+    position TEXT NOT NULL,
+    department TEXT NOT NULL,
+    localCallNum TEXT NOT NULL,
+    extensionNum TEXT NOT NULL,
+    mobileNum TEXT NOT NULL,
+    faxNum TEXT NOT NULL,
+    email TEXT NOT NULL,
+    motto TEXT NOT NULL,
+    PRIMARY KEY (myId, userId)
+);
+
+insertUserProfile:
+INSERT OR REPLACE INTO UserProfileEntity VALUES ?;
+
+selectUserProfile:
+SELECT * FROM UserProfileEntity WHERE myId = ? AND userId = ?;
+
+deleteUserProfilesByMyId:
+DELETE FROM UserProfileEntity WHERE myId = ?;
+
+-- 대화방 투표.
+-- 항목/투표자는 ChatEntity 의 중첩 데이터 처리와 동일하게 JSON 컬럼으로 보관한다
+-- (항목·투표자 단위로 조회할 일이 없고 항상 투표 한 건을 통째로 읽는다).
+-- boolean 은 기존 테이블(isRecalled 등)과 맞춰 'true'/'false' 문자열로 저장.
+CREATE TABLE VoteEntity (
+    myId TEXT NOT NULL,
+    chatRoomId TEXT NOT NULL,
+    voteId TEXT NOT NULL,
+    title TEXT NOT NULL,
+    isClosed TEXT NOT NULL DEFAULT 'false',
+    useEndTime TEXT NOT NULL DEFAULT 'false',
+    endTime TEXT,
+    writeUserId TEXT NOT NULL,
+    multiSelect TEXT NOT NULL DEFAULT 'false',
+    allowAddItem TEXT NOT NULL DEFAULT 'false',
+    itemsJson TEXT NOT NULL,
+    votersJson TEXT NOT NULL,
+    PRIMARY KEY (myId, chatRoomId, voteId)
+);
+
+insertVote:
+INSERT OR REPLACE INTO VoteEntity VALUES ?;
+
+selectVotesByRoom:
+SELECT * FROM VoteEntity WHERE myId = ? AND chatRoomId = ? ORDER BY voteId DESC;
+
+selectVoteById:
+SELECT * FROM VoteEntity WHERE myId = ? AND chatRoomId = ? AND voteId = ?;
+
+deleteVotesByRoom:
+DELETE FROM VoteEntity WHERE myId = ? AND chatRoomId = ?;
+
+deleteVotesByMyId:
+DELETE FROM VoteEntity WHERE myId = ?;
+
+-- 대화방 공지 — 방당 한 건만 유지되므로 (myId, chatRoomId) 가 PK.
+CREATE TABLE NoticeEntity (
+    myId TEXT NOT NULL,
+    chatRoomId TEXT NOT NULL,
+    noticeId TEXT NOT NULL,
+    content TEXT NOT NULL,
+    ownerId TEXT NOT NULL,
+    ownerName TEXT NOT NULL,
+    ownerPosition TEXT NOT NULL,
+    date TEXT NOT NULL,
+    PRIMARY KEY (myId, chatRoomId)
+);
+
+insertNotice:
+INSERT OR REPLACE INTO NoticeEntity VALUES ?;
+
+selectNotice:
+SELECT * FROM NoticeEntity WHERE myId = ? AND chatRoomId = ?;
+
+deleteNotice:
+DELETE FROM NoticeEntity WHERE myId = ? AND chatRoomId = ?;
+
+-- 대화 책갈피.
+CREATE TABLE BookmarkEntity (
+    myId TEXT NOT NULL,
+    chatRoomId TEXT NOT NULL,
+    chatId TEXT NOT NULL,
+    content TEXT NOT NULL,
+    date TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    userName TEXT NOT NULL,
+    PRIMARY KEY (myId, chatRoomId, chatId)
+);
+
+insertBookmark:
+INSERT OR REPLACE INTO BookmarkEntity VALUES ?;
+
+selectBookmarksByRoom:
+SELECT * FROM BookmarkEntity WHERE myId = ? AND chatRoomId = ? ORDER BY chatId DESC;
+
+deleteBookmark:
+DELETE FROM BookmarkEntity WHERE myId = ? AND chatRoomId = ? AND chatId = ?;
+
+deleteBookmarksByRoom:
+DELETE FROM BookmarkEntity WHERE myId = ? AND chatRoomId = ?;
