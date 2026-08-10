@@ -75,7 +75,7 @@ fun RecallItem(
             fontSize = 13.sp,
             maxLines = 20,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 5.dp, bottom = 5.dp, start = 5.dp, end = 10.dp)
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp, start = 5.dp, end = 10.dp)
         )
 
     }
