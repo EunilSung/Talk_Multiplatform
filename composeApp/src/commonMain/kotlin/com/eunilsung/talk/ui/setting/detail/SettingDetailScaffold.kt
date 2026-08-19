@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.setting.detail
 
+import com.eunilsung.talk.ui.main.popToEmptyRoot
 import com.eunilsung.talk.ui.uikit.topbar.BackScaffold
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,7 +33,7 @@ internal fun SettingDetailScaffold(
     content: @Composable (PaddingValues) -> Unit
 ) {
     val rightNavigator = LocalRightNavigator.current
-    BackScaffold(title = title, onBack = { rightNavigator.popUntilRoot() }, content = content)
+    BackScaffold(title = title, onBack = { rightNavigator.popToEmptyRoot() }, content = content)
 }
 
 @Composable

@@ -124,7 +124,7 @@ object MainScreen : Screen {
                         .drop(1)
                         .filter { !it }
                         .collect {
-                            rightNavigator.popUntilRoot()
+                            rightNavigator.popToEmptyRoot()
                             com.eunilsung.talk.data.remote.push.PendingPushNavigation.consume()
                             com.eunilsung.talk.data.remote.share.PendingShareNavigation.consume()
                         }
@@ -355,7 +355,7 @@ fun Phone(
     val scope = rememberCoroutineScope()
 
     if (hasOverlay) {
-        BackHandler { rightNavigator.popUntilRoot() }
+        BackHandler { rightNavigator.popToEmptyRoot() }
     }
 
     var stickyOverlay by remember { mutableStateOf<Screen?>(null) }
@@ -394,7 +394,7 @@ fun Phone(
                     scope.launch {
                         if (shouldDismiss) {
                             offsetX.animateTo(screenWidthPx, tween(durationMillis = 200))
-                            rightNavigator.popUntilRoot()
+                            rightNavigator.popToEmptyRoot()
                         } else {
                             offsetX.animateTo(0f, spring())
                         }
@@ -481,7 +481,7 @@ fun Phone(
                             scope.launch {
                                 if (shouldDismiss) {
                                     offsetX.animateTo(screenWidthPx, tween(durationMillis = 200))
-                                    rightNavigator.popUntilRoot()
+                                    rightNavigator.popToEmptyRoot()
                                 } else {
                                     offsetX.animateTo(0f, spring())
                                 }

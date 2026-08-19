@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.setting
 
+import com.eunilsung.talk.ui.main.popToEmptyRoot
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -64,7 +65,7 @@ private fun openDetail(rightNavigator: Navigator, item: SettingItem) {
         SettingItem.CHAT -> SettingChatDetailScreen()
         SettingItem.APP_INFO -> SettingAppInfoDetailScreen()
     }
-    rightNavigator.popUntilRoot()
+    rightNavigator.popToEmptyRoot()
     rightNavigator.push(newScreen)
 }
 

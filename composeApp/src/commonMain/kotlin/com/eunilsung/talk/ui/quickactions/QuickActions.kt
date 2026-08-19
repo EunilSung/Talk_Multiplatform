@@ -122,7 +122,7 @@ class QuickActions(
         if (current is ChatRoomScreen && current.chatRoomId == chatRoomId) return
 
         val newScreen = ChatRoomScreen(chatRoomId = chatRoomId)
-        if (current === EmptyScreen) {
+        if (current is EmptyScreen) {
             nav.push(newScreen)
         } else {
             nav.replace(newScreen)

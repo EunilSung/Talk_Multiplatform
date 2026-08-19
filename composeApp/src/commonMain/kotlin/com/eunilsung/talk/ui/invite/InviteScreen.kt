@@ -83,7 +83,7 @@ class InviteScreen(
                             (mode is InviteMode.InviteToChatRoom && mode.createNewRoom)
                         if (createdNewRoom && result.chatRoomId.isNotBlank()) {
                             val newScreen = ChatRoomScreen(chatRoomId = result.chatRoomId)
-                            if (rightNavigator.lastItem === EmptyScreen) {
+                            if (rightNavigator.lastItem is EmptyScreen) {
                                 rightNavigator.push(newScreen)
                             } else {
                                 rightNavigator.replace(newScreen)

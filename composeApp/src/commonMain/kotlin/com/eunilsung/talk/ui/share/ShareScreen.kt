@@ -94,7 +94,7 @@ class ShareScreen(
                             val newScreen = ChatRoomScreen(
                                 chatRoomId = result.chatRoomId
                             )
-                            if (current === EmptyScreen) {
+                            if (current is EmptyScreen) {
                                 rightNavigator.push(newScreen)
                             } else {
                                 rightNavigator.replace(newScreen)

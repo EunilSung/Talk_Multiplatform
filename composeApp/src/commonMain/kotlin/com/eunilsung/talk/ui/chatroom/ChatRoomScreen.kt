@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.chatroom
 
+import com.eunilsung.talk.ui.main.popToEmptyRoot
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -233,7 +234,7 @@ class ChatRoomScreen(
         LaunchedEffect(viewModel, chatRoomId) {
             viewModel.selfLeftPush.collect { leftRoomId ->
                 if (leftRoomId == chatRoomId) {
-                    rightNavigator.popUntilRoot()
+                    rightNavigator.popToEmptyRoot()
                 }
             }
         }
@@ -258,7 +259,7 @@ class ChatRoomScreen(
                 when (action) {
                     is ChatRoomActions.OnClose -> {
                         if (searchState.isActive) viewModel.onAction(ChatRoomActions.OnExitSearch)
-                        else rightNavigator.popUntilRoot()
+                        else rightNavigator.popToEmptyRoot()
                     }
                     else -> viewModel.onAction(action)
                 }

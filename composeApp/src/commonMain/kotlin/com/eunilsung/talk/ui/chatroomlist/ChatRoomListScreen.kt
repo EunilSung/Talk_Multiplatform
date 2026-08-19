@@ -92,7 +92,7 @@ object ChatRoomListScreen : Screen {
                 if (current is ChatRoomScreen && current.chatRoomId == item.id) return@ChatRoomListContent
 
                 val newScreen = ChatRoomScreen(chatRoomId = item.id)
-                if (current === EmptyScreen) {
+                if (current is EmptyScreen) {
                     rightNavigator.push(newScreen)
                 } else {
                     rightNavigator.replace(newScreen)

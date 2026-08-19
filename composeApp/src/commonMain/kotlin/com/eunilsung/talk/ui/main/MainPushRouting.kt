@@ -93,7 +93,7 @@ internal fun routePushNavigation(
         return
     }
 
-    if (current === EmptyScreen) {
+    if (current is EmptyScreen) {
         rightNavigator.push(newScreen)
     } else {
         rightNavigator.replace(newScreen)
