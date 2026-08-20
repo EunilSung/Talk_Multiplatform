@@ -30,8 +30,6 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
-import cafe.adriel.voyager.navigator.tab.CurrentTab
-import cafe.adriel.voyager.navigator.tab.TabNavigator
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.chatroom_list
 import multiplatformtalk.composeapp.generated.resources.close_icon
@@ -39,6 +37,8 @@ import multiplatformtalk.composeapp.generated.resources.group
 import multiplatformtalk.composeapp.generated.resources.send
 import multiplatformtalk.composeapp.generated.resources.share
 import kotlinx.coroutines.flow.MutableStateFlow
+import com.eunilsung.talk.ui.main.tab.CurrentAppTab
+import com.eunilsung.talk.ui.main.tab.rememberAppTabState
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.data.remote.share.SharedContent
 import com.eunilsung.talk.domain.model.ChatRoom
@@ -193,41 +193,40 @@ fun ShareScreenContent(
                 }
             )
 
-            TabNavigator(InviteGroupTab) { tabNavigator ->
-                val groupTitle = stringResource(Res.string.group)
-                val chatRoomTitle = stringResource(Res.string.chatroom_list)
-                TabRow1(
-                    items = listOf(
-                        TabItem1(
-                            text = groupTitle,
-                            isSelected = tabNavigator.current == InviteGroupTab,
-                            onClick = { tabNavigator.current = InviteGroupTab },
-                        ),
-                        TabItem1(
-                            text = chatRoomTitle,
-                            isSelected = tabNavigator.current == ShareChatRoomTab,
-                            onClick = { tabNavigator.current = ShareChatRoomTab },
-                        ),
-                    )
+            val tabState = rememberAppTabState(listOf(InviteGroupTab, ShareChatRoomTab), InviteGroupTab)
+            val groupTitle = stringResource(Res.string.group)
+            val chatRoomTitle = stringResource(Res.string.chatroom_list)
+            TabRow1(
+                items = listOf(
+                    TabItem1(
+                        text = groupTitle,
+                        isSelected = tabState.current == InviteGroupTab,
+                        onClick = { tabState.current = InviteGroupTab },
+                    ),
+                    TabItem1(
+                        text = chatRoomTitle,
+                        isSelected = tabState.current == ShareChatRoomTab,
+                        onClick = { tabState.current = ShareChatRoomTab },
+                    ),
                 )
+            )
 
-                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                    CurrentTab()
-                }
+            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                CurrentAppTab(tabState)
+            }
 
-                if (uiState.selectedUsers.isNotEmpty()) {
-                    LineDivider(modifier = Modifier.fillMaxWidth().height(1.dp))
-                    SelectedUserChips(
-                        selectedUsers = uiState.selectedUsers,
-                        onRemove = { id -> onAction(ShareActions.OnUserRemove(id)) }
-                    )
-                } else if (uiState.selectedChatRoom != null) {
-                    LineDivider(modifier = Modifier.fillMaxWidth().height(1.dp))
-                    SelectedChatRoomChip(
-                        room = uiState.selectedChatRoom,
-                        onRemove = { onAction(ShareActions.OnChatRoomClear) }
-                    )
-                }
+            if (uiState.selectedUsers.isNotEmpty()) {
+                LineDivider(modifier = Modifier.fillMaxWidth().height(1.dp))
+                SelectedUserChips(
+                    selectedUsers = uiState.selectedUsers,
+                    onRemove = { id -> onAction(ShareActions.OnUserRemove(id)) }
+                )
+            } else if (uiState.selectedChatRoom != null) {
+                LineDivider(modifier = Modifier.fillMaxWidth().height(1.dp))
+                SelectedChatRoomChip(
+                    room = uiState.selectedChatRoom,
+                    onRemove = { onAction(ShareActions.OnChatRoomClear) }
+                )
             }
         }
     }

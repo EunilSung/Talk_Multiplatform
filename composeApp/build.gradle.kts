@@ -84,7 +84,6 @@ kotlin {
             implementation(libs.voyager.navigator)
             implementation(libs.voyager.screenModel)
             implementation(libs.voyager.bottomSheetNavigation)
-            implementation(libs.voyager.tabNavigation)
             implementation(libs.voyager.transitions)
             implementation(libs.voyager.koin)
 

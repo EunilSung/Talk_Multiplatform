@@ -125,6 +125,19 @@ private fun LockScreenHost(onUnlocked: () -> Unit) {
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { tryAutoPromptBiometric() }
 
+    /**
+     * 백그라운드로 나가면 자동 프롬프트를 다시 무장한다.
+     *
+     * [promptFired] 는 **한 번의 포그라운드 세션에서** 프롬프트가 중복으로 뜨는 것을 막으려는 것이지
+     * 앱 수명 전체에서 1회로 제한하려는 게 아니다. 리셋하지 않으면 사용자가 지문 프롬프트를 취소한
+     * 뒤에는 잠금 화면이 그대로 남아([LockScreenHost] 가 컴포지션에 유지되므로) 플래그도 살아 있어,
+     * 다시 포그라운드로 들어와도 지문이 뜨지 않는다.
+     *
+     * [Lifecycle.Event.ON_PAUSE] 가 아니라 ON_STOP 인 이유 — 생체 프롬프트가 뜰 때 ON_PAUSE 가
+     * 발생하므로, 거기서 리셋하면 프롬프트를 띄우자마자 무장이 풀려 중복으로 뜰 수 있다.
+     */
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { promptFired = false }
+
     LockScreenContent(
         type = config.type,
         patternVisible = config.patternVisible,

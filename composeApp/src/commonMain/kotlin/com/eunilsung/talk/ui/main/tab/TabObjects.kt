@@ -1,8 +1,6 @@
 package com.eunilsung.talk.ui.main.tab
 
 import androidx.compose.runtime.Composable
-import cafe.adriel.voyager.navigator.tab.Tab
-import cafe.adriel.voyager.navigator.tab.TabOptions
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.chat_tab_icon
 import multiplatformtalk.composeapp.generated.resources.chatroom_list
@@ -16,11 +14,12 @@ import com.eunilsung.talk.ui.setting.SettingScreen
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-internal object GroupTab : Tab {
-    override val options: TabOptions
+internal object GroupTab : AppTab {
+    override val key: String = "group"
+
+    override val options: AppTabOptions
         @Composable
-        get() = TabOptions(
-            index = 0u,
+        get() = AppTabOptions(
             title = stringResource(Res.string.tab_my_group),
             icon = painterResource(Res.drawable.group_tab_icon)
         )
@@ -31,11 +30,12 @@ internal object GroupTab : Tab {
     }
 }
 
-internal object ChatTab : Tab {
-    override val options: TabOptions
+internal object ChatTab : AppTab {
+    override val key: String = "chat"
+
+    override val options: AppTabOptions
         @Composable
-        get() = TabOptions(
-            index = 0u,
+        get() = AppTabOptions(
             title = stringResource(Res.string.chatroom_list),
             icon = painterResource(Res.drawable.chat_tab_icon)
         )
@@ -46,11 +46,12 @@ internal object ChatTab : Tab {
     }
 }
 
-internal object SettingTab : Tab {
-    override val options: TabOptions
+internal object SettingTab : AppTab {
+    override val key: String = "setting"
+
+    override val options: AppTabOptions
         @Composable
-        get() = TabOptions(
-            index = 0u,
+        get() = AppTabOptions(
             title = stringResource(Res.string.setting),
             icon = painterResource(Res.drawable.setting_tab_icon)
         )

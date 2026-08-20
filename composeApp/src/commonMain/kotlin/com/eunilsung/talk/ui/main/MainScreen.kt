@@ -56,15 +56,15 @@ import kotlinx.coroutines.launch
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.stack.StackEvent
 import cafe.adriel.voyager.navigator.Navigator
-import cafe.adriel.voyager.navigator.tab.CurrentTab
-import cafe.adriel.voyager.navigator.tab.TabNavigator
 import com.eunilsung.talk.domain.model.MainEvent
 import com.eunilsung.talk.domain.repository.LoginRepository
 import com.eunilsung.talk.ui.login.LoginScreen
 import com.eunilsung.talk.ui.main.tab.ChatTab
 import com.eunilsung.talk.ui.main.tab.GroupTab
 import com.eunilsung.talk.ui.main.tab.SettingTab
+import com.eunilsung.talk.ui.main.tab.CurrentAppTab
 import com.eunilsung.talk.ui.main.tab.TabItem
+import com.eunilsung.talk.ui.main.tab.rememberAppTabState
 import com.eunilsung.talk.ui.theme.AppTheme
 import com.eunilsung.talk.ui.uikit.BackHandler
 import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
@@ -293,7 +293,7 @@ fun LeftPane() {
     val chatUnreadTotal by chatRoomListUseCases.observeChatRoomUnreadTotal().collectAsState()
 
     key(isLoggedIn) {
-        TabNavigator(GroupTab) { tabNavigator ->
+        val tabState = rememberAppTabState(tabList, GroupTab)
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
@@ -309,12 +309,12 @@ fun LeftPane() {
                             TabItem(
                                 tab = tab,
                                 modifier = Modifier.weight(1f),
-                                isSelected = tabNavigator.current == tab,
+                                isSelected = tabState.current == tab,
                                 badgeCount = when (tab) {
                                     ChatTab -> chatUnreadTotal
                                     else -> 0
                                 },
-                                onClick = { tabNavigator.current = tab }
+                                onClick = { tabState.current = tab }
                             )
                         }
                     }
@@ -334,10 +334,9 @@ fun LeftPane() {
                     }
                     .padding(bottom = innerPadding.calculateBottomPadding())
             ) {
-                CurrentTab()
+                CurrentAppTab(tabState)
             }
         }
-    }
     }
 }
 

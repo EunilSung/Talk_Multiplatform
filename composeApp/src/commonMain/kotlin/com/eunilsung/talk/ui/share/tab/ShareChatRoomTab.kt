@@ -24,12 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import cafe.adriel.voyager.navigator.tab.Tab
-import cafe.adriel.voyager.navigator.tab.TabOptions
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.chat_tab_icon
 import multiplatformtalk.composeapp.generated.resources.chatroom_list
 import multiplatformtalk.composeapp.generated.resources.chatroom_list_search_hint
+import com.eunilsung.talk.ui.main.tab.AppTab
+import com.eunilsung.talk.ui.main.tab.AppTabOptions
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.ui.chatroomlist.item.ChatRoomItem
 import com.eunilsung.talk.ui.theme.AppColors
@@ -38,11 +38,12 @@ import com.eunilsung.talk.ui.uikit.topbar.TopBarV1
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-object ShareChatRoomTab : Tab {
-    override val options: TabOptions
+object ShareChatRoomTab : AppTab {
+    override val key: String = "share_chatroom"
+
+    override val options: AppTabOptions
         @Composable
-        get() = TabOptions(
-            index = 2u,
+        get() = AppTabOptions(
             title = stringResource(Res.string.chatroom_list),
             icon = painterResource(Res.drawable.chat_tab_icon)
         )

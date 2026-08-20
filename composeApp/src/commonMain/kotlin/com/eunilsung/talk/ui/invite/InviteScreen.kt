@@ -33,12 +33,12 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
-import cafe.adriel.voyager.navigator.tab.CurrentTab
-import cafe.adriel.voyager.navigator.tab.TabNavigator
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.confirm_count
 import multiplatformtalk.composeapp.generated.resources.close_icon
 import multiplatformtalk.composeapp.generated.resources.group
+import com.eunilsung.talk.ui.main.tab.CurrentAppTab
+import com.eunilsung.talk.ui.main.tab.rememberAppTabState
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.ui.chatroom.ChatRoomScreen
 import com.eunilsung.talk.ui.invite.item.SelectedUserChips
@@ -163,31 +163,30 @@ fun InviteScreenContent(
                 }
             )
 
-            TabNavigator(InviteGroupTab) { tabNavigator ->
-                val groupTitle = stringResource(Res.string.group)
-                TabRow1(
-                    items = listOf(
-                        TabItem1(
-                            text = groupTitle,
-                            isSelected = tabNavigator.current == InviteGroupTab,
-                            onClick = { tabNavigator.current = InviteGroupTab },
-                        ),
-                    )
+            val tabState = rememberAppTabState(listOf(InviteGroupTab), InviteGroupTab)
+            val groupTitle = stringResource(Res.string.group)
+            TabRow1(
+                items = listOf(
+                    TabItem1(
+                        text = groupTitle,
+                        isSelected = tabState.current == InviteGroupTab,
+                        onClick = { tabState.current = InviteGroupTab },
+                    ),
                 )
+            )
 
-                Spacer(modifier = Modifier.size(10.dp))
+            Spacer(modifier = Modifier.size(10.dp))
 
-                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                    CurrentTab()
-                }
+            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                CurrentAppTab(tabState)
+            }
 
-                if (uiState.selectedUsers.isNotEmpty()) {
-                    LineDivider(modifier = Modifier.fillMaxWidth().height(1.dp))
-                    SelectedUserChips(
-                        selectedUsers = uiState.selectedUsers,
-                        onRemove = { id -> onAction(InviteActions.OnUserRemove(id)) }
-                    )
-                }
+            if (uiState.selectedUsers.isNotEmpty()) {
+                LineDivider(modifier = Modifier.fillMaxWidth().height(1.dp))
+                SelectedUserChips(
+                    selectedUsers = uiState.selectedUsers,
+                    onRemove = { id -> onAction(InviteActions.OnUserRemove(id)) }
+                )
             }
         }
     }

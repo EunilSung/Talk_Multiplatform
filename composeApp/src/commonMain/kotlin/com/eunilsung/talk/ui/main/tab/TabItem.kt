@@ -26,14 +26,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
-import cafe.adriel.voyager.navigator.tab.Tab
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.click.clickable
 
 @Composable
 fun TabItem(
-    tab: Tab,
+    tab: AppTab,
     modifier: Modifier,
     isSelected: Boolean,
     badgeCount: Int = 0,
