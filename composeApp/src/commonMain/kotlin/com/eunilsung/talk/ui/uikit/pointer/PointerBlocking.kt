@@ -16,17 +16,3 @@ import androidx.compose.ui.input.pointer.pointerInput
  */
 fun Modifier.blockPointerInput(): Modifier = pointerInput(Unit) {}
 
-/**
- * 남은 포인터 이벤트까지 **소비**한다 — 잠금 화면처럼 뒤쪽이 절대 반응하면 안 되는 경우.
- *
- * 소비는 자식이 먼저 처리하는 Main 패스에서 일어나므로 자기 자식의 입력은 살아 있고,
- * 자식이 쓰고 남은 것만 흡수한다. [blockPointerInput] 보다 강하지만,
- * 자식 제스처가 이벤트를 소비하지 않는 구조라면 영향이 있을 수 있으니 기본은 [blockPointerInput] 을 쓴다.
- */
-fun Modifier.consumeAllPointerEvents(): Modifier = pointerInput(Unit) {
-    awaitPointerEventScope {
-        while (true) {
-            awaitPointerEvent().changes.forEach { if (!it.isConsumed) it.consume() }
-        }
-    }
-}

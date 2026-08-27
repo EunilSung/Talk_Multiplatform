@@ -35,7 +35,7 @@ import com.eunilsung.talk.ui.screenlock.ScreenLockViewModel
 import com.eunilsung.talk.ui.screenlock.component.PatternPad
 import com.eunilsung.talk.ui.screenlock.component.PinPad
 import com.eunilsung.talk.ui.theme.AppColors
-import com.eunilsung.talk.ui.uikit.pointer.consumeAllPointerEvents
+import com.eunilsung.talk.ui.uikit.pointer.blockPointerInput
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.cancel
 import multiplatformtalk.composeapp.generated.resources.lock_biometric_negative_password
@@ -171,7 +171,7 @@ private fun LockScreenContent(
     Box(
         // 잠금 화면은 앱 본문 위에 겹쳐 그려져 배경색만으로는 시각적으로만 가린다.
         // 이벤트까지 흡수해야 잠긴 상태에서 뒤쪽 대화방 등이 조작되지 않는다.
-        modifier = Modifier.fillMaxSize().background(AppColors.Bg).consumeAllPointerEvents(),
+        modifier = Modifier.fillMaxSize().background(AppColors.Bg).blockPointerInput(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
