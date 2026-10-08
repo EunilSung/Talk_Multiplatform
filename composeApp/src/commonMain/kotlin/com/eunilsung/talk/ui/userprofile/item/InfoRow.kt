@@ -15,18 +15,32 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eunilsung.talk.ui.theme.AppColors
+import com.eunilsung.talk.ui.uikit.click.itemClickable
 
+/**
+ * 프로필 상세의 정보 한 줄 — 항목 이름과 값.
+ *
+ * @param isCopyable true 면 줄을 눌러 값을 클립보드에 복사한다. 값이 비어 있으면("-" 표시) 눌리지 않는다.
+ */
 @Composable
-fun InfoRow(label: String, value: String) {
+fun InfoRow(label: String, value: String, isCopyable: Boolean = false) {
+    val clipboard = LocalClipboardManager.current
+    val canCopy = isCopyable && value.isNotBlank()
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 15.dp, end = 15.dp, top = 5.dp)
+            .then(
+                if (canCopy) Modifier.itemClickable(onClick = { clipboard.setText(AnnotatedString(value)) })
+                else Modifier
+            )
             .clip(RoundedCornerShape(10.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             .padding(horizontal = 10.dp, vertical = 7.dp)
