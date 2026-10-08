@@ -19,6 +19,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -77,8 +78,13 @@ private fun ShareChatRoomTabContent() {
             .collect { keyboardController?.hide() }
     }
 
+    /** 검색어가 **바뀔 때만** 맨 위로 — 첫 조립에서는 건너뛰어 복원된 스크롤을 유지한다. */
+    var lastScrolledQuery by rememberSaveable { mutableStateOf(query) }
     LaunchedEffect(query) {
-        listState.scrollToItem(0)
+        if (query != lastScrolledQuery) {
+            lastScrolledQuery = query
+            listState.scrollToItem(0)
+        }
     }
 
     Scaffold(

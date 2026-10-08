@@ -12,6 +12,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -45,8 +49,19 @@ fun GroupSearchScaffold(
             .collect { keyboardController?.hide() }
     }
 
+    /**
+     * 검색어가 **바뀔 때만** 맨 위로. 첫 조립에서는 건너뛴다.
+     *
+     * `LaunchedEffect(searchQuery)` 는 값이 바뀔 때뿐 아니라 처음 조립될 때도 실행된다. 탭은 나갔다 들어올 때마다
+     * 새로 조립되므로, 그대로 두면 복원된 스크롤 위치를 매번 0 으로 되돌린다.
+     * 직전 검색어를 [rememberSaveable] 로 함께 보관해, 복원된 뒤에도 "안 바뀐 것" 으로 판정되게 한다.
+     */
+    var lastScrolledQuery by rememberSaveable { mutableStateOf(searchQuery) }
     LaunchedEffect(searchQuery) {
-        listState.scrollToItem(0)
+        if (searchQuery != lastScrolledQuery) {
+            lastScrolledQuery = searchQuery
+            listState.scrollToItem(0)
+        }
     }
 
     Scaffold(

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -127,8 +128,11 @@ fun ChatRoomListContent(
     } else {
         searchState.filterType.name
     }
-    val listStates = remember { mutableMapOf<String, LazyListState>() }
-    val listState = listStates.getOrPut(scrollKey) { LazyListState() }
+    val listState = rememberSaveable(
+        scrollKey,
+        saver = LazyListState.Saver,
+        key = "chatRoomListScroll_$scrollKey",
+    ) { LazyListState() }
 
     // heightOffset 을 key 로 쓰면 스크롤 프레임마다 화면 스코프가 무효화되고 코루틴도 재기동된다.
     // snapshotFlow 로 구독을 이 이펙트 안에 가두고, 임계값을 넘는 순간만 걸러낸다.
@@ -139,8 +143,16 @@ fun ChatRoomListContent(
             .collect { keyboardController?.hide() }
     }
 
+    /**
+     * 검색어가 **바뀔 때만** 맨 위로. 첫 조립에서는 건너뛴다 — 탭을 다녀올 때마다 실행돼 복원된 스크롤을 0 으로
+     * 되돌리던 것을 막는다.
+     */
+    var lastScrolledQuery by rememberSaveable { mutableStateOf(searchState.query) }
     LaunchedEffect(searchState.query) {
-        listState.scrollToItem(0)
+        if (searchState.query != lastScrolledQuery) {
+            lastScrolledQuery = searchState.query
+            listState.scrollToItem(0)
+        }
     }
 
     if (scrollToTop != null) {
