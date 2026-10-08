@@ -3,6 +3,7 @@ package com.eunilsung.talk.data.local
 import android.content.ContentResolver
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.media.ExifInterface
 import android.net.Uri
 import android.provider.OpenableColumns
 import kotlinx.coroutines.Dispatchers
@@ -294,14 +295,23 @@ class AndroidFileMetadataResolver(
         resolver.openInputStream(uri).use { stream ->
             BitmapFactory.decodeStream(stream, null, opts)
         }
-        if (opts.outWidth > 0 && opts.outHeight > 0) "${opts.outWidth}:${opts.outHeight}" else ""
+        val orientation = runCatching {
+            resolver.openInputStream(uri)?.use { stream -> ExifInterface(stream).orientation() }
+        }.getOrNull() ?: ExifInterface.ORIENTATION_NORMAL
+        orientedWidthHeight(opts.outWidth, opts.outHeight, orientation)
     }.getOrDefault("")
 
     private fun decodeBoundsFromFile(file: File): String = runCatching {
         val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.absolutePath, opts)
-        if (opts.outWidth > 0 && opts.outHeight > 0) "${opts.outWidth}:${opts.outHeight}" else ""
+        val orientation = runCatching { ExifInterface(file.absolutePath).orientation() }
+            .getOrDefault(ExifInterface.ORIENTATION_NORMAL)
+        orientedWidthHeight(opts.outWidth, opts.outHeight, orientation)
     }.getOrDefault("")
+
+    /** EXIF 방향 태그. 없거나(PNG 등) 읽지 못하면 정상 방향. */
+    private fun ExifInterface.orientation(): Int =
+        getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
 
     private companion object {
         val IMAGE_EXTENSIONS = setOf(
