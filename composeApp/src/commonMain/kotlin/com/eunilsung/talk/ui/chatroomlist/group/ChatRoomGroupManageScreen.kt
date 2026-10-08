@@ -21,6 +21,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -160,7 +161,13 @@ fun ChatRoomGroupManageContent(
     }
 }
 
-/** 그룹 카드 리스트 + 드래그 순서변경. 놓으면 [onReorder] 로 전체 순서를 전달. */
+/**
+ * 그룹 카드 리스트 + 드래그 순서변경. 놓으면 [onReorder] 로 전체 순서를 전달.
+ *
+ * 순서 상태([items])는 한 번만 만들고 그룹 목록이 바뀌면 값만 맞춘다. `remember(groups)` 로 새로 만들면, 한 번 끈 그룹의
+ * 끌기 처리(`pointerInput`)가 예전 상태를 계속 붙들어 두 번째부터는 화면에 그리지 않는 상태만 바뀌었다 — 끄는 그룹이
+ * 제자리로 튀다가 손을 떼야 옮겨졌다.
+ */
 @Composable
 private fun ReorderableGroupList(
     groups: List<ChatGroup>,
@@ -173,9 +180,11 @@ private fun ReorderableGroupList(
     val rowSpacing = 10.dp
     val slotPx = with(LocalDensity.current) { (rowHeight + rowSpacing).toPx() }
 
-    var items by remember(groups) { mutableStateOf(groups) }
+    var items by remember { mutableStateOf(groups) }
     var draggingId by remember { mutableStateOf<String?>(null) }
     var dragOffset by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(groups) { if (draggingId == null) items = groups }
 
     val unreadName = stringResource(Res.string.unread)
 
