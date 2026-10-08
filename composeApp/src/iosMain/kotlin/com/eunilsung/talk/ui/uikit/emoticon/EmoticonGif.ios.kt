@@ -13,7 +13,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import multiplatformtalk.composeapp.generated.resources.Res
-import kotlinx.coroutines.delay
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Codec
 import org.jetbrains.skia.Data
@@ -27,6 +26,8 @@ actual fun AnimatedEmoticonImage(
     resourceName: String,
     contentDescription: String?,
     modifier: Modifier,
+    playCount: Int,
+    restartKey: Int,
 ) {
     val gifPath = "drawable/$resourceName.gif"
 
@@ -40,12 +41,8 @@ actual fun AnimatedEmoticonImage(
     }
 
     var index by remember(frames) { mutableStateOf(0) }
-    LaunchedEffect(frames) {
-        if (frames.size <= 1) return@LaunchedEffect
-        while (true) {
-            delay(frames[index].durationMs.toLong())
-            index = (index + 1) % frames.size
-        }
+    LaunchedEffect(frames, playCount, restartKey) {
+        playGifFrames(frames.map { it.durationMs }, playCount) { index = it }
     }
 
     Image(

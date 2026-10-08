@@ -88,6 +88,15 @@ object Config {
         const val IS_CHAT_GROUP_ENABLED: Boolean = true
     }
 
+    /** 이모티콘 옵션. */
+    object Emoticon {
+        /**
+         * 대화 말풍선의 움직이는 이모티콘을 몇 번 재생하고 멈출지 — 멈추면 마지막 장면에 서고, 말풍선을 누르면 다시 이 횟수만큼
+         * 재생한다. 0 이면 멈추지 않는다. 이모티콘 미리보기는 이 값과 상관없이 계속 움직인다(GIF 파일에는 모두 "무한 반복" 으로 적혀 있다).
+         */
+        const val BUBBLE_ANIMATION_PLAY_COUNT: Int = 3
+    }
+
     object Watermark {
         /** 화면 전역 워터마크(내 아이디 + 내 이름) 표시 on/off */
         const val IS_ENABLED: Boolean = true
