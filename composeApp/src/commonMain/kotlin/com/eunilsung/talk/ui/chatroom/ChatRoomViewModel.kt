@@ -287,14 +287,8 @@ class ChatRoomViewModel(
                     _searchState.update { ChatSearchState() }
                 }
                 viewModelScope.launch {
-                    var chat = action.chat
-                    val originalName = chat.user.name
-                    if (originalName.isNotBlank()) {
-                        chat = chat.copy(user = chat.user.copy(name = "${originalName}에게 답장"))
-                    }
-                    // 인용 본문은 대화방 리스트와 같은 규칙으로 만든다(사진만 "사진" 으로 축약).
-                    chat = chat.copy(chatContent = chatDisplayText(chat, forReply = true))
-                    _replyTarget.value = chat
+                    val chat = action.chat
+                    _replyTarget.value = chat.copy(chatContent = chatDisplayText(chat, forReply = true))
                 }
             }
             is ChatRoomActions.OnCancelReply -> _replyTarget.value = null

@@ -420,4 +420,12 @@
     <string name="vote_create_action">만들기</string>
     <string name="date_yesterday">어제</string>
     <string name="date_time">%1$s %2$d:%3$s</string>
+    <string name="reply_to_name">%1$s에게 답장</string>
+    <string name="toast_download_done">\'%1$s\' 다운로드 완료</string>
+    <string name="profile_load_failed">프로필 로드 실패</string>
+    <string name="chat_group_edit">대화 그룹 편집</string>
+    <string name="contact_label_extension">내선</string>
+    <string name="contact_label_mobile">휴대폰</string>
+    <string name="toast_no_number_to_call">전화할 번호가 없습니다</string>
+    <string name="main_notice_message">안내\n이 앱은 서버 없이 동작하는 샘플입니다.\n모든 계정·대화·그룹은 단말에 저장된 테스트 데이터입니다.\n대화방 우측 상단의 사람 아이콘으로 전송 주체를 바꿔볼 수 있습니다.</string>
 </resources>

@@ -45,6 +45,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.call_do
+import multiplatformtalk.composeapp.generated.resources.profile_load_failed
+import multiplatformtalk.composeapp.generated.resources.contact_label_extension
+import multiplatformtalk.composeapp.generated.resources.contact_label_mobile
+import multiplatformtalk.composeapp.generated.resources.toast_no_number_to_call
 import multiplatformtalk.composeapp.generated.resources.camera2_dark
 import multiplatformtalk.composeapp.generated.resources.camera2_light
 import multiplatformtalk.composeapp.generated.resources.chat_do
@@ -100,6 +104,9 @@ fun UserProfileBottomSheetContent(
     val dialog = LocalDialogManager.current
     val toast = LocalToastManager.current
     val callTitle = stringResource(Res.string.call_do)
+    val noNumberMessage = stringResource(Res.string.toast_no_number_to_call)
+    val extensionLabel = stringResource(Res.string.contact_label_extension)
+    val mobileLabel = stringResource(Res.string.contact_label_mobile)
 
     LaunchedEffect(userId) {
         if (userId.isNotBlank()) {
@@ -130,11 +137,12 @@ fun UserProfileBottomSheetContent(
                         showPickerDialog = { items, onPicked ->
                             dialog.list(title = callTitle, items = items, onSelected = onPicked)
                         },
+                        noNumberMessage = noNumberMessage,
                         showToast = { toast.show(it) },
                     )
                 }
                 is UserProfileActions.OnSaveContact -> current?.let { p ->
-                    addContactLauncher(p.toContactDraft())
+                    addContactLauncher(p.toContactDraft(extensionLabel, mobileLabel))
                 }
                 is UserProfileActions.OnAddToGroup -> current?.let(onAddToGroup)
                 else -> viewModel.onAction(action)
@@ -181,7 +189,7 @@ private fun UserProfileContent(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = uiState.message,
+                            text = uiState.message ?: stringResource(Res.string.profile_load_failed),
                             style = MaterialTheme.typography.bodyMedium.copy(color = AppColors.TextSub)
                         )
                         Spacer(Modifier.height(12.dp))

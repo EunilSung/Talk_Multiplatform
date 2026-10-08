@@ -11,5 +11,6 @@ sealed interface UserProfileUiState {
         val isStale: Boolean = false
     ) : UserProfileUiState
 
-    data class Error(val message: String) : UserProfileUiState
+    /** [message] 가 null 이면 화면이 `profile_load_failed` 문구를 보인다. */
+    data class Error(val message: String? = null) : UserProfileUiState
 }

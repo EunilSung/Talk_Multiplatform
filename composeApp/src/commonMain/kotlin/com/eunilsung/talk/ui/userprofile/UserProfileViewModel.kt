@@ -45,7 +45,7 @@ class UserProfileViewModel(
                     _uiState.value = if (cached != null) {
                         UserProfileUiState.Success(profile = cached, isStale = true)
                     } else {
-                        UserProfileUiState.Error(err.message ?: "프로필 로드 실패")
+                        UserProfileUiState.Error(err.message)
                     }
                 }
         }

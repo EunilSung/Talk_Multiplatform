@@ -256,7 +256,7 @@ fun ChatRoomListContent(
                                         onClick = { showOverlay(ChatRoomGroupManageScreen) },
                                         key = "__group_edit__",
                                         icon = Res.drawable.chatroom_group_icon,
-                                        contentDescription = "대화 그룹 편집",
+                                        contentDescription = stringResource(Res.string.chat_group_edit),
                                         circular = true
                                     )
                                 )

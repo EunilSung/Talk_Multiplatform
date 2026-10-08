@@ -1,6 +1,7 @@
 package com.eunilsung.talk.ui.main
 
 import multiplatformtalk.composeapp.generated.resources.toast_download_failed
+import multiplatformtalk.composeapp.generated.resources.toast_download_done
 import multiplatformtalk.composeapp.generated.resources.toast_file_open_failed
 import org.jetbrains.compose.resources.getString
 import androidx.compose.animation.AnimatedVisibility
@@ -177,7 +178,7 @@ private fun FileDetailSheetBinding(content: @Composable () -> Unit) {
                                 )
                             }.getOrNull()
                             toast.show(
-                                if (saved != null) "'$displayName' 다운로드 완료"
+                                if (saved != null) getString(Res.string.toast_download_done, displayName)
                                 else getString(Res.string.toast_download_failed)
                             )
                         }
@@ -209,7 +210,7 @@ private fun FileDetailSheetBinding(content: @Composable () -> Unit) {
                                 } ?: false
                                 when {
                                     !opened -> toast.show(getString(Res.string.toast_file_open_failed))
-                                    downloaded -> toast.show("'$displayName' 다운로드 완료")
+                                    downloaded -> toast.show(getString(Res.string.toast_download_done, displayName))
                                 }
                             }
                         }

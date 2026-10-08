@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.chatroom.item
 
+import com.eunilsung.talk.ui.chatroom.input.replyToNameText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
@@ -36,7 +37,7 @@ fun ReplyItem(
                 )
         ) {
             Text(
-                text = itemProps.chat.replyChat.user.name,
+                text = replyToNameText(itemProps.chat.replyChat.user.name),
                 color = itemProps.bubbleTextColor,
                 fontSize = 11.sp,
                 lineHeight = 11.sp,
