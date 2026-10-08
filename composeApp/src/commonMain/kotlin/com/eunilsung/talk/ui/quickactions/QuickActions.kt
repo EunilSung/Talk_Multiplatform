@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import cafe.adriel.voyager.navigator.Navigator
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.default_group
+import multiplatformtalk.composeapp.generated.resources.toast_chat_create_failed
 import multiplatformtalk.composeapp.generated.resources.toast_add_to_group_failed
 import multiplatformtalk.composeapp.generated.resources.toast_added_to_group
 import multiplatformtalk.composeapp.generated.resources.toast_user_already_in_group
@@ -74,7 +75,7 @@ class QuickActions(
             }.getOrNull()
 
             if (newRoomId.isNullOrBlank()) {
-                toastManager?.show("대화방 생성에 실패했습니다")
+                toastManager?.show(getString(Res.string.toast_chat_create_failed))
                 return@launch
             }
             navigateToChatRoom(newRoomId)

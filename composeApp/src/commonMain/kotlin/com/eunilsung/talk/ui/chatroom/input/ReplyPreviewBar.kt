@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.close_icon
+import multiplatformtalk.composeapp.generated.resources.reply_to_name
+import org.jetbrains.compose.resources.stringResource
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.ReplyChat
@@ -56,8 +58,8 @@ fun ReplyPreviewBar(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                // user.name 에 이미 "OOO에게 답장" 라벨이 붙어 온다.
-                text = target.user.name,
+
+                text = replyToNameText(target.user.name),
                 color = AppColors.Text,
                 fontSize = 12.sp,
                 lineHeight = 15.sp,
@@ -146,3 +148,10 @@ fun ReplyPreviewBarPreview() {
         )
     }
 }
+/** 예전 버전이 답장 대상의 이름에 직접 붙여 저장하던 접미사 — 이미 저장된 대화에서 떼어 낸다. */
+internal const val REPLY_NAME_LEGACY_SUFFIX = "에게 답장"
+
+/** 답장 대상 이름을 "OOO에게 답장" 문구로 — 이름이 비면 빈 문자열. */
+@Composable
+internal fun replyToNameText(name: String): String =
+    if (name.isBlank()) "" else stringResource(Res.string.reply_to_name, name.removeSuffix(REPLY_NAME_LEGACY_SUFFIX))

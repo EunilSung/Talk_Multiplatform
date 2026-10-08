@@ -5,11 +5,11 @@ import com.eunilsung.talk.ui.uikit.contact.ContactDraft
 
 private const val EXTENSION_DIAL_PREFIX = "0704673"
 
-internal fun UserProfile.toContactDraft(): ContactDraft {
+internal fun UserProfile.toContactDraft(extensionLabel: String, mobileLabel: String): ContactDraft {
     val extension = extensionNum.ifBlank { localCallNum }
     val phones = buildList {
-        if (extension.isNotBlank()) add("내선" to "$EXTENSION_DIAL_PREFIX$extension")
-        if (mobileNum.isNotBlank()) add("휴대폰" to mobileNum)
+        if (extension.isNotBlank()) add(extensionLabel to "$EXTENSION_DIAL_PREFIX$extension")
+        if (mobileNum.isNotBlank()) add(mobileLabel to mobileNum)
     }
     return ContactDraft(
         name = name.ifBlank { userId },
@@ -25,6 +25,7 @@ internal fun handleCallAction(
     profile: UserProfile,
     onPickNumber: (String) -> Unit,
     showPickerDialog: (items: List<String>, onPicked: (String) -> Unit) -> Unit,
+    noNumberMessage: String,
     showToast: (String) -> Unit,
 ) {
     val extension = profile.extensionNum.ifBlank { profile.localCallNum }
@@ -36,7 +37,7 @@ internal fun handleCallAction(
     }.distinct()
 
     if (numbers.isEmpty()) {
-        showToast("전화할 번호가 없습니다")
+        showToast(noNumberMessage)
         return
     }
 

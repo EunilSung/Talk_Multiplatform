@@ -420,4 +420,12 @@
     <string name="vote_create_action">Create</string>
     <string name="date_yesterday">Yesterday</string>
     <string name="date_time">%1$s %2$d:%3$s</string>
+    <string name="reply_to_name">Reply to %1$s</string>
+    <string name="toast_download_done">\'%1$s\' downloaded</string>
+    <string name="profile_load_failed">Failed to load profile</string>
+    <string name="chat_group_edit">Edit chat groups</string>
+    <string name="contact_label_extension">Extension</string>
+    <string name="contact_label_mobile">Mobile</string>
+    <string name="toast_no_number_to_call">There is no number to call</string>
+    <string name="main_notice_message">Notice\nThis app is a sample that runs without a server.\nAll accounts, chats and groups are test data stored on this device.\nUse the person icon at the top right of a chat room to switch the sender.</string>
 </resources>

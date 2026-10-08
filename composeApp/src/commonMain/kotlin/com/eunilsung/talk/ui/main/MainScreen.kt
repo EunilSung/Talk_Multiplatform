@@ -1,5 +1,8 @@
 package com.eunilsung.talk.ui.main
 
+import multiplatformtalk.composeapp.generated.resources.Res
+import multiplatformtalk.composeapp.generated.resources.main_notice_message
+import org.jetbrains.compose.resources.getString
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
@@ -165,11 +168,6 @@ private fun AppIconBadgeSync() {
     }
 }
 
-/** 로그인 후 메인 진입 시 노출할 공지 내용. */
-private const val MAIN_NOTICE_MESSAGE = "안내\n" +
-        "이 앱은 서버 없이 동작하는 샘플입니다.\n" +
-        "모든 계정·대화·그룹은 단말에 저장된 테스트 데이터입니다.\n" +
-        "대화방 우측 상단의 사람 아이콘으로 전송 주체를 바꿔볼 수 있습니다."
 /** 로그인 후 메인 진입 시 버전명 기준 1회 공지. */
 @Composable
 private fun MainNoticeDialog(viewModel: MainViewModel) {
@@ -181,7 +179,7 @@ private fun MainNoticeDialog(viewModel: MainViewModel) {
         if (!isLoggedIn) return@LaunchedEffect
         val version = viewModel.pendingNoticeVersion() ?: return@LaunchedEffect
         dialog.alert(
-            message = MAIN_NOTICE_MESSAGE,
+            message = getString(Res.string.main_notice_message),
             onConfirm = { viewModel.markNoticeShown(version) },
         )
     }
