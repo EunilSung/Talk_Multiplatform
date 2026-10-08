@@ -54,6 +54,7 @@ object Config {
         /** 검색 모드 내 "날짜 필터" 기능 on/off — ChatSearchNav 의 날짜 아이콘 노출 */
         const val IS_SEARCH_DATE_ENABLED: Boolean = true
 
+        /** 책갈피 — 상단바 책갈피 목록 버튼 + 롱클릭 메뉴 "책갈피" 추가·해제 */
         const val IS_BOOK_MARK_ENABLED: Boolean = true
 
         /** 답장 — 롱클릭 메뉴 "답장" + 스와이프 답장 동작 */
@@ -61,6 +62,12 @@ object Config {
 
         /** 회수 — 롱클릭 메뉴 "회수"(내가 보낸 대화) 동작 */
         const val IS_RECALL_ENABLED: Boolean = true
+
+        /** 복사 — 롱클릭 메뉴 "복사"(텍스트·답장 대화) */
+        const val IS_COPY_ENABLED: Boolean = true
+
+        /** 투표 — 대화방 서랍의 "투표" 메뉴(목록·만들기) (대화 속 투표 말풍선 표시·참여는 유지) */
+        const val IS_VOTE_ENABLED: Boolean = true
 
         /** 이모티콘 — 입력바 이모티콘 버튼/패널 */
         const val IS_EMOTICON_ENABLED: Boolean = true
