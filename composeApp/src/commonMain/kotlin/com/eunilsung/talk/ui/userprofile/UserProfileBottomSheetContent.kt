@@ -361,10 +361,14 @@ private fun ProfileBody(
 
         Spacer(Modifier.height(5.dp))
 
-        InfoRow(label = stringResource(Res.string.local_call), value = profile.extensionNum.ifBlank { profile.localCallNum })
-        InfoRow(label = stringResource(Res.string.phone), value = profile.mobileNum)
-        InfoRow(label = stringResource(Res.string.email), value = profile.email)
-        InfoRow(label = stringResource(Res.string.fax), value = profile.faxNum)
+        InfoRow(
+            label = stringResource(Res.string.local_call),
+            value = profile.extensionNum.ifBlank { profile.localCallNum },
+            isCopyable = true,
+        )
+        InfoRow(label = stringResource(Res.string.phone), value = profile.mobileNum, isCopyable = true)
+        InfoRow(label = stringResource(Res.string.email), value = profile.email, isCopyable = true)
+        InfoRow(label = stringResource(Res.string.fax), value = profile.faxNum, isCopyable = true)
     }
 
     photoDetailUri?.let { uri ->
