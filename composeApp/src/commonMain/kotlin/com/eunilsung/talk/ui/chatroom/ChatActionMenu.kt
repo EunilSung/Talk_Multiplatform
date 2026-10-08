@@ -1,6 +1,7 @@
 package com.eunilsung.talk.ui.chatroom
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import com.eunilsung.talk.Config
@@ -32,11 +33,15 @@ fun ChatActionMenu(
     val isTextLike = target.chatType == Chat.Type.TEXT || target.chatType == Chat.Type.REPLY
     val bookmarkLabel = if (isBookmarked) strings.bookmarkUnset else strings.bookmarkSet
     val actionItems = buildList {
-        if (isTextLike) add(strings.menuCopy)
+        if (Config.ChatRoom.IS_COPY_ENABLED && isTextLike) add(strings.menuCopy)
         if (Config.ChatRoom.IS_REPLY_ENABLED && !target.isRecalled) add(strings.menuReply)
         if (Config.ChatRoom.IS_NOTICE_ENABLED && isTextLike) add(strings.menuNotice)
-        add(bookmarkLabel)
+        if (Config.ChatRoom.IS_BOOK_MARK_ENABLED) add(bookmarkLabel)
         if (Config.ChatRoom.IS_RECALL_ENABLED && target.isMe) add(strings.menuRecall)
+    }
+    if (actionItems.isEmpty() && !Config.ChatRoom.IS_EMPATHY_ENABLED) {
+        LaunchedEffect(target.chatID) { onDismiss() }
+        return
     }
 
     ChatListDialog(

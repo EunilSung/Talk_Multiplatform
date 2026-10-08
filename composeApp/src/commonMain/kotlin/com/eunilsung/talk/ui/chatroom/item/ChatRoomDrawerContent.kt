@@ -69,11 +69,13 @@ fun ChatRoomDrawerContent(
                 label = stringResource(Res.string.notice),
                 onClick = onNoticeClick,
             )
-            DrawerMenuRow(
-                icon = painterResource(Res.drawable.vote_icon),
-                label = stringResource(Res.string.vote),
-                onClick = onVoteClick,
-            )
+            if (Config.ChatRoom.IS_VOTE_ENABLED) {
+                DrawerMenuRow(
+                    icon = painterResource(Res.drawable.vote_icon),
+                    label = stringResource(Res.string.vote),
+                    onClick = onVoteClick,
+                )
+            }
         }
 
         Spacer(Modifier.height(12.dp))
