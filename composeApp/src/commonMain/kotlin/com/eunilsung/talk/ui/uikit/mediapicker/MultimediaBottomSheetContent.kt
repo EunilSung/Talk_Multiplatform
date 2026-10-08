@@ -48,6 +48,10 @@ data class MultimediaRecentPhoto(
     val originalFileName: String = "",
     val isVideo: Boolean = false,
     val durationSec: Long = 0,
+    /** 사진 상세보기 제목의 보낸 사람 이름. 대화 사진일 때만 채운다. */
+    val senderName: String = "",
+    /** 사진 상세보기 제목의 보낸 시간 원본(대화 날짜 문자열). 대화 사진일 때만 채운다. */
+    val sentDate: String = "",
 )
 
 /** 시트에 보여줄 최근 사진 개수 — 호출부에서 미리 잘라 넘길 때도 쓴다. */

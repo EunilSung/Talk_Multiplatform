@@ -131,15 +131,8 @@ fun ChatMessageList(
                     },
                     onImageClick = { item ->
                         hideKeyboard()
-                        mediaPicker.showDetail(
-                            MultimediaRecentPhoto(
-                                id = item.chatID,
-                                uri = item.imagePath,
-                                serverFileName = item.imagePath,
-                                originalFileName = item.originalFileName,
-                                isVideo = item.chatType == Chat.Type.VIDEO,
-                            )
-                        )
+                        val gallery = chatImageGallery(groupedChats, item)
+                        mediaPicker.showGallery(gallery.photos, gallery.startIndex)
                     },
                     onResendFailedChat = { item ->
                         dialog.confirm(

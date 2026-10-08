@@ -32,6 +32,10 @@ class MediaPickerState {
     internal var selectedPhotoIds by mutableStateOf<List<String>>(emptyList())
     internal var detailPhoto by mutableStateOf<MultimediaRecentPhoto?>(null)
 
+    /** 좌우로 넘겨 보는 사진 목록 — 비어 있으면 닫힘. 대화방 사진 말풍선에서 연다. */
+    internal var galleryPhotos by mutableStateOf<List<MultimediaRecentPhoto>>(emptyList())
+    internal var galleryStartIndex by mutableStateOf(0)
+
     fun open() {
         showMultimediaSheet = true
     }
@@ -40,12 +44,20 @@ class MediaPickerState {
         detailPhoto = photo
     }
 
+    /** 사진 여러 장을 [startIndex] 부터 좌우로 넘겨 보게 연다. */
+    fun showGallery(photos: List<MultimediaRecentPhoto>, startIndex: Int) {
+        if (photos.isEmpty()) return
+        galleryStartIndex = startIndex.coerceIn(0, photos.lastIndex)
+        galleryPhotos = photos
+    }
+
     fun closeAll() {
         showMultimediaSheet = false
         showGallerySheet = false
         transitioningToGallery = false
         selectedPhotoIds = emptyList()
         detailPhoto = null
+        galleryPhotos = emptyList()
     }
 }
 
@@ -191,6 +203,14 @@ fun MediaPickerHost(
                 state.selectedPhotoIds = emptyList()
                 bindings.onSelectGalleryAlbum(albumId)
             },
+        )
+    }
+
+    if (state.galleryPhotos.isNotEmpty()) {
+        PhotoDetailDialog(
+            photos = state.galleryPhotos,
+            initialIndex = state.galleryStartIndex,
+            onDismiss = { state.galleryPhotos = emptyList() },
         )
     }
 
