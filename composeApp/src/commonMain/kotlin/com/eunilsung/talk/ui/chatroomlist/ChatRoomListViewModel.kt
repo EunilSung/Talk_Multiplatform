@@ -131,6 +131,28 @@ class ChatRoomListViewModel(
         }
     }
 
+    /**
+     * 고른 대화방을 차례로 나간다. 일부가 실패해도 나머지는 계속하고, 끝나면 선택을 비우고 편집 모드를 끈다.
+     * 고른 방이 없으면 편집 모드만 끈다.
+     */
+    private fun leaveSelectedChatRooms() {
+        val roomIds = chatRoomsToLeave(_uiState.value.chatItems, _selectedRoomIds.value)
+        if (roomIds.isEmpty()) {
+            onAction(ChatRoomListActions.SetMode(ChatRoomListMode.IDLE))
+            return
+        }
+        viewModelScope.launch {
+            var left = 0
+            var failed = 0
+            roomIds.forEach { roomId ->
+                if (chatRoomListUseCases.leaveChatRoom(roomId)) left++ else failed++
+            }
+            _selectedRoomIds.value = emptySet()
+            updateUiState(isEditMode = false)
+            _events.send(ChatRoomListEvent.ChatRoomsBulkLeft(left = left, failed = failed))
+        }
+    }
+
     fun onAction(action: ChatRoomListActions) {
         when (action) {
             is ChatRoomListActions.OnSearchQueryChange -> {
@@ -191,6 +213,7 @@ class ChatRoomListViewModel(
                     _scrollToTop.tryEmit(Unit)
                 }
             }
+            is ChatRoomListActions.LeaveSelectedChatRooms -> leaveSelectedChatRooms()
             is ChatRoomListActions.LeaveChatRoom -> {
                 viewModelScope.launch {
                     val ok = chatRoomListUseCases.leaveChatRoom(action.chatRoomId)
