@@ -64,11 +64,6 @@ class QuickActions(
                 return@launch
             }
 
-            if (targetId == myId) {
-                toastManager?.show("나와의 대화방이 없습니다")
-                return@launch
-            }
-
             val name = resolveUserName(targetId)
             val newRoomId = runCatching {
                 invites.inviteUsers(
