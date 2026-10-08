@@ -1,4 +1,4 @@
-# MultiplatformTalk
+# Talk_Multiplatform
 
 **Compose Multiplatform 으로 만든 Android · iOS 메신저** — 서버 없이 로컬 데이터만으로 동작합니다.
 
