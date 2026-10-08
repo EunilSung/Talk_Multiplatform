@@ -189,6 +189,9 @@
     <!-- 대화방 나가기 -->
     <string name="toast_chat_room_left">대화방에서 나갔습니다</string>
     <string name="toast_chat_room_leave_failed">대화방 나가기에 실패했습니다</string>
+    <string name="confirm_leave_selected_chat_rooms">선택한 대화방에서 나가시겠습니까?</string>
+    <string name="toast_chat_rooms_bulk_left">대화방 %1$d개에서 나갔습니다</string>
+    <string name="toast_chat_rooms_bulk_partial">대화방 %1$d개에서 나갔고 %2$d개는 실패했습니다</string>
 
     <!-- 대화 회수 -->
     <string name="chat_recalled">회수된 메시지 입니다</string>

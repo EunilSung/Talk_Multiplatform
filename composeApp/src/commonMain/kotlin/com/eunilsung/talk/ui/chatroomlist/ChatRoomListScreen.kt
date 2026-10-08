@@ -315,7 +315,7 @@ fun ChatRoomListContent(
             if (uiState.isEditMode) {
                 LineDivider(modifier = Modifier.fillMaxWidth())
                 ChatRoomEditBottomBar(
-                    onExit = { onAction(ChatRoomListActions.SetMode(ChatRoomListMode.IDLE)) }
+                    onLeave = { chatRoomItemMenu.onLeaveSelectedClick(hasSelection = selectedRoomIds.isNotEmpty()) }
                 )
             }
         }
@@ -337,7 +337,7 @@ private fun ChatRoomListBackHandler(
 
 @Composable
 private fun ChatRoomEditBottomBar(
-    onExit: () -> Unit,
+    onLeave: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -349,7 +349,7 @@ private fun ChatRoomEditBottomBar(
             modifier = Modifier.weight(1f).height(46.dp),
             text = stringResource(Res.string.chat_rooom_out),
             containerColor = AppColors.Red,
-            onClick = onExit
+            onClick = onLeave
         )
     }
 }
@@ -460,6 +460,12 @@ private suspend fun handleChatRoomListEvent(
             val resId = if (event.success) Res.string.toast_chat_room_left
                         else Res.string.toast_chat_room_leave_failed
             toastManager.show(getString(resId))
+        }
+        is ChatRoomListEvent.ChatRoomsBulkLeft -> {
+            toastManager.show(
+                if (event.failed == 0) getString(Res.string.toast_chat_rooms_bulk_left, event.left)
+                else getString(Res.string.toast_chat_rooms_bulk_partial, event.left, event.failed)
+            )
         }
         is ChatRoomListEvent.ChatRoomAddedToGroup -> {
             toastManager.show(getString(Res.string.toast_chat_room_added_to_group, event.groupName))

@@ -2,6 +2,7 @@ package com.eunilsung.talk.ui.chatroomlist.item.menu
 
 import androidx.compose.runtime.Composable
 import com.eunilsung.talk.ui.chatroomlist.ChatRoomListActions
+import com.eunilsung.talk.ui.chatroomlist.ChatRoomListMode
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import multiplatformtalk.composeapp.generated.resources.Res
@@ -14,6 +15,7 @@ import multiplatformtalk.composeapp.generated.resources.chat_room_remove_from_gr
 import multiplatformtalk.composeapp.generated.resources.chat_room_rename
 import multiplatformtalk.composeapp.generated.resources.chat_room_unpin
 import multiplatformtalk.composeapp.generated.resources.confirm_chat_room_leave
+import multiplatformtalk.composeapp.generated.resources.confirm_leave_selected_chat_rooms
 import com.eunilsung.talk.domain.model.ChatGroup
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.model.Search
@@ -138,6 +140,22 @@ class ChatRoomItemMenu internal constructor(
         )
     }
 
+    /** 편집 모드 하단 나가기 — 고른 방이 없으면 편집 모드만 끄고, 있으면 확인 후 한꺼번에 나간다. */
+    fun onLeaveSelectedClick(hasSelection: Boolean) {
+        if (!hasSelection) {
+            onAction(ChatRoomListActions.SetMode(ChatRoomListMode.IDLE))
+            return
+        }
+        dialogManager.confirm(
+            title = labels.leave,
+            message = labels.confirmLeaveSelected,
+            confirmText = labels.leave,
+            onConfirm = {
+                onAction(ChatRoomListActions.LeaveSelectedChatRooms)
+            }
+        )
+    }
+
     @Stable
     data class Labels(
         val rename: String,
@@ -147,6 +165,7 @@ class ChatRoomItemMenu internal constructor(
         val alarmOn: String,
         val leave: String,
         val confirmLeave: String,
+        val confirmLeaveSelected: String,
         val addToGroup: String,
         val removeFromGroup: String
     )
@@ -165,6 +184,7 @@ fun rememberChatRoomItemMenu(
         alarmOn = stringResource(Res.string.chat_room_alarm_on),
         leave = stringResource(Res.string.chat_room_leave),
         confirmLeave = stringResource(Res.string.confirm_chat_room_leave),
+        confirmLeaveSelected = stringResource(Res.string.confirm_leave_selected_chat_rooms),
         addToGroup = stringResource(Res.string.chat_room_add_to_group),
         removeFromGroup = stringResource(Res.string.chat_room_remove_from_group)
     )
