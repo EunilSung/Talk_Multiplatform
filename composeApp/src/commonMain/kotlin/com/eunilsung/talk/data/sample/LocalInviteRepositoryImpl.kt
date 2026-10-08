@@ -46,7 +46,11 @@ class LocalInviteRepositoryImpl(
         return roomId
     }
 
-    /** 신규 방 생성 — 단, 1:1 은 기존 방이 있으면 그 방을 돌려준다. */
+    /**
+     * 신규 방 생성 — 단, 1:1 은 기존 방이 있으면 그 방을 돌려준다.
+     *
+     * 초대 목록에 내가 들어 있으면(나와의 대화방) 참여자에서 빼고 나를 한 번만 싣는다.
+     */
     private fun createRoom(myId: String, invited: List<Pair<String, String>>): String {
         if (invited.size == 1) {
             val targetId = invited.first().first
@@ -57,7 +61,7 @@ class LocalInviteRepositoryImpl(
         }
 
         val roomId = ChatIdUtils.generateChatId(myId)
-        val members = listOf(myId to myName()) + invited
+        val members = listOf(myId to myName()) + invited.filterNot { it.first.equals(myId, ignoreCase = true) }
 
         val room = ChatRoom.Item(
             id = roomId,
