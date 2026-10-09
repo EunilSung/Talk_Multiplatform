@@ -1,6 +1,7 @@
 package com.eunilsung.talk.ui.uikit.emoticon
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -43,6 +44,10 @@ internal suspend fun playGifFrames(frameDurationsMs: List<Int>, playCount: Int, 
     }
 }
 
+/**
+ * 내장 이모티콘의 정지 그림. 읽고 푸는 동안에도 [modifier] 크기만큼 자리를 차지한다 — 대화방 말풍선이 0 높이로 그려지면
+ * 플링 한 번에 이모티콘 수십 개를 지나간다.
+ */
 @Composable
 fun StaticEmoticonImage(
     resourceName: String,
@@ -53,9 +58,12 @@ fun StaticEmoticonImage(
     val bitmap by produceState<ImageBitmap?>(null, pngPath) {
         value = runCatching { Res.readBytes(pngPath).decodeToImageBitmap() }.getOrNull()
     }
-    bitmap?.let {
+    val loaded = bitmap
+    if (loaded == null) {
+        Box(modifier)
+    } else {
         Image(
-            bitmap = it,
+            bitmap = loaded,
             contentDescription = contentDescription,
             contentScale = ContentScale.Fit,
             modifier = modifier,
