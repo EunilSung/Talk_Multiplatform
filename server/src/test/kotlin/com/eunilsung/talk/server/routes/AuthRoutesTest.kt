@@ -119,6 +119,18 @@ class AuthRoutesTest {
     }
 
     @Test
+    fun `비밀번호를 연달아 틀리면 맞는 비밀번호도 잠시 받지 않고 다른 아이디는 영향이 없다`() = serverTest {
+        repeat(5) { assertEquals(HttpStatusCode.Unauthorized, client.login("test6", "wrong-$it").status) }
+
+        val locked = client.login("test6", SeedAccounts.PASSWORD)
+
+        assertEquals(HttpStatusCode.TooManyRequests, locked.status)
+        assertEquals(ApiErrorCode.TOO_MANY_ATTEMPTS, ServerJson.decodeFromString(ApiError.serializer(), locked.bodyAsText()).code)
+        assertTrue((locked.headers[HttpHeaders.RetryAfter]?.toLongOrNull() ?: 0) > 0)
+        assertEquals(HttpStatusCode.OK, client.login("test7", SeedAccounts.PASSWORD).status)
+    }
+
+    @Test
     fun `DB 에는 비밀번호도 토큰도 평문으로 남지 않는다`() = serverTest {
         val token = client.loginToken("test5")
 

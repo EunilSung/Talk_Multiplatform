@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.login_invalid_credentials
+import multiplatformtalk.composeapp.generated.resources.login_too_many_attempts
 import multiplatformtalk.composeapp.generated.resources.no_server_response
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
@@ -68,7 +69,12 @@ class LoginRepositoryImpl(
             }
             is ServerResult.Rejected -> {
                 Log.message("[Login] rejected — ${result.status} ${result.code}")
-                Login.LoginResult.Error(text(Res.string.login_invalid_credentials))
+                val message = if (result.code == ApiErrorCode.TOO_MANY_ATTEMPTS) {
+                    Res.string.login_too_many_attempts
+                } else {
+                    Res.string.login_invalid_credentials
+                }
+                Login.LoginResult.Error(text(message))
             }
             ServerResult.Unreachable -> Login.LoginResult.Error(text(Res.string.no_server_response))
         }
