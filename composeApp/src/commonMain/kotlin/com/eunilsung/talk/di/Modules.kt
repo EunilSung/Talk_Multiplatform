@@ -1,6 +1,11 @@
 package com.eunilsung.talk.di
 
 import com.russhwolf.settings.Settings
+import com.eunilsung.talk.Config
+import com.eunilsung.talk.data.remote.server.AuthTokenStore
+import com.eunilsung.talk.data.remote.server.TalkServer
+import com.eunilsung.talk.data.remote.server.TalkServerClient
+import com.eunilsung.talk.data.repository.LoginRepositoryImpl
 import com.eunilsung.talk.data.local.DatabaseDriverFactory
 import com.eunilsung.talk.data.local.NoticeUiStateStore
 import com.eunilsung.talk.data.mapper.ChatMapper
@@ -69,8 +74,12 @@ val appModule = module {
     singleOf(::VersionCheckUseCase)
 
     viewModelOf(::LoginViewModel)
-    // TestAccounts(test1~test10 / 1234) 로 인증.
-    single<LoginRepository> { LocalLoginRepositoryImpl(get()) }
+    single { AuthTokenStore(get()) }
+    single<TalkServer> { TalkServerClient(get(), get()) }
+    /** 서버 주소가 있으면 서버에, 없으면 TestAccounts(test1~test10 / 1234) 로 인증. */
+    single<LoginRepository> {
+        if (Config.Server.IS_ENABLED) LoginRepositoryImpl(get(), get(), get()) else LocalLoginRepositoryImpl(get())
+    }
     singleOf(::LoginUseCase)
     singleOf(::DuplicateLoginUseCase)
     singleOf(::LogoutUseCase)

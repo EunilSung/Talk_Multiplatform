@@ -5,6 +5,7 @@
     <string name="save_pw">비밀번호 저장</string>
     <string name="login">로그인</string>
     <string name="login_fail">로그인 실패</string>
+    <string name="login_invalid_credentials">아이디 또는 비밀번호가 올바르지 않습니다</string>
     <string name="login_forced_logout">다른 기기에서 로그인하여 로그아웃되었습니다</string>
     <string name="no_server_response">서버 응답이 없습니다</string>
     <string name="login_time_out">로그인 시간이 초과되었습니다.</string>

@@ -4,6 +4,8 @@ object SettingsKeys {
     const val KEY_ID = "saved_id"
     const val KEY_PW = "saved_pw"
     const val KEY_SAVE_PW = "save_pw"
+    /** 서버 인증 토큰 — 잠가서 저장한다. */
+    const val KEY_AUTH_TOKEN = "auth_token"
     const val KEY_GROUP_EXPANDED_PREFIX = "group_expanded_"
 
     /** 메시지 알림 마스터 토글 */

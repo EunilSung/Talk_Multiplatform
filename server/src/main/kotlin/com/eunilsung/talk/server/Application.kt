@@ -2,7 +2,11 @@ package com.eunilsung.talk.server
 
 import com.eunilsung.talk.server.config.ServerConfig
 import com.eunilsung.talk.server.db.Database
+import com.eunilsung.talk.server.repository.AuthTokenRepository
+import com.eunilsung.talk.server.repository.UserRepository
+import com.eunilsung.talk.server.routes.authRoutes
 import com.eunilsung.talk.server.routes.healthRoutes
+import com.eunilsung.talk.server.seed.SeedAccounts
 import com.eunilsung.talk.shared.api.ApiError
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
@@ -52,8 +56,13 @@ fun Application.module(dataSource: DataSource) {
         }
     }
 
+    val users = UserRepository(dataSource)
+    val tokens = AuthTokenRepository(dataSource)
+    SeedAccounts.ensure(users)
+
     routing {
         healthRoutes(dataSource)
+        authRoutes(users, tokens)
     }
 }
 
