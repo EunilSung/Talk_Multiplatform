@@ -2,6 +2,9 @@ package com.eunilsung.talk.data.remote.server
 
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.shared.api.ApiError
+import com.eunilsung.talk.shared.api.BookmarkDto
+import com.eunilsung.talk.shared.api.BookmarkRequest
+import com.eunilsung.talk.shared.api.BookmarksResponse
 import com.eunilsung.talk.shared.api.CreateRoomRequest
 import com.eunilsung.talk.shared.api.InviteRequest
 import com.eunilsung.talk.shared.api.LoginRequest
@@ -10,16 +13,22 @@ import com.eunilsung.talk.shared.api.MarkReadRequest
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MessagesResponse
 import com.eunilsung.talk.shared.api.MuteRoomRequest
+import com.eunilsung.talk.shared.api.NoticeChangeResponse
+import com.eunilsung.talk.shared.api.NoticeDto
+import com.eunilsung.talk.shared.api.RecallRequest
 import com.eunilsung.talk.shared.api.RenameRoomRequest
 import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.RoomsResponse
 import com.eunilsung.talk.shared.api.SendMessageRequest
+import com.eunilsung.talk.shared.api.SetNoticeRequest
+import com.eunilsung.talk.shared.api.ToggleReactionRequest
 import com.eunilsung.talk.shared.api.UnreadCountDto
 import com.eunilsung.talk.shared.api.UnreadCountsResponse
 import com.eunilsung.talk.shared.api.UserDto
 import com.eunilsung.talk.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
@@ -105,6 +114,26 @@ interface TalkServer {
 
     /** [fromId] 부터 뒤쪽 대화들의 안읽음 수. */
     suspend fun unreadCounts(roomId: String, fromId: String): ServerResult<List<UnreadCountDto>>
+
+    /** 공감을 누른다. 켤지 끌지는 서버가 정하고, 바뀐 대화를 돌려준다. */
+    suspend fun toggleReaction(roomId: String, messageId: String, kind: String): ServerResult<MessageDto>
+
+    /** 내가 보낸 대화를 회수한다. 바뀐 대화를 돌려준다. */
+    suspend fun recallMessage(roomId: String, messageId: String): ServerResult<MessageDto>
+
+    /** 방의 공지. 공지가 없으면 내용이 빈 값이 온다. */
+    suspend fun notice(roomId: String): ServerResult<NoticeDto>
+
+    suspend fun setNotice(roomId: String, content: String): ServerResult<NoticeChangeResponse>
+
+    suspend fun deleteNotice(roomId: String): ServerResult<NoticeChangeResponse>
+
+    /** 이 방에서 내가 꽂은 책갈피. */
+    suspend fun bookmarks(roomId: String): ServerResult<List<BookmarkDto>>
+
+    suspend fun addBookmark(roomId: String, messageId: String): ServerResult<Unit>
+
+    suspend fun removeBookmark(roomId: String, messageId: String): ServerResult<Unit>
 }
 
 class TalkServerClient(
@@ -219,6 +248,61 @@ class TalkServerClient(
                 parameter("from", fromId)
             }
         }.map { it.counts }
+
+    override suspend fun toggleReaction(roomId: String, messageId: String, kind: String): ServerResult<MessageDto> =
+        request("공감", MessageDto.serializer()) {
+            httpClient.post("${roomUrl(roomId)}/reactions") {
+                auth()
+                jsonBody(ToggleReactionRequest.serializer(), ToggleReactionRequest(messageId, kind))
+            }
+        }
+
+    override suspend fun recallMessage(roomId: String, messageId: String): ServerResult<MessageDto> =
+        request("회수", MessageDto.serializer()) {
+            httpClient.post("${roomUrl(roomId)}/recall") {
+                auth()
+                jsonBody(RecallRequest.serializer(), RecallRequest(messageId))
+            }
+        }
+
+    override suspend fun notice(roomId: String): ServerResult<NoticeDto> =
+        request("공지 조회", NoticeDto.serializer()) {
+            httpClient.get("${roomUrl(roomId)}/notice") { auth() }
+        }
+
+    override suspend fun setNotice(roomId: String, content: String): ServerResult<NoticeChangeResponse> =
+        request("공지 등록", NoticeChangeResponse.serializer()) {
+            httpClient.put("${roomUrl(roomId)}/notice") {
+                auth()
+                jsonBody(SetNoticeRequest.serializer(), SetNoticeRequest(content))
+            }
+        }
+
+    override suspend fun deleteNotice(roomId: String): ServerResult<NoticeChangeResponse> =
+        request("공지 삭제", NoticeChangeResponse.serializer()) {
+            httpClient.delete("${roomUrl(roomId)}/notice") { auth() }
+        }
+
+    override suspend fun bookmarks(roomId: String): ServerResult<List<BookmarkDto>> =
+        request("책갈피 조회", BookmarksResponse.serializer()) {
+            httpClient.get("${roomUrl(roomId)}/bookmarks") { auth() }
+        }.map { it.bookmarks }
+
+    override suspend fun addBookmark(roomId: String, messageId: String): ServerResult<Unit> =
+        command("책갈피 등록") {
+            httpClient.put("${roomUrl(roomId)}/bookmarks") {
+                auth()
+                jsonBody(BookmarkRequest.serializer(), BookmarkRequest(messageId))
+            }
+        }
+
+    override suspend fun removeBookmark(roomId: String, messageId: String): ServerResult<Unit> =
+        command("책갈피 해제") {
+            httpClient.delete("${roomUrl(roomId)}/bookmarks") {
+                auth()
+                parameter("messageId", messageId)
+            }
+        }
 
     private fun roomUrl(roomId: String): String = "$baseUrl/rooms/${roomId.encodeURLPathPart()}"
 

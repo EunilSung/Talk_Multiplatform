@@ -1,11 +1,17 @@
 package com.eunilsung.talk.server.repository
 
+import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MessageKind
 import com.eunilsung.talk.shared.api.MessagePayloadDto
+import com.eunilsung.talk.shared.api.NoticeAction
+import com.eunilsung.talk.shared.api.NoticeChangeResponse
+import com.eunilsung.talk.shared.api.NoticeDto
+import com.eunilsung.talk.shared.api.ReactionDto
 import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.RoomMemberDto
 import com.eunilsung.talk.shared.api.UnreadCountDto
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.sql.Connection
 import java.sql.ResultSet
@@ -234,6 +240,212 @@ class ChatRepository(private val dataSource: DataSource) {
             }
         }
 
+    /**
+     * 공감을 누른다. 같은 종류를 다시 누르면 끄고, 다른 종류면 갈아탄다. 바뀐 대화를 돌려준다.
+     *
+     * 방에 없거나, 내가 볼 수 없는 대화이거나, 회수된 대화이거나, 모르는 종류이면 null.
+     */
+    fun toggleReaction(roomId: String, userId: String, messageId: String, kind: String): MessageDto? =
+        transaction { conn ->
+            if (kind !in REACTION_KINDS) return@transaction null
+            lockRoom(conn, roomId) ?: return@transaction null
+            val seq = visibleSeq(conn, roomId, userId, messageId) ?: return@transaction null
+            if (selectMessage(conn, roomId, seq)?.isRecalled != false) return@transaction null
+
+            val removed = conn.prepareStatement(
+                "DELETE FROM chat_reaction WHERE room_id = ? AND seq = ? AND user_id = ? AND kind = ?"
+            ).use { st ->
+                st.setString(1, roomId)
+                st.setLong(2, seq)
+                st.setString(3, userId)
+                st.setString(4, kind)
+                st.executeUpdate() > 0
+            }
+            if (!removed) {
+                conn.prepareStatement(
+                    """
+                    INSERT INTO chat_reaction (room_id, seq, user_id, kind) VALUES (?, ?, ?, ?)
+                    ON CONFLICT (room_id, seq, user_id) DO UPDATE SET kind = EXCLUDED.kind, created_at = now()
+                    """.trimIndent()
+                ).use { st ->
+                    st.setString(1, roomId)
+                    st.setLong(2, seq)
+                    st.setString(3, userId)
+                    st.setString(4, kind)
+                    st.executeUpdate()
+                }
+            }
+            selectMessage(conn, roomId, seq)
+        }
+
+    /**
+     * 내가 보낸 대화를 회수한다. 바뀐 대화를 돌려준다. 이미 회수했으면 그대로 돌려준다.
+     *
+     * 남의 대화이거나 초대·퇴장 같은 알림이면 null — 보낸 사람만 자기 말을 거둘 수 있다.
+     */
+    fun recall(roomId: String, userId: String, messageId: String): MessageDto? = transaction { conn ->
+        if (!isActiveMember(conn, roomId, userId)) return@transaction null
+        val seq = seqOf(conn, roomId, messageId) ?: return@transaction null
+        conn.prepareStatement(
+            """
+            UPDATE chat_message SET recalled_at = coalesce(recalled_at, now())
+            WHERE room_id = ? AND seq = ? AND sender_id = ? AND kind = ANY (?)
+            """.trimIndent()
+        ).use { st ->
+            st.setString(1, roomId)
+            st.setLong(2, seq)
+            st.setString(3, userId)
+            st.setArray(4, conn.createArrayOf("text", MessageKind.SENDABLE.toTypedArray()))
+            if (st.executeUpdate() == 0) return@transaction null
+        }
+        selectMessage(conn, roomId, seq)
+    }
+
+    /** 방의 공지. 공지가 없으면 내용이 빈 값을 돌려준다. 참여 중이 아니면 null. */
+    fun notice(roomId: String, userId: String): NoticeDto? = dataSource.connection.use { conn ->
+        if (!isActiveMember(conn, roomId, userId)) return@use null
+        selectNotice(conn, roomId) ?: NoticeDto(roomId = roomId)
+    }
+
+    /** 공지를 건다. 이미 있으면 바꾼다. 방에 공지 등록 알림이 남는다. 참여 중이 아니면 null. */
+    fun setNotice(roomId: String, userId: String, content: String): NoticeChangeResponse? = transaction { conn ->
+        lockRoom(conn, roomId) ?: return@transaction null
+        if (!isActiveMember(conn, roomId, userId)) return@transaction null
+        conn.prepareStatement(
+            """
+            INSERT INTO chat_notice (room_id, id, content, owner_id) VALUES (?, ?, ?, ?)
+            ON CONFLICT (room_id) DO UPDATE
+                SET id = EXCLUDED.id, content = EXCLUDED.content, owner_id = EXCLUDED.owner_id, created_at = now()
+            """.trimIndent()
+        ).use { st ->
+            st.setString(1, roomId)
+            st.setString(2, UUID.randomUUID().toString())
+            st.setString(3, content)
+            st.setString(4, userId)
+            st.executeUpdate()
+        }
+        NoticeChangeResponse(
+            notice = checkNotNull(selectNotice(conn, roomId)),
+            message = insertNoticeMessage(conn, roomId, userId, content, NoticeAction.ADD),
+        )
+    }
+
+    /** 공지를 내린다. 방에 공지 삭제 알림이 남는다. 참여 중이 아니거나 공지가 없으면 null. */
+    fun deleteNotice(roomId: String, userId: String): NoticeChangeResponse? = transaction { conn ->
+        lockRoom(conn, roomId) ?: return@transaction null
+        if (!isActiveMember(conn, roomId, userId)) return@transaction null
+        val previous = selectNotice(conn, roomId) ?: return@transaction null
+        conn.prepareStatement("DELETE FROM chat_notice WHERE room_id = ?").use { st ->
+            st.setString(1, roomId)
+            st.executeUpdate()
+        }
+        NoticeChangeResponse(
+            notice = NoticeDto(roomId = roomId),
+            message = insertNoticeMessage(conn, roomId, userId, previous.content, NoticeAction.DELETE),
+        )
+    }
+
+    /** 이 방에서 내가 꽂은 책갈피, 최근 대화부터. 참여 중이 아니면 null. */
+    fun bookmarks(roomId: String, userId: String): List<BookmarkDto>? = dataSource.connection.use { conn ->
+        if (!isActiveMember(conn, roomId, userId)) return@use null
+        conn.prepareStatement(
+            """
+            SELECT g.client_id, CASE WHEN g.recalled_at IS NULL THEN g.content ELSE '' END, g.sender_id, u.name, g.sent_at
+            FROM chat_bookmark b
+            JOIN chat_message g ON g.room_id = b.room_id AND g.seq = b.seq
+            JOIN app_user u ON u.id = g.sender_id
+            WHERE b.user_id = ? AND b.room_id = ?
+            ORDER BY b.seq DESC
+            """.trimIndent()
+        ).use { st ->
+            st.setString(1, userId)
+            st.setString(2, roomId)
+            st.executeQuery().use { rs ->
+                buildList {
+                    while (rs.next()) {
+                        add(BookmarkDto(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getTimestamp(5).time))
+                    }
+                }
+            }
+        }
+    }
+
+    /** 책갈피를 꽂는다. 이미 꽂혀 있어도 성공이다. 내가 볼 수 없는 대화면 false. */
+    fun addBookmark(roomId: String, userId: String, messageId: String): Boolean = dataSource.connection.use { conn ->
+        val seq = visibleSeq(conn, roomId, userId, messageId) ?: return@use false
+        conn.prepareStatement(
+            "INSERT INTO chat_bookmark (user_id, room_id, seq) VALUES (?, ?, ?) ON CONFLICT DO NOTHING"
+        ).use { st ->
+            st.setString(1, userId)
+            st.setString(2, roomId)
+            st.setLong(3, seq)
+            st.executeUpdate()
+        }
+        true
+    }
+
+    /** 책갈피를 뺀다. 꽂혀 있지 않았어도 성공이다. 참여 중이 아니면 false. */
+    fun removeBookmark(roomId: String, userId: String, messageId: String): Boolean = dataSource.connection.use { conn ->
+        if (!isActiveMember(conn, roomId, userId)) return@use false
+        conn.prepareStatement(
+            """
+            DELETE FROM chat_bookmark b USING chat_message g
+            WHERE b.user_id = ? AND b.room_id = ? AND g.room_id = b.room_id AND g.seq = b.seq AND g.client_id = ?
+            """.trimIndent()
+        ).use { st ->
+            st.setString(1, userId)
+            st.setString(2, roomId)
+            st.setString(3, messageId)
+            st.executeUpdate()
+        }
+        true
+    }
+
+    /** 내가 볼 수 있는 대화의 번호. 방에 없거나, 없는 대화이거나, 내가 들어오기 전 대화이면 null. */
+    private fun visibleSeq(conn: Connection, roomId: String, userId: String, messageId: String): Long? {
+        val joinedSeq = joinedSeq(conn, roomId, userId) ?: return null
+        return seqOf(conn, roomId, messageId)?.takeIf { it > joinedSeq }
+    }
+
+    private fun selectNotice(conn: Connection, roomId: String): NoticeDto? =
+        conn.prepareStatement(
+            """
+            SELECT n.id, n.content, n.owner_id, u.name, u.position_name, n.created_at
+            FROM chat_notice n JOIN app_user u ON u.id = n.owner_id
+            WHERE n.room_id = ?
+            """.trimIndent()
+        ).use { st ->
+            st.setString(1, roomId)
+            st.executeQuery().use { rs ->
+                if (!rs.next()) return@use null
+                NoticeDto(
+                    roomId = roomId,
+                    id = rs.getString(1),
+                    content = rs.getString(2),
+                    ownerId = rs.getString(3),
+                    ownerName = rs.getString(4),
+                    ownerPositionName = rs.getString(5),
+                    createdAtEpochMillis = rs.getTimestamp(6).time,
+                )
+            }
+        }
+
+    private fun insertNoticeMessage(
+        conn: Connection,
+        roomId: String,
+        actorId: String,
+        content: String,
+        action: String,
+    ): MessageDto = insertMessage(
+        conn = conn,
+        roomId = roomId,
+        senderId = actorId,
+        clientId = UUID.randomUUID().toString(),
+        kind = MessageKind.NOTICE,
+        content = content,
+        payload = MessagePayloadDto(noticeAction = action),
+    )
+
     private fun selectRooms(conn: Connection, userId: String, roomId: String?): List<RoomDto> {
         data class Row(val id: String, val title: String, val lastSeq: Long, val readSeq: Long, val joinedSeq: Long, val isMuted: Boolean, val createdAt: Long)
 
@@ -435,17 +647,26 @@ class ChatRepository(private val dataSource: DataSource) {
             st.executeQuery().use { rs -> buildMap { while (rs.next()) put(rs.getString(1), rs.getString(2)) } }
         }
 
-    private fun ResultSet.toMessage() = MessageDto(
+    /** 회수된 대화는 본문·부가 정보·공감을 비워서 내보낸다. DB 에는 남아 있어도 밖으로 나가지 않는다. */
+    private fun ResultSet.toMessage(): MessageDto {
+        val isRecalled = getBoolean("recalled")
+        return toMessage(isRecalled)
+    }
+
+    private fun ResultSet.toMessage(isRecalled: Boolean) = MessageDto(
         roomId = getString("room_id"),
         seq = getLong("seq"),
         id = getString("client_id"),
         senderId = getString("sender_id"),
         senderName = getString("sender_name"),
         kind = getString("kind"),
-        content = getString("content"),
-        payload = getString("payload")?.let { json.decodeFromString(MessagePayloadDto.serializer(), it) },
+        content = if (isRecalled) "" else getString("content"),
+        payload = getString("payload")?.takeUnless { isRecalled }
+            ?.let { json.decodeFromString(MessagePayloadDto.serializer(), it) },
         sentAtEpochMillis = getTimestamp("sent_at").time,
         unreadCount = getInt("unread"),
+        isRecalled = isRecalled,
+        reactions = if (isRecalled) emptyList() else json.decodeFromString(REACTIONS_SERIALIZER, getString("reactions")),
     )
 
     private fun <T> transaction(block: (Connection) -> T): T =
@@ -473,9 +694,21 @@ class ChatRepository(private val dataSource: DataSource) {
             "(SELECT count(*) FROM chat_room_member mm " +
                 "WHERE mm.room_id = g.room_id AND mm.left_at IS NULL AND mm.last_read_seq < g.seq)"
 
+        /** 이 대화에 눌린 공감들을 JSON 배열로. 대화마다 따로 조회하지 않게 한 쿼리에 싣는다. */
+        const val REACTIONS =
+            "(SELECT coalesce(json_agg(json_build_object('userId', r.user_id, 'userName', ru.name, 'kind', r.kind) " +
+                "ORDER BY r.created_at), '[]') " +
+                "FROM chat_reaction r JOIN app_user ru ON ru.id = r.user_id " +
+                "WHERE r.room_id = g.room_id AND r.seq = g.seq)"
+
+        val REACTIONS_SERIALIZER = ListSerializer(ReactionDto.serializer())
+
+        /** 공감 종류는 앱의 이모지 여섯 개와 짝을 이룬다. */
+        val REACTION_KINDS = setOf("0", "1", "2", "3", "4", "5")
+
         const val MESSAGE_SELECT =
             "SELECT g.room_id, g.seq, g.client_id, g.sender_id, u.name AS sender_name, g.kind, g.content, " +
-                "g.payload, g.sent_at, $UNREAD_COUNT AS unread " +
+                "g.payload, g.sent_at, g.recalled_at IS NOT NULL AS recalled, $UNREAD_COUNT AS unread, $REACTIONS AS reactions " +
                 "FROM chat_message g JOIN app_user u ON u.id = g.sender_id"
     }
 }

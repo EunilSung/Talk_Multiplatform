@@ -6,23 +6,31 @@ import com.eunilsung.talk.server.repository.ChatRepository
 import com.eunilsung.talk.server.repository.RoomChange
 import com.eunilsung.talk.shared.api.ApiError
 import com.eunilsung.talk.shared.api.ApiErrorCode
+import com.eunilsung.talk.shared.api.BookmarkRequest
+import com.eunilsung.talk.shared.api.BookmarksResponse
 import com.eunilsung.talk.shared.api.ChatErrorCode
 import com.eunilsung.talk.shared.api.CreateRoomRequest
 import com.eunilsung.talk.shared.api.InviteRequest
 import com.eunilsung.talk.shared.api.MarkReadRequest
+import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MessageKind
 import com.eunilsung.talk.shared.api.MessagesResponse
 import com.eunilsung.talk.shared.api.MuteRoomRequest
+import com.eunilsung.talk.shared.api.NoticeChangeResponse
+import com.eunilsung.talk.shared.api.RecallRequest
 import com.eunilsung.talk.shared.api.RenameRoomRequest
 import com.eunilsung.talk.shared.api.RoomsResponse
 import com.eunilsung.talk.shared.api.SendMessageRequest
 import com.eunilsung.talk.shared.api.ServerEvent
+import com.eunilsung.talk.shared.api.SetNoticeRequest
+import com.eunilsung.talk.shared.api.ToggleReactionRequest
 import com.eunilsung.talk.shared.api.UnreadCountsResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
@@ -44,6 +52,22 @@ fun Route.chatRoutes(chats: ChatRepository, tokens: AuthTokenRepository, hub: Ch
         val targets = db { chats.activeMemberIds(roomId) } + listOfNotNull(alsoTo)
         change?.message?.let { hub.send(targets, ServerEvent(ServerEvent.TYPE_MESSAGE, roomId, it)) }
         hub.send(targets, ServerEvent(type, roomId))
+    }
+
+    /** 이미 있던 대화가 바뀌었다고(공감·회수) 방 참여자에게 알린다. */
+    suspend fun notifyUpdated(message: MessageDto) {
+        hub.send(
+            db { chats.activeMemberIds(message.roomId) },
+            ServerEvent(ServerEvent.TYPE_MESSAGE_UPDATED, message.roomId, message),
+        )
+    }
+
+    /** 공지가 바뀌었다고 알린다. 그 일을 알리는 대화도 함께 보낸다. */
+    suspend fun notifyNotice(change: NoticeChangeResponse) {
+        val roomId = change.message.roomId
+        val targets = db { chats.activeMemberIds(roomId) }
+        hub.send(targets, ServerEvent(ServerEvent.TYPE_MESSAGE, roomId, change.message))
+        hub.send(targets, ServerEvent(ServerEvent.TYPE_NOTICE, roomId))
     }
 
     route("/rooms") {
@@ -138,6 +162,80 @@ fun Route.chatRoutes(chats: ChatRepository, tokens: AuthTokenRepository, hub: Ch
                 call.respond(message)
             }
 
+            post("/reactions") {
+                val userId = call.callerUserId(tokens) ?: return@post
+                val request = call.receiveOrNull<ToggleReactionRequest>() ?: return@post call.respondBadRequest()
+                val message = db { chats.toggleReaction(call.roomId(), userId, request.messageId, request.kind) }
+                    ?: return@post call.respondMessageNotFound()
+                notifyUpdated(message)
+                call.respond(message)
+            }
+
+            post("/recall") {
+                val userId = call.callerUserId(tokens) ?: return@post
+                val request = call.receiveOrNull<RecallRequest>() ?: return@post call.respondBadRequest()
+                val message = db { chats.recall(call.roomId(), userId, request.messageId) }
+                    ?: return@post call.respondMessageNotFound()
+                notifyUpdated(message)
+                /** 마지막 대화가 회수되면 목록의 미리보기도 바뀌어야 한다. */
+                notify(message.roomId, ServerEvent.TYPE_ROOM)
+                call.respond(message)
+            }
+
+            route("/notice") {
+                get {
+                    val userId = call.callerUserId(tokens) ?: return@get
+                    val notice = db { chats.notice(call.roomId(), userId) } ?: return@get call.respondRoomNotFound()
+                    call.respond(notice)
+                }
+
+                put {
+                    val userId = call.callerUserId(tokens) ?: return@put
+                    val content = call.receiveOrNull<SetNoticeRequest>()?.content?.trim()
+                    if (content.isNullOrBlank() || content.length > MAX_CONTENT_LENGTH) return@put call.respondBadRequest()
+                    val change = db { chats.setNotice(call.roomId(), userId, content) }
+                        ?: return@put call.respondRoomNotFound()
+                    notifyNotice(change)
+                    call.respond(change)
+                }
+
+                delete {
+                    val userId = call.callerUserId(tokens) ?: return@delete
+                    val change = db { chats.deleteNotice(call.roomId(), userId) }
+                        ?: return@delete call.respondRoomNotFound()
+                    notifyNotice(change)
+                    call.respond(change)
+                }
+            }
+
+            /** 책갈피는 나만 보는 것이라 다른 사람에게 알리지 않는다. */
+            route("/bookmarks") {
+                get {
+                    val userId = call.callerUserId(tokens) ?: return@get
+                    val bookmarks = db { chats.bookmarks(call.roomId(), userId) }
+                        ?: return@get call.respondRoomNotFound()
+                    call.respond(BookmarksResponse(bookmarks))
+                }
+
+                put {
+                    val userId = call.callerUserId(tokens) ?: return@put
+                    val request = call.receiveOrNull<BookmarkRequest>() ?: return@put call.respondBadRequest()
+                    if (!db { chats.addBookmark(call.roomId(), userId, request.messageId) }) {
+                        return@put call.respondMessageNotFound()
+                    }
+                    call.respond(HttpStatusCode.NoContent)
+                }
+
+                delete {
+                    val userId = call.callerUserId(tokens) ?: return@delete
+                    val messageId = call.request.queryParameters["messageId"].orEmpty()
+                    if (!db { chats.removeBookmark(call.roomId(), userId, messageId) }) {
+                        return@delete call.respondRoomNotFound()
+                    }
+                    call.respond(HttpStatusCode.NoContent)
+                }
+            }
+
             post("/read") {
                 val userId = call.callerUserId(tokens) ?: return@post
                 val request = call.receiveOrNull<MarkReadRequest>() ?: return@post call.respondBadRequest()
@@ -198,6 +296,9 @@ private suspend fun ApplicationCall.respondRoom(chats: ChatRepository, roomId: S
 
 private suspend fun ApplicationCall.respondRoomNotFound() =
     respond(HttpStatusCode.NotFound, ApiError(ChatErrorCode.ROOM_NOT_FOUND, "대화방을 찾을 수 없습니다"))
+
+private suspend fun ApplicationCall.respondMessageNotFound() =
+    respond(HttpStatusCode.NotFound, ApiError(ChatErrorCode.MESSAGE_NOT_FOUND, "대화를 찾을 수 없습니다"))
 
 private suspend fun ApplicationCall.respondBadRequest() =
     respond(HttpStatusCode.BadRequest, ApiError(ApiErrorCode.BAD_REQUEST, "요청이 올바르지 않습니다"))

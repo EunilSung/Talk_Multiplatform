@@ -8,17 +8,23 @@ import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.data.remote.server.valueOrNull
 import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
 import com.eunilsung.talk.db.AppDatabase
+import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
+import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.repository.ChatRoomRepository
 import com.eunilsung.talk.shared.api.ChatErrorCode
+import com.eunilsung.talk.shared.api.NoticeChangeResponse
 import com.eunilsung.talk.shared.api.ServerEvent
 import com.eunilsung.talk.util.ChatIdUtils
+import com.eunilsung.talk.util.stripMentionTags
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -32,7 +38,7 @@ import kotlinx.coroutines.withContext
  * 서버로 보낸다. 서버가 완결된 응답을 준 것만 로컬에 반영하므로, 요청이 실패하면 가지고 있던 대화가
  * 그대로 남는다.
  *
- * 공지·책갈피·공감·회수·파일은 아직 서버에 연동하지 않았다. [local] 이 이 기기 안에서만 처리한다.
+ * 파일 전송은 아직 서버에 연동하지 않았다. [local] 이 이 기기 안에서만 처리한다.
  */
 class ChatRoomRepositoryImpl(
     private val local: LocalChatRoomRepositoryImpl,
@@ -62,6 +68,15 @@ class ChatRoomRepositoryImpl(
     private val _selfLeftPush = MutableSharedFlow<String>(extraBufferCapacity = PUSH_BUFFER)
     override val selfLeftPush: SharedFlow<String> = _selfLeftPush.asSharedFlow()
 
+    private val _currentNotice = MutableStateFlow<Notice?>(null)
+    override val currentNotice: StateFlow<Notice?> = _currentNotice.asStateFlow()
+
+    private val _bookmarks = MutableStateFlow<List<Bookmark>>(emptyList())
+    override val bookmarks: StateFlow<List<Bookmark>> = _bookmarks.asStateFlow()
+
+    /** [currentNotice] 와 [bookmarks] 가 지금 어느 방의 것인지. */
+    private var extrasRoomId: String? = null
+
     init {
         repositoryScope.launch { serverEvents.events.collect { onServerEvent(it) } }
         repositoryScope.launch {
@@ -76,6 +91,78 @@ class ChatRoomRepositoryImpl(
         syncFromServer(chatRoomId)
         local.fetchChats(chatRoomId)
         failStaleSendingChats(chatRoomId)
+        requestNotice(chatRoomId)
+        fetchBookmarks(chatRoomId)
+    }
+
+    override fun clearCurrentRoom(chatRoomId: String) {
+        local.clearCurrentRoom(chatRoomId)
+        showRoomExtras(null)
+    }
+
+    /**
+     * 공감을 누른다. 켤지 끌지는 서버가 정하고, 서버가 돌려준 대화를 그대로 반영한다.
+     *
+     * 화면에 먼저 그려 두지 않는다. 여러 사람이 동시에 누를 때 각자 계산한 결과를 그려 두면
+     * 서버의 답과 어긋났다가 고쳐지며 깜빡인다.
+     */
+    override suspend fun sendEmpathy(chatRoomId: String, targetChatId: String, empathyType: String) {
+        val updated = server.toggleReaction(chatRoomId, targetChatId, empathyType).valueOrNull() ?: return
+        local.storeChats(chatRoomId, listOf(mapper.toChat(updated)))
+    }
+
+    /** 서버가 회수를 받아 준 뒤에 화면에서 거둔다. 서버에 닿지 못했는데 거둔 것처럼 보이면 안 된다. */
+    override suspend fun recallChat(chatRoomId: String, targetChatId: String) {
+        val recalled = server.recallMessage(chatRoomId, targetChatId).valueOrNull() ?: return
+        local.storeChats(chatRoomId, listOf(mapper.toChat(recalled)))
+    }
+
+    override suspend fun requestNotice(chatRoomId: String) {
+        showRoomExtras(chatRoomId)
+        val notice = server.notice(chatRoomId).valueOrNull() ?: return
+        if (extrasRoomId == chatRoomId) _currentNotice.value = mapper.toNotice(notice)
+    }
+
+    override suspend fun addNotice(chatRoomId: String, content: String) {
+        if (content.isBlank()) return
+        applyNoticeChange(chatRoomId, server.setNotice(chatRoomId, content.stripMentionTags()).valueOrNull())
+    }
+
+    override suspend fun deleteNotice(chatRoomId: String) {
+        applyNoticeChange(chatRoomId, server.deleteNotice(chatRoomId).valueOrNull())
+    }
+
+    override suspend fun fetchBookmarks(chatRoomId: String) {
+        showRoomExtras(chatRoomId)
+        val bookmarks = server.bookmarks(chatRoomId).valueOrNull() ?: return
+        if (extrasRoomId == chatRoomId) _bookmarks.value = bookmarks.map { mapper.toBookmark(chatRoomId, it) }
+    }
+
+    override suspend fun addBookmark(chatRoomId: String, chat: Chat.Item) {
+        if (server.addBookmark(chatRoomId, chat.chatID) is ServerResult.Success) fetchBookmarks(chatRoomId)
+    }
+
+    override suspend fun deleteBookmark(chatRoomId: String, chatId: String) {
+        if (server.removeBookmark(chatRoomId, chatId) is ServerResult.Success) fetchBookmarks(chatRoomId)
+    }
+
+    /** 공지가 바뀐 결과를 반영한다 — 공지 띠와, 그 일을 알리는 대화. 서버가 받아 주지 않았으면 그대로 둔다. */
+    private suspend fun applyNoticeChange(chatRoomId: String, change: NoticeChangeResponse?) {
+        change ?: return
+        if (extrasRoomId == chatRoomId) _currentNotice.value = mapper.toNotice(change.notice)
+        local.storeChats(chatRoomId, listOf(mapper.toChat(change.message)))
+    }
+
+    /**
+     * 공지와 책갈피가 어느 방의 것인지 바꾼다. 방이 바뀌면 앞 방의 것을 비운다.
+     *
+     * 비우지 않으면 새 방의 조회가 실패했을 때 앞 방의 공지가 그대로 남아 엉뚱한 방에 걸려 보인다.
+     */
+    private fun showRoomExtras(chatRoomId: String?) {
+        if (extrasRoomId == chatRoomId) return
+        extrasRoomId = chatRoomId
+        _currentNotice.value = null
+        _bookmarks.value = emptyList()
     }
 
     override suspend fun sendTextChat(
@@ -138,16 +225,31 @@ class ChatRoomRepositoryImpl(
     private suspend fun syncFromServer(chatRoomId: String) {
         val myId = Config.MyInfo.userId
         if (myId.isBlank() || chatRoomId.isBlank()) return
-        var cursor = withContext(Dispatchers.Default) {
+        val lastKnown = withContext(Dispatchers.Default) {
             dbQueries.selectLastCompleteChatId(myId, chatRoomId).executeAsOneOrNull()
         }
+        var cursor = lastKnown
         repeat(MAX_SYNC_PAGES) {
             val page = server.messages(chatRoomId, afterId = cursor, limit = PAGE_SIZE).valueOrNull() ?: return
             if (page.isNotEmpty()) local.storeChats(chatRoomId, page.map { mapper.toChat(it) })
             syncedRooms.update { it + chatRoomId }
-            if (cursor == null || page.size < PAGE_SIZE) return
+            if (cursor == null || page.size < PAGE_SIZE) {
+                if (lastKnown != null) refreshRecentChats(chatRoomId)
+                return
+            }
             cursor = page.last().id
         }
+    }
+
+    /**
+     * 이미 받아 둔 최근 대화의 상태(공감·회수·안읽음 수)를 서버 것으로 맞춘다.
+     *
+     * "마지막 대화 이후"만 받으면 그 앞 대화에 생긴 변화를 놓친다. 앱이 꺼져 있던 동안 누가 공감을 누르거나
+     * 대화를 회수했을 수 있으므로, 최근 한 쪽은 통째로 다시 받아 덮어쓴다.
+     */
+    private suspend fun refreshRecentChats(chatRoomId: String) {
+        val recent = server.messages(chatRoomId, limit = PAGE_SIZE).valueOrNull() ?: return
+        if (recent.isNotEmpty()) local.storeChats(chatRoomId, recent.map { mapper.toChat(it) })
     }
 
     /** 서버로 보내고, 결과에 따라 '전송 중'을 완료 또는 실패로 바꾼다. */
@@ -179,7 +281,16 @@ class ChatRoomRepositoryImpl(
             ServerEvent.TYPE_MESSAGE -> onMessage(event)
             ServerEvent.TYPE_READ -> if (event.roomId in syncedRooms.value) refreshChatUnreadCounts(event.roomId)
             ServerEvent.TYPE_ROOM -> onRoomChanged(event.roomId)
+            ServerEvent.TYPE_MESSAGE_UPDATED -> onMessageUpdated(event)
+            ServerEvent.TYPE_NOTICE -> if (event.roomId == extrasRoomId) requestNotice(event.roomId)
         }
+    }
+
+    /** 공감이 눌리거나 회수된 대화를 고쳐 쓴다. 새 대화가 아니므로 새 대화 신호는 내지 않는다. */
+    private suspend fun onMessageUpdated(event: ServerEvent) {
+        val message = event.message ?: return
+        if (event.roomId !in syncedRooms.value) return
+        local.storeChats(event.roomId, listOf(mapper.toChat(message)))
     }
 
     private suspend fun onMessage(event: ServerEvent) {

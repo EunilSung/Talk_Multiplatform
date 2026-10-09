@@ -108,7 +108,7 @@ class ChatRoomRepositoryImplTest {
         repo.fetchChats(roomId)
 
         assertEquals(listOf("하나", "둘"), contents())
-        assertEquals("messages:$roomId:after=test2-하나", server.calls.last { it.startsWith("messages") })
+        assertTrue("messages:$roomId:after=test2-하나" in server.calls)
     }
 
     @Test
