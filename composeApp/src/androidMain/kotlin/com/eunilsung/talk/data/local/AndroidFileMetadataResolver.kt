@@ -160,6 +160,16 @@ class AndroidFileMetadataResolver(
             candidates.firstOrNull { it.exists() }?.absolutePath
         }
 
+    /**
+     * 확장자 기반 MIME. MediaStore 에 넣어 두어야 연결 프로그램 선택기가 올바른 앱을 추린다.
+     * 미상이면 null 을 돌려 MediaStore 기본 추론에 맡긴다.
+     */
+    private fun mimeTypeOf(filename: String): String? {
+        val ext = filename.substringAfterLast('.', "").lowercase()
+        if (ext.isBlank()) return null
+        return android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
+    }
+
     override suspend fun saveDownloadedFile(filename: String, bytes: ByteArray): String? =
         withContext(Dispatchers.IO) {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
@@ -171,6 +181,9 @@ class AndroidFileMetadataResolver(
                             android.provider.MediaStore.MediaColumns.RELATIVE_PATH,
                             android.os.Environment.DIRECTORY_DOWNLOADS + "/$SAVE_DIR"
                         )
+                        mimeTypeOf(filename)?.let {
+                            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, it)
+                        }
                         put(android.provider.MediaStore.MediaColumns.IS_PENDING, 1)
                     }
                     val uri = resolver.insert(

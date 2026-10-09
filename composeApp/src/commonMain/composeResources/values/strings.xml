@@ -421,6 +421,7 @@
     <string name="date_yesterday">Yesterday</string>
     <string name="date_time">%1$s %2$d:%3$s</string>
     <string name="reply_to_name">Reply to %1$s</string>
+    <string name="file_open_chooser">Open with</string>
     <string name="toast_download_done">\'%1$s\' downloaded</string>
     <string name="profile_load_failed">Failed to load profile</string>
     <string name="chat_group_edit">Edit chat groups</string>
