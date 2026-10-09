@@ -8,6 +8,13 @@ import com.eunilsung.talk.domain.model.EmpathyChat
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.model.ReplyChat
 import com.eunilsung.talk.domain.model.User
+import com.eunilsung.talk.domain.model.Vote
+import com.eunilsung.talk.domain.model.VoteComplete
+import com.eunilsung.talk.domain.model.VoteData
+import com.eunilsung.talk.domain.model.VoteDataItem
+import com.eunilsung.talk.domain.model.VoteResultItem
+import com.eunilsung.talk.domain.model.VoteSetting
+import com.eunilsung.talk.domain.model.VoteVoter
 import com.eunilsung.talk.data.remote.server.ServerFileStore
 import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.FileDto
@@ -19,6 +26,7 @@ import com.eunilsung.talk.shared.api.NoticeDto
 import com.eunilsung.talk.shared.api.ReactionDto
 import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.SendMessageRequest
+import com.eunilsung.talk.shared.api.VoteDto
 import com.eunilsung.talk.util.ChatIdUtils
 import com.eunilsung.talk.util.UserListCodec
 import com.eunilsung.talk.util.chatDisplayText
@@ -50,7 +58,13 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
         return Chat.Item(
             chatID = message.id,
             chatType = chatTypeOf(message.kind),
-            title = if (message.kind == MessageKind.NOTICE) noticeActionOf(payload?.noticeAction) else "",
+            title = when (message.kind) {
+                MessageKind.NOTICE -> noticeActionOf(payload?.noticeAction)
+                MessageKind.VOTE, MessageKind.VOTE_CLOSED -> payload?.vote?.title ?: message.content
+                else -> ""
+            },
+            vote = payload?.vote?.takeIf { message.kind == MessageKind.VOTE }?.let(::voteOf),
+            voteComplete = payload?.vote?.takeIf { message.kind == MessageKind.VOTE_CLOSED }?.let(::voteCompleteOf),
             chatContent = when (message.kind) {
                 MessageKind.INVITE -> inviteText(message.senderName, payload?.targetNames.orEmpty())
                 MessageKind.EXIT -> exitText(message.senderName)
@@ -157,6 +171,39 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
             date = chatDateOf(notice.createdAtEpochMillis),
         )
 
+    /** 서버 투표 → 참여·결과 화면이 쓰는 투표. */
+    fun toVoteData(vote: VoteDto): VoteData = VoteData(
+        id = vote.id,
+        title = vote.title,
+        isClosed = vote.isClosed,
+        useEndTime = vote.useEndTime,
+        endTime = vote.endTime,
+        participantCount = vote.voters.map { it.userId }.distinct().size,
+        writeUserId = vote.writerId,
+        multiSelect = vote.multiSelect,
+        allowAddItem = vote.allowAddItem,
+        items = vote.items.map { VoteDataItem(it.idx, it.idx, it.content, it.voteCount, it.writerId) },
+        voters = vote.voters.map { VoteVoter(itemIdx = it.itemIdx, userID = it.userId, userName = it.userName) },
+    )
+
+    /** 투표가 만들어졌다는 알림 말풍선에 들어갈 내용. */
+    private fun voteOf(vote: VoteDto): Vote = Vote(
+        id = vote.id,
+        items = vote.items.map { it.content },
+        setting = VoteSetting(
+            settingEndTime = vote.useEndTime,
+            endTime = vote.endTime,
+            multiSelect = vote.multiSelect,
+            allowAddItem = vote.allowAddItem,
+        ),
+    )
+
+    /** 투표가 끝났다는 알림 말풍선에 들어갈 항목별 결과. */
+    private fun voteCompleteOf(vote: VoteDto): VoteComplete = VoteComplete(
+        id = vote.id,
+        items = vote.items.map { VoteResultItem(it.idx, it.idx, it.content, it.voteCount, it.writerId) },
+    )
+
     fun toBookmark(roomId: String, bookmark: BookmarkDto): Bookmark = Bookmark(
         chatId = bookmark.messageId,
         chatRoomId = roomId,
@@ -194,6 +241,8 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
         MessageKind.IMAGE -> Chat.Type.IMAGE
         MessageKind.VIDEO -> Chat.Type.VIDEO
         MessageKind.FILE -> Chat.Type.FILE
+        MessageKind.VOTE -> Chat.Type.VOTE
+        MessageKind.VOTE_CLOSED -> Chat.Type.VOTE_COMPLETE
         else -> Chat.Type.TEXT
     }
 

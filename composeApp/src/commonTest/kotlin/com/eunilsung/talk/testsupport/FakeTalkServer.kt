@@ -5,6 +5,7 @@ import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.shared.api.ApiErrorCode
 import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.ChatErrorCode
+import com.eunilsung.talk.shared.api.CreateVoteRequest
 import com.eunilsung.talk.shared.api.FileDto
 import com.eunilsung.talk.shared.api.LoginResponse
 import com.eunilsung.talk.shared.api.MessageDto
@@ -19,6 +20,10 @@ import com.eunilsung.talk.shared.api.RoomMemberDto
 import com.eunilsung.talk.shared.api.SendMessageRequest
 import com.eunilsung.talk.shared.api.UnreadCountDto
 import com.eunilsung.talk.shared.api.UserDto
+import com.eunilsung.talk.shared.api.VoteChangeResponse
+import com.eunilsung.talk.shared.api.VoteDto
+import com.eunilsung.talk.shared.api.VoteItemDto
+import com.eunilsung.talk.shared.api.VoteVoterDto
 
 /**
  * 서버 대역 — 메모리 안에서 방과 대화를 들고 실제 서버처럼 답한다.
@@ -44,6 +49,8 @@ class FakeTalkServer : TalkServer {
     private val notices = mutableMapOf<String, NoticeDto>()
     private val bookmarkIds = mutableMapOf<String, MutableList<String>>()
     private var noticeCount = 0
+    private val votesByRoom = mutableMapOf<String, MutableList<VoteDto>>()
+    private var voteCount = 0
     /** 올라온 파일들 — 파일 id → 바이트. */
     val uploads = mutableMapOf<String, ByteArray>()
 
@@ -236,6 +243,73 @@ class FakeTalkServer : TalkServer {
             ),
         )
     }
+
+    override suspend fun votes(roomId: String): ServerResult<List<VoteDto>> = answer("votes:$roomId") {
+        ServerResult.Success(votesByRoom[roomId].orEmpty().reversed())
+    }
+
+    override suspend fun vote(roomId: String, voteId: String): ServerResult<VoteDto> = answer("vote:$roomId:$voteId") {
+        findVote(roomId, voteId)?.let { ServerResult.Success(it) } ?: voteNotFound()
+    }
+
+    override suspend fun createVote(roomId: String, request: CreateVoteRequest): ServerResult<VoteChangeResponse> =
+        answer("createVote:$roomId:${request.title}") {
+            if (roomId !in rooms) return@answer roomNotFound()
+            val vote = VoteDto(
+                id = "vote-${++voteCount}",
+                title = request.title,
+                writerId = USER.id,
+                multiSelect = request.multiSelect,
+                allowAddItem = request.allowAddItem,
+                useEndTime = request.useEndTime,
+                endTime = request.endTime,
+                items = request.items.mapIndexed { index, content -> VoteItemDto(index, content, 0, USER.id) },
+            )
+            votesByRoom.getOrPut(roomId) { mutableListOf() } += vote
+            ServerResult.Success(VoteChangeResponse(vote, announceVote(roomId, vote, MessageKind.VOTE)))
+        }
+
+    override suspend fun castVote(roomId: String, voteId: String, selectedIdx: List<Int>): ServerResult<VoteDto> =
+        answer("castVote:$roomId:$voteId:$selectedIdx") {
+            val vote = findVote(roomId, voteId)?.takeUnless { it.isClosed } ?: return@answer voteNotFound()
+            ServerResult.Success(cast(roomId, vote.id, USER.id, USER.name, selectedIdx))
+        }
+
+    override suspend fun closeVote(roomId: String, voteId: String): ServerResult<VoteChangeResponse> =
+        answer("closeVote:$roomId:$voteId") {
+            val vote = findVote(roomId, voteId)?.takeIf { it.writerId == USER.id && !it.isClosed }
+                ?: return@answer voteNotFound()
+            val closed = replaceVote(roomId, vote.copy(isClosed = true))
+            ServerResult.Success(VoteChangeResponse(closed, announceVote(roomId, closed, MessageKind.VOTE_CLOSED)))
+        }
+
+    /** [userId] 의 표를 [selectedIdx] 로 바꾼다. 바뀐 투표를 돌려준다. */
+    fun cast(roomId: String, voteId: String, userId: String, userName: String, selectedIdx: List<Int>): VoteDto {
+        val vote = findVote(roomId, voteId)!!
+        val voters = vote.voters.filterNot { it.userId == userId } + selectedIdx.map { VoteVoterDto(it, userId, userName) }
+        return replaceVote(
+            roomId,
+            vote.copy(
+                voters = voters,
+                items = vote.items.map { item -> item.copy(voteCount = voters.count { it.itemIdx == item.idx }) },
+            ),
+        )
+    }
+
+    private fun findVote(roomId: String, voteId: String): VoteDto? = votesByRoom[roomId]?.firstOrNull { it.id == voteId }
+
+    private fun replaceVote(roomId: String, vote: VoteDto): VoteDto {
+        val list = votesByRoom.getValue(roomId)
+        list[list.indexOfFirst { it.id == vote.id }] = vote
+        return vote
+    }
+
+    private fun announceVote(roomId: String, vote: VoteDto, kind: String): MessageDto = append(
+        roomId, USER.id, USER.name,
+        SendMessageRequest("$kind-${vote.id}", vote.title, kind, MessagePayloadDto(vote = vote.copy(voters = emptyList()))),
+    )
+
+    private fun voteNotFound() = ServerResult.Rejected(404, ChatErrorCode.VOTE_NOT_FOUND)
 
     /** [userId] 가 공감을 누른다(같은 종류면 끄고, 다르면 갈아탄다). 바뀐 대화를 돌려준다. */
     fun react(roomId: String, messageId: String, userId: String, userName: String, kind: String): MessageDto {

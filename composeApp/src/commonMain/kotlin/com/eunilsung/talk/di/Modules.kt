@@ -13,6 +13,7 @@ import com.eunilsung.talk.data.repository.ChatRoomListRepositoryImpl
 import com.eunilsung.talk.data.repository.ChatRoomRepositoryImpl
 import com.eunilsung.talk.data.repository.InviteRepositoryImpl
 import com.eunilsung.talk.data.repository.LoginRepositoryImpl
+import com.eunilsung.talk.data.repository.VoteRepositoryImpl
 import com.eunilsung.talk.data.local.DatabaseDriverFactory
 import com.eunilsung.talk.data.local.NoticeUiStateStore
 import com.eunilsung.talk.data.mapper.ChatMapper
@@ -210,7 +211,9 @@ val appModule = module {
 
     viewModelOf(::VoteViewModel)
     // 투표/투표 결과는 VoteEntity 에 저장.
-    single<VoteRepository> { LocalVoteRepositoryImpl(get(), get()) }
+    single<VoteRepository> {
+        if (Config.Server.IS_ENABLED) VoteRepositoryImpl(get(), get(), get()) else LocalVoteRepositoryImpl(get(), get())
+    }
     singleOf(::GetVotesUseCase)
     singleOf(::GetVoteUseCase)
     singleOf(::CreateVoteUseCase)
