@@ -15,6 +15,7 @@ import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.RoomsResponse
 import com.eunilsung.talk.shared.api.SendMessageRequest
 import com.eunilsung.talk.shared.api.ServerEvent
+import com.eunilsung.talk.shared.api.UsersResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.WebSockets
@@ -33,6 +34,7 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.KSerializer
 import kotlin.test.BeforeTest
@@ -109,6 +111,7 @@ class ChatRoutesTest {
         val socketClient = createClient { install(WebSockets) }
 
         socketClient.webSocket("/ws?token=$peer") {
+            client.awaitOnline(me, "test2")
             client.send(me, room.id, "m1", "실시간")
 
             val event = nextEvent()
@@ -128,6 +131,7 @@ class ChatRoutesTest {
         val socketClient = createClient { install(WebSockets) }
 
         socketClient.webSocket("/ws?token=$me") {
+            client.awaitOnline(me, "test1")
             client.authPost(peer, "/rooms/${room.id}/read", MarkReadRequest.serializer(), MarkReadRequest("m1"))
 
             assertEquals(ServerEvent.TYPE_READ, nextEvent().type)
@@ -144,6 +148,7 @@ class ChatRoutesTest {
         val socketClient = createClient { install(WebSockets) }
 
         socketClient.webSocket("/ws?token=$outsider") {
+            client.awaitOnline(me, "test3")
             client.send(me, room.id, "m1", "둘만의 대화")
 
             assertNull(runCatching { withTimeout(SILENCE_WAIT_MS) { nextEvent() } }.getOrNull())
@@ -156,6 +161,20 @@ class ChatRoutesTest {
 
         socketClient.webSocket("/ws?token=made-up") {
             assertNull(runCatching { withTimeout(EVENT_WAIT_MS) { incoming.receive() } }.getOrNull() as? Frame.Text)
+        }
+    }
+
+    /**
+     * [userId] 의 알림 연결이 서버에 등록될 때까지 기다린다.
+     *
+     * 연결이 열린 직후에는 서버가 아직 토큰을 확인하는 중이다. 그 사이에 일어난 일은 알림으로 오지
+     * 않으므로(앱은 연결될 때마다 다시 조회해 메운다), 등록을 확인한 뒤에 다음 단계를 진행한다.
+     */
+    private suspend fun HttpClient.awaitOnline(token: String, userId: String) {
+        repeat(ONLINE_RETRIES) {
+            val users = authGet(token, "/users").decode(UsersResponse.serializer()).users
+            if (users.first { it.id == userId }.isOnline) return
+            delay(ONLINE_RETRY_DELAY_MS)
         }
     }
 
@@ -205,5 +224,7 @@ class ChatRoutesTest {
     private companion object {
         const val EVENT_WAIT_MS = 5_000L
         const val SILENCE_WAIT_MS = 500L
+        const val ONLINE_RETRIES = 40
+        const val ONLINE_RETRY_DELAY_MS = 50L
     }
 }
