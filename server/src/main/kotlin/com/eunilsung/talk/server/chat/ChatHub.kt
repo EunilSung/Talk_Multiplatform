@@ -21,6 +21,9 @@ class ChatHub {
         sessions.computeIfAbsent(userId) { CopyOnWriteArraySet() }.add(session)
     }
 
+    /** 이 사람의 연결이 하나라도 붙어 있는지. */
+    fun isOnline(userId: String): Boolean = sessions.containsKey(userId)
+
     fun leave(userId: String, session: WebSocketSession) {
         sessions.computeIfPresent(userId) { _, set ->
             set.remove(session)

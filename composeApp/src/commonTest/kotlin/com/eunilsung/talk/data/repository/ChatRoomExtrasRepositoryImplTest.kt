@@ -4,6 +4,7 @@ import com.eunilsung.talk.data.mapper.ChatMapper
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.data.mapper.ServerChatMapper
 import com.eunilsung.talk.data.remote.server.ServerFileStore
+import com.eunilsung.talk.data.remote.server.UserDirectory
 import com.eunilsung.talk.data.sample.ChatSenderOverride
 import com.eunilsung.talk.data.sample.LocalChatRoomListRepositoryImpl
 import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
@@ -75,7 +76,7 @@ class ChatRoomExtrasRepositoryImplTest {
             seedsSampleChats = false,
         )
         val fileStore = ServerFileStore(fileSettings, server, deviceFiles)
-        return ChatRoomRepositoryImpl(local, server, events, ServerChatMapper(fileStore), fileStore, deviceFiles, database)
+        return ChatRoomRepositoryImpl(local, server, events, ServerChatMapper(fileStore), fileStore, deviceFiles, UserDirectory(), database)
     }
 
     private suspend fun chats(): List<Chat.Item> = repo.getChats(roomId).first()

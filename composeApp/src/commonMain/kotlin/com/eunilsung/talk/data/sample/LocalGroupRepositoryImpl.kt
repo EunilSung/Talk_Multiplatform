@@ -28,6 +28,11 @@ class LocalGroupRepositoryImpl(
     private val loginRepository: LoginRepository,
     private val settings: Settings,
     database: AppDatabase,
+    /** 시연용 그룹을 채울지. 서버 모드에서는 끈다 — 그룹은 서버에서만 온다. */
+    private val seedsSampleGroups: Boolean = true,
+    /** 사용자 id 로 그 사람을 찾아 [Group.User] 로 만든다. 서버 모드에서는 서버의 사용자 목록에서 찾는다. */
+    private val findUser: (userId: String, groupId: String) -> Group.User? =
+        { userId, groupId -> TestAccounts.find(userId)?.toGroupUser(groupId) },
 ) : GroupRepository {
 
     private val dbQueries = database.appDatabaseQueries
@@ -62,7 +67,7 @@ class LocalGroupRepositoryImpl(
     override suspend fun copyUserToGroup(userId: String, targetGroupId: String): AddUserResult =
         withContext(Dispatchers.Default) {
             val myId = Config.MyInfo.userId
-            val account = TestAccounts.find(userId) ?: return@withContext AddUserResult.FAILED
+            val user = findUser(userId, targetGroupId) ?: return@withContext AddUserResult.FAILED
             val groupExists = dbQueries.selectGroupsByMyId(myId).executeAsList()
                 .any { it.groupId == targetGroupId }
             if (!groupExists) return@withContext AddUserResult.FAILED
@@ -71,7 +76,7 @@ class LocalGroupRepositoryImpl(
                 .any { it.userId == userId }
             if (already) return@withContext AddUserResult.ALREADY_EXISTS
 
-            dbQueries.insertGroupUser(mapper.toEntity(myId, account.toGroupUser(targetGroupId)))
+            dbQueries.insertGroupUser(mapper.toEntity(myId, user))
             refreshFromDb(myId)
             Log.message("[Group/Local] copyUserToGroup $userId → $targetGroupId")
             AddUserResult.SUCCESS
@@ -97,14 +102,14 @@ class LocalGroupRepositoryImpl(
     ): Boolean = withContext(Dispatchers.Default) {
         if (fromGroupId == toGroupId) return@withContext false
         val myId = Config.MyInfo.userId
-        val account = TestAccounts.find(userId) ?: return@withContext false
+        val user = findUser(userId, toGroupId) ?: return@withContext false
         val targetExists = dbQueries.selectGroupsByMyId(myId).executeAsList()
             .any { it.groupId == toGroupId }
         if (!targetExists) return@withContext false
 
         dbQueries.transaction {
             dbQueries.deleteGroupUser(myId = myId, groupId = fromGroupId, userId = userId)
-            dbQueries.insertGroupUser(mapper.toEntity(myId, account.toGroupUser(toGroupId)))
+            dbQueries.insertGroupUser(mapper.toEntity(myId, user))
         }
         refreshFromDb(myId)
         Log.message("[Group/Local] moveUserToGroup $userId: $fromGroupId → $toGroupId")
@@ -166,7 +171,7 @@ class LocalGroupRepositoryImpl(
         val myId = Config.MyInfo.userId
         if (myId.isBlank()) return@withContext
 
-        if (dbQueries.selectGroupsByMyId(myId).executeAsList().isEmpty()) {
+        if (seedsSampleGroups && dbQueries.selectGroupsByMyId(myId).executeAsList().isEmpty()) {
             val seeded = buildSeed(myId)
             dbQueries.transaction {
                 seeded.forEach { group ->
@@ -206,7 +211,29 @@ class LocalGroupRepositoryImpl(
     private fun usersOf(memberIds: List<String>, groupId: String, myId: String): List<Group.User> =
         memberIds
             .filterNot { it.equals(myId, ignoreCase = true) }
-            .mapNotNull { TestAccounts.find(it)?.toGroupUser(groupId) }
+            .mapNotNull { findUser(it, groupId) }
+
+    /** 지금의 그룹 목록. */
+    internal fun currentGroups(): List<Group.Item> = _groups.value
+
+    /**
+     * 내 그룹을 [groups] 로 통째로 바꾼다. 서버에서 받은 목록을 반영할 때 쓴다.
+     *
+     * 한 트랜잭션으로 바꾸므로 비었다가 채워지는 중간 상태가 화면에 보이지 않는다.
+     */
+    internal suspend fun replaceGroups(groups: List<Group.Item>) = withContext(Dispatchers.Default) {
+        val myId = Config.MyInfo.userId
+        if (myId.isBlank()) return@withContext
+        dbQueries.transaction {
+            dbQueries.deleteUsersByMyId(myId)
+            dbQueries.deleteGroupsByMyId(myId)
+            groups.forEach { group ->
+                dbQueries.insertGroup(mapper.toEntity(myId, group))
+                group.userData.forEach { user -> dbQueries.insertGroupUser(mapper.toEntity(myId, user)) }
+            }
+        }
+        refreshFromDb(myId)
+    }
 
     /** DB 를 읽어 정렬 + 펼침상태를 입힌다. */
     private fun refreshFromDb(myId: String) {
