@@ -1,13 +1,20 @@
 package com.eunilsung.talk.data.mapper
 
+import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.model.Emoticon
+import com.eunilsung.talk.domain.model.EmpathyChat
+import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.model.ReplyChat
 import com.eunilsung.talk.domain.model.User
+import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MessageKind
 import com.eunilsung.talk.shared.api.MessagePayloadDto
+import com.eunilsung.talk.shared.api.NoticeAction
+import com.eunilsung.talk.shared.api.NoticeDto
+import com.eunilsung.talk.shared.api.ReactionDto
 import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.SendMessageRequest
 import com.eunilsung.talk.util.ChatIdUtils
@@ -40,6 +47,7 @@ class ServerChatMapper {
         return Chat.Item(
             chatID = message.id,
             chatType = chatTypeOf(message.kind),
+            title = if (message.kind == MessageKind.NOTICE) noticeActionOf(payload?.noticeAction) else "",
             chatContent = when (message.kind) {
                 MessageKind.INVITE -> inviteText(message.senderName, payload?.targetNames.orEmpty())
                 MessageKind.EXIT -> exitText(message.senderName)
@@ -59,6 +67,8 @@ class ServerChatMapper {
                 )
             } ?: ReplyChat(),
             emoticon = Emoticon(id = payload?.emoticonId.orEmpty()),
+            empathy = empathyOf(message.id, message.reactions),
+            isRecalled = message.isRecalled,
         )
     }
 
@@ -111,11 +121,52 @@ class ServerChatMapper {
         )
     }
 
+    /** 서버 공지 → 화면 공지. 공지가 없으면(내용이 비면) null. */
+    fun toNotice(notice: NoticeDto): Notice? =
+        if (notice.content.isBlank()) null else Notice(
+            noticeId = notice.id,
+            chatRoomId = notice.roomId,
+            content = notice.content,
+            ownerId = notice.ownerId,
+            ownerName = notice.ownerName,
+            ownerPosition = notice.ownerPositionName,
+            date = chatDateOf(notice.createdAtEpochMillis),
+        )
+
+    fun toBookmark(roomId: String, bookmark: BookmarkDto): Bookmark = Bookmark(
+        chatId = bookmark.messageId,
+        chatRoomId = roomId,
+        content = bookmark.content,
+        date = chatDateOf(bookmark.sentAtEpochMillis),
+        userId = bookmark.senderId,
+        userName = bookmark.senderName,
+    )
+
+    /** 공지 알림 대화는 등록인지 삭제인지를 제목 칸에 적는다. 화면이 그 값으로 문구를 고른다. */
+    private fun noticeActionOf(action: String?): String =
+        if (action == NoticeAction.DELETE) Notice.ACTION_DELETE else Notice.ACTION_ADD
+
+    /** 공감 목록 → 종류(0~5)별로 누른 사람들. */
+    private fun empathyOf(chatId: String, reactions: List<ReactionDto>): EmpathyChat {
+        if (reactions.isEmpty()) return EmpathyChat()
+        fun usersOf(kind: String) = reactions.filter { it.kind == kind }.map { User(id = it.userId, name = it.userName) }
+        return EmpathyChat(
+            chatID = chatId,
+            empathy0 = usersOf("0"),
+            empathy1 = usersOf("1"),
+            empathy2 = usersOf("2"),
+            empathy3 = usersOf("3"),
+            empathy4 = usersOf("4"),
+            empathy5 = usersOf("5"),
+        )
+    }
+
     private fun chatTypeOf(kind: String): String = when (kind) {
         MessageKind.EMOTICON -> Chat.Type.EMOTICON
         MessageKind.REPLY -> Chat.Type.REPLY
         MessageKind.INVITE -> Chat.Type.INVITE
         MessageKind.EXIT -> Chat.Type.EXIT
+        MessageKind.NOTICE -> Chat.Type.NOTICE
         else -> Chat.Type.TEXT
     }
 

@@ -66,6 +66,10 @@ data class MessageDto(
     val sentAtEpochMillis: Long = 0,
     /** 이 대화를 아직 읽지 않은 참여자 수. */
     val unreadCount: Int = 0,
+    /** 보낸 사람이 회수했다. 회수된 대화는 본문과 부가 정보가 비어서 온다. */
+    val isRecalled: Boolean = false,
+    /** 이 대화에 눌린 공감들. */
+    val reactions: List<ReactionDto> = emptyList(),
 )
 
 /** 대화 종류. 본문만으로는 답장인지 이모티콘인지 알 수 없어, 받는 쪽이 같은 화면을 그리려면 함께 와야 한다. */
@@ -77,6 +81,8 @@ object MessageKind {
     const val INVITE = "invite"
     /** 퇴장 알림. 보낸 사람이 나간 사람이다. */
     const val EXIT = "exit"
+    /** 공지 등록·삭제 알림. 본문이 공지 내용이고, 어느 쪽인지는 [MessagePayloadDto.noticeAction] 에 있다. */
+    const val NOTICE = "notice"
 
     /** 앱이 직접 보낼 수 있는 종류. 초대·퇴장은 서버만 만든다. */
     val SENDABLE = setOf(TEXT, EMOTICON, REPLY)
@@ -98,6 +104,8 @@ data class MessagePayloadDto(
     val replyText: String? = null,
     val replyEmoticonId: String? = null,
     val targetNames: List<String> = emptyList(),
+    /** 공지 알림 — [NoticeAction] 값. */
+    val noticeAction: String? = null,
 )
 
 @Serializable
@@ -140,6 +148,10 @@ data class ServerEvent(
         const val TYPE_READ = "read"
         /** 방 정보(이름·참여자)가 바뀌었다. */
         const val TYPE_ROOM = "room"
+        /** 이미 있던 대화가 바뀌었다(공감·회수). 바뀐 [message] 가 함께 온다. */
+        const val TYPE_MESSAGE_UPDATED = "message_updated"
+        /** 방의 공지가 바뀌었다. */
+        const val TYPE_NOTICE = "notice"
     }
 }
 
@@ -148,4 +160,71 @@ object ChatErrorCode {
     /** 그런 방이 없거나 내가 참여자가 아니다. 둘을 가르지 않는다 — 가르면 방이 있는지 알아낼 수 있다. */
     const val ROOM_NOT_FOUND = "room_not_found"
     const val USER_NOT_FOUND = "user_not_found"
+    /** 그런 대화가 없거나, 그 대화에 할 수 없는 일이다(남의 대화 회수, 회수된 대화에 공감 등). */
+    const val MESSAGE_NOT_FOUND = "message_not_found"
 }
+
+/** 공감 한 칸 — 누가 어떤 반응을 눌렀는지. [kind] 는 `"0"`~`"5"` 다. */
+@Serializable
+data class ReactionDto(
+    val userId: String,
+    val userName: String = "",
+    val kind: String,
+)
+
+/**
+ * 공감 누르기.
+ *
+ * 켤지 끌지를 앱이 정해 보내지 않는다. 같은 [kind] 면 끄고 다르면 갈아타는 판단을 서버가 한다 —
+ * 여러 기기가 각자 옛 상태를 근거로 계산하면 서로의 변경을 덮어쓴다.
+ */
+@Serializable
+data class ToggleReactionRequest(val messageId: String, val kind: String)
+
+@Serializable
+data class RecallRequest(val messageId: String)
+
+/** 공지 알림의 종류. */
+object NoticeAction {
+    const val ADD = "add"
+    const val DELETE = "delete"
+}
+
+/** 방에 걸린 공지. 방마다 하나뿐이다. 공지가 없으면 [content] 가 비어서 온다. */
+@Serializable
+data class NoticeDto(
+    val roomId: String,
+    val id: String = "",
+    val content: String = "",
+    val ownerId: String = "",
+    val ownerName: String = "",
+    val ownerPositionName: String = "",
+    val createdAtEpochMillis: Long = 0,
+)
+
+/** 공지 등록. 이미 공지가 있으면 바꾼다. */
+@Serializable
+data class SetNoticeRequest(val content: String)
+
+/** 공지를 등록하거나 지운 결과 — 바뀐 뒤의 공지와, 그 일을 알리는 대화. */
+@Serializable
+data class NoticeChangeResponse(
+    val notice: NoticeDto,
+    val message: MessageDto,
+)
+
+/** 책갈피 한 건. 내 것만 보인다. 대화 내용은 지금 시점의 것이다 — 회수됐으면 비어서 온다. */
+@Serializable
+data class BookmarkDto(
+    val messageId: String,
+    val content: String = "",
+    val senderId: String = "",
+    val senderName: String = "",
+    val sentAtEpochMillis: Long = 0,
+)
+
+@Serializable
+data class BookmarksResponse(val bookmarks: List<BookmarkDto> = emptyList())
+
+@Serializable
+data class BookmarkRequest(val messageId: String)

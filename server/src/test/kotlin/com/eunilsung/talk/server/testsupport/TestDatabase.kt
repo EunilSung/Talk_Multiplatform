@@ -31,7 +31,7 @@ object TestDatabase {
     fun clean() {
         dataSource.connection.use { conn ->
             conn.createStatement().use { st ->
-                st.execute("TRUNCATE chat_message, chat_room_member, chat_room, auth_token RESTART IDENTITY CASCADE")
+                st.execute("TRUNCATE chat_bookmark, chat_notice, chat_reaction, chat_message, chat_room_member, chat_room, auth_token RESTART IDENTITY CASCADE")
             }
         }
     }

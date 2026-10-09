@@ -3,9 +3,16 @@ package com.eunilsung.talk.testsupport
 import com.eunilsung.talk.data.remote.server.ServerResult
 import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.shared.api.ApiErrorCode
+import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.ChatErrorCode
 import com.eunilsung.talk.shared.api.LoginResponse
 import com.eunilsung.talk.shared.api.MessageDto
+import com.eunilsung.talk.shared.api.MessageKind
+import com.eunilsung.talk.shared.api.MessagePayloadDto
+import com.eunilsung.talk.shared.api.NoticeAction
+import com.eunilsung.talk.shared.api.NoticeChangeResponse
+import com.eunilsung.talk.shared.api.NoticeDto
+import com.eunilsung.talk.shared.api.ReactionDto
 import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.RoomMemberDto
 import com.eunilsung.talk.shared.api.SendMessageRequest
@@ -31,6 +38,11 @@ class FakeTalkServer : TalkServer {
     private var issued = 0
     private val rooms = LinkedHashMap<String, RoomDto>()
     private val messages = mutableMapOf<String, MutableList<MessageDto>>()
+    private val reactionsByMessage = mutableMapOf<String, List<ReactionDto>>()
+    private val recalledIds = mutableSetOf<String>()
+    private val notices = mutableMapOf<String, NoticeDto>()
+    private val bookmarkIds = mutableMapOf<String, MutableList<String>>()
+    private var noticeCount = 0
 
     /** 방을 하나 만들어 둔다. 참여자에는 늘 내가 들어간다. */
     fun addRoom(roomId: String, vararg others: Pair<String, String>, unreadCount: Int = 0): RoomDto {
@@ -47,7 +59,8 @@ class FakeTalkServer : TalkServer {
     fun receive(roomId: String, senderId: String, senderName: String, text: String, id: String = "$senderId-$text"): MessageDto =
         append(roomId, senderId, senderName, SendMessageRequest(id = id, content = text))
 
-    fun messagesOf(roomId: String): List<MessageDto> = messages[roomId].orEmpty()
+    /** 방의 대화 전부 — 지금의 안읽음 수·공감·회수 상태가 반영돼 있다. */
+    fun messagesOf(roomId: String): List<MessageDto> = messages[roomId].orEmpty().map { it.current() }
 
     override suspend fun login(id: String, password: String): ServerResult<LoginResponse> {
         if (!isReachable) return ServerResult.Unreachable
@@ -114,7 +127,7 @@ class FakeTalkServer : TalkServer {
         val all = messagesOf(roomId)
         val afterSeq = all.firstOrNull { it.id == afterId }?.seq
         val page = if (afterSeq != null) all.filter { it.seq > afterSeq }.take(limit) else all.takeLast(limit)
-        ServerResult.Success(page.map { it.copy(unreadCount = unreadByMessage[it.id] ?: 0) })
+        ServerResult.Success(page)
     }
 
     override suspend fun sendMessage(roomId: String, request: SendMessageRequest): ServerResult<MessageDto> =
@@ -137,6 +150,98 @@ class FakeTalkServer : TalkServer {
                 all.filter { it.seq >= fromSeq }.map { UnreadCountDto(it.id, unreadByMessage[it.id] ?: 0) }
             )
         }
+
+    override suspend fun toggleReaction(roomId: String, messageId: String, kind: String): ServerResult<MessageDto> =
+        answer("reaction:$roomId:$messageId:$kind") {
+            if (find(roomId, messageId) == null || messageId in recalledIds) return@answer messageNotFound()
+            ServerResult.Success(react(roomId, messageId, USER.id, USER.name, kind))
+        }
+
+    override suspend fun recallMessage(roomId: String, messageId: String): ServerResult<MessageDto> =
+        answer("recall:$roomId:$messageId") {
+            val message = find(roomId, messageId) ?: return@answer messageNotFound()
+            if (message.senderId != USER.id) return@answer messageNotFound()
+            ServerResult.Success(recall(roomId, messageId))
+        }
+
+    override suspend fun notice(roomId: String): ServerResult<NoticeDto> = answer("notice:$roomId") {
+        if (roomId !in rooms) roomNotFound() else ServerResult.Success(notices[roomId] ?: NoticeDto(roomId = roomId))
+    }
+
+    override suspend fun setNotice(roomId: String, content: String): ServerResult<NoticeChangeResponse> =
+        answer("setNotice:$roomId:$content") {
+            if (roomId !in rooms) roomNotFound() else ServerResult.Success(putNotice(roomId, USER.id, USER.name, content))
+        }
+
+    override suspend fun deleteNotice(roomId: String): ServerResult<NoticeChangeResponse> = answer("deleteNotice:$roomId") {
+        val previous = notices.remove(roomId) ?: return@answer roomNotFound()
+        val message = append(
+            roomId, USER.id, USER.name,
+            SendMessageRequest("notice-${++noticeCount}", previous.content, MessageKind.NOTICE, MessagePayloadDto(noticeAction = NoticeAction.DELETE)),
+        )
+        ServerResult.Success(NoticeChangeResponse(NoticeDto(roomId = roomId), message))
+    }
+
+    override suspend fun bookmarks(roomId: String): ServerResult<List<BookmarkDto>> = answer("bookmarks:$roomId") {
+        ServerResult.Success(
+            bookmarkIds[roomId].orEmpty().mapNotNull { find(roomId, it) }.map {
+                BookmarkDto(it.id, it.content, it.senderId, it.senderName, it.sentAtEpochMillis)
+            }
+        )
+    }
+
+    override suspend fun addBookmark(roomId: String, messageId: String): ServerResult<Unit> =
+        answer("addBookmark:$roomId:$messageId") {
+            if (find(roomId, messageId) == null) return@answer messageNotFound()
+            bookmarkIds.getOrPut(roomId) { mutableListOf() }.apply { if (messageId !in this) add(0, messageId) }
+            ServerResult.Success(Unit)
+        }
+
+    override suspend fun removeBookmark(roomId: String, messageId: String): ServerResult<Unit> =
+        answer("removeBookmark:$roomId:$messageId") {
+            bookmarkIds[roomId]?.remove(messageId)
+            ServerResult.Success(Unit)
+        }
+
+    /** [userId] 가 공감을 누른다(같은 종류면 끄고, 다르면 갈아탄다). 바뀐 대화를 돌려준다. */
+    fun react(roomId: String, messageId: String, userId: String, userName: String, kind: String): MessageDto {
+        val before = reactionsByMessage[messageId].orEmpty()
+        val wasSame = before.any { it.userId == userId && it.kind == kind }
+        val others = before.filterNot { it.userId == userId }
+        reactionsByMessage[messageId] = if (wasSame) others else others + ReactionDto(userId, userName, kind)
+        return find(roomId, messageId)!!
+    }
+
+    /** 대화를 회수된 상태로 만든다. 바뀐 대화를 돌려준다. */
+    fun recall(roomId: String, messageId: String): MessageDto {
+        recalledIds += messageId
+        return find(roomId, messageId)!!
+    }
+
+    /** [ownerId] 가 공지를 건다. 등록 알림 대화가 함께 생긴다. */
+    fun putNotice(roomId: String, ownerId: String, ownerName: String, content: String): NoticeChangeResponse {
+        val notice = NoticeDto(roomId, "notice-${++noticeCount}", content, ownerId, ownerName, "팀장", BASE_TIME)
+        notices[roomId] = notice
+        val message = append(
+            roomId, ownerId, ownerName,
+            SendMessageRequest("notice-msg-$noticeCount", content, MessageKind.NOTICE, MessagePayloadDto(noticeAction = NoticeAction.ADD)),
+        )
+        return NoticeChangeResponse(notice, message)
+    }
+
+    private fun find(roomId: String, messageId: String): MessageDto? = messagesOf(roomId).firstOrNull { it.id == messageId }
+
+    /** 저장된 대화에 지금의 안읽음 수·공감·회수 상태를 입힌다. */
+    private fun MessageDto.current(): MessageDto {
+        val unread = unreadByMessage[id] ?: 0
+        return if (id in recalledIds) {
+            copy(content = "", payload = null, unreadCount = unread, isRecalled = true, reactions = emptyList())
+        } else {
+            copy(unreadCount = unread, reactions = reactionsByMessage[id].orEmpty())
+        }
+    }
+
+    private fun messageNotFound() = ServerResult.Rejected(404, ChatErrorCode.MESSAGE_NOT_FOUND)
 
     private fun append(roomId: String, senderId: String, senderName: String, request: SendMessageRequest): MessageDto {
         val list = messages.getOrPut(roomId) { mutableListOf() }
