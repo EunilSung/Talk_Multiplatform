@@ -19,6 +19,7 @@ fun MainViewController() = ComposeUIViewController(
         onFocusBehavior = OnFocusBehavior.DoNothing
         parallelRendering = false
         registerIosForegroundRedraw()
+        registerAppSwitcherCover()
 
         try {
             startKoin {

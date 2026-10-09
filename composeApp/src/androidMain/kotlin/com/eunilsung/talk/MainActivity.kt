@@ -107,12 +107,24 @@ class MainActivity : FragmentActivity() {
     /** 포그라운드 복귀 시 시스템 알림 권한 상태를 미러. */
     override fun onResume() {
         super.onResume()
+        AppSwitcherSnapshotGuard.onResume(this)
         com.eunilsung.talk.data.remote.push.SystemNotificationBridge.refreshEnabled()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        AppSwitcherSnapshotGuard.onPause(this)
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        AppSwitcherSnapshotGuard.onConfigurationChanged(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        AppSwitcherSnapshotGuard.onCreate(this)
 
         val isTablet = resources.configuration.smallestScreenWidthDp >= 600
         requestedOrientation = if (isTablet) {
