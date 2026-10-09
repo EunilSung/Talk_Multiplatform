@@ -97,6 +97,28 @@ object Config {
         const val BUBBLE_ANIMATION_PLAY_COUNT: Int = 3
     }
 
+    /** 앱 전환 화면(최근 앱·앱 전환기)에 대화 내용이 그림으로 남지 않게 하는 옵션. */
+    object AppSwitcherSnapshot {
+        /**
+         * 스냅샷 가리기 on/off.
+         *  - Android 13 이상: `setRecentsScreenshotEnabled(false)`. 부작용 없음. 12 이하는 [IS_SECURE_WHILE_PAUSED_ENABLED].
+         *  - iOS: 앱이 비활성이 되는 순간 창 맨 위에 앱 첫 화면과 같은 가림막을 올리고 다시 활성이 되면 내린다.
+         */
+        const val IS_ENABLED: Boolean = true
+
+        /**
+         * Android 에서 **앱이 가려져 일시정지된 동안만** 캡처를 막는다(onPause 에 `FLAG_SECURE`, onResume 에 해제).
+         *
+         * - 12 이하: 스냅샷만 끄는 공개 API 가 없어 쓰는 차선책이다. 부분 보호다 — 제스처 내비게이션에서는 썸네일이
+         *   onPause 보다 먼저 찍힐 수 있다.
+         * - 13 이상: 권한 요청·사진 선택기·앱 선택 창 같은 반투명 시스템 화면이 앱 위에 떠 있으면 OS 가 실제 화면을
+         *   찍는다. 그 경우를 막는다.
+         *
+         * 대신 그런 창이 위에 떠 있는 동안에는 사용자 캡처가 검게 나온다. 앱이 맨 위일 때의 캡처는 그대로다.
+         */
+        const val IS_SECURE_WHILE_PAUSED_ENABLED: Boolean = true
+    }
+
     object Watermark {
         /** 화면 전역 워터마크(내 아이디 + 내 이름) 표시 on/off */
         const val IS_ENABLED: Boolean = true
