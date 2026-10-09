@@ -2,7 +2,9 @@ package com.eunilsung.talk.data.repository
 
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.data.mapper.ServerChatMapper
+import com.eunilsung.talk.data.remote.server.ServerFileStore
 import com.eunilsung.talk.data.sample.LocalChatRoomListRepositoryImpl
+import com.eunilsung.talk.testsupport.FakeFileMetadataResolver
 import com.eunilsung.talk.testsupport.FakeLoginRepository
 import com.eunilsung.talk.testsupport.FakeServerEvents
 import com.eunilsung.talk.testsupport.FakeTalkServer
@@ -33,7 +35,7 @@ class InviteRepositoryImplTest {
         val local = LocalChatRoomListRepositoryImpl(
             login, MapSettings(), ChatRoomMapper(), createTestDatabase(), seedsSampleRooms = false,
         )
-        roomList = ChatRoomListRepositoryImpl(local, server, FakeServerEvents(), login, ServerChatMapper())
+        roomList = ChatRoomListRepositoryImpl(local, server, FakeServerEvents(), login, ServerChatMapper(ServerFileStore(MapSettings(), server, FakeFileMetadataResolver())))
         repo = InviteRepositoryImpl(server, roomList)
     }
 

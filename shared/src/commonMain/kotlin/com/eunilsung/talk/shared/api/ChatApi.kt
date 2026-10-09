@@ -77,6 +77,10 @@ object MessageKind {
     const val TEXT = "text"
     const val EMOTICON = "emoticon"
     const val REPLY = "reply"
+    /** 사진·동영상·파일. 실제 파일은 먼저 올리고, 받은 id 를 [MessagePayloadDto.fileId] 에 실어 보낸다. */
+    const val IMAGE = "image"
+    const val VIDEO = "video"
+    const val FILE = "file"
     /** 초대 알림. 보낸 사람이 초대한 사람이고, 초대받은 사람은 [MessagePayloadDto.targetNames] 에 있다. */
     const val INVITE = "invite"
     /** 퇴장 알림. 보낸 사람이 나간 사람이다. */
@@ -85,7 +89,10 @@ object MessageKind {
     const val NOTICE = "notice"
 
     /** 앱이 직접 보낼 수 있는 종류. 초대·퇴장은 서버만 만든다. */
-    val SENDABLE = setOf(TEXT, EMOTICON, REPLY)
+    val SENDABLE = setOf(TEXT, EMOTICON, REPLY, IMAGE, VIDEO, FILE)
+
+    /** 파일이 딸린 종류. */
+    val WITH_FILE = setOf(IMAGE, VIDEO, FILE)
 }
 
 /**
@@ -104,6 +111,12 @@ data class MessagePayloadDto(
     val replyText: String? = null,
     val replyEmoticonId: String? = null,
     val targetNames: List<String> = emptyList(),
+    /** 올려 둔 파일의 id. */
+    val fileId: String? = null,
+    val fileName: String? = null,
+    val fileSize: Long? = null,
+    /** 사진·동영상의 `"가로:세로"`. 말풍선 틀을 미리 잡는 데 쓴다. */
+    val imageSize: String? = null,
     /** 공지 알림 — [NoticeAction] 값. */
     val noticeAction: String? = null,
 )
@@ -162,6 +175,9 @@ object ChatErrorCode {
     const val USER_NOT_FOUND = "user_not_found"
     /** 그런 대화가 없거나, 그 대화에 할 수 없는 일이다(남의 대화 회수, 회수된 대화에 공감 등). */
     const val MESSAGE_NOT_FOUND = "message_not_found"
+    /** 그런 파일이 없거나 내가 받을 수 없는 파일이다. */
+    const val FILE_NOT_FOUND = "file_not_found"
+    const val FILE_TOO_LARGE = "file_too_large"
 }
 
 /** 공감 한 칸 — 누가 어떤 반응을 눌렀는지. [kind] 는 `"0"`~`"5"` 다. */
@@ -228,3 +244,14 @@ data class BookmarksResponse(val bookmarks: List<BookmarkDto> = emptyList())
 
 @Serializable
 data class BookmarkRequest(val messageId: String)
+
+/** 올린 파일. [id] 를 대화에 실어 보내면 방 참여자들이 내려받을 수 있다. */
+@Serializable
+data class FileDto(
+    val id: String,
+    val name: String,
+    val size: Long,
+)
+
+/** 파일 한 개의 최대 크기. 앱과 서버가 같은 값을 본다. */
+const val MAX_FILE_BYTES: Long = 20L * 1024 * 1024

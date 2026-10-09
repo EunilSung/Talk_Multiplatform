@@ -2,7 +2,9 @@ package com.eunilsung.talk.server.routes
 
 import com.eunilsung.talk.server.chat.ChatHub
 import com.eunilsung.talk.server.repository.AuthTokenRepository
+import com.eunilsung.talk.server.files.FileStorage
 import com.eunilsung.talk.server.repository.ChatRepository
+import com.eunilsung.talk.server.repository.FileRepository
 import com.eunilsung.talk.server.repository.RoomChange
 import com.eunilsung.talk.shared.api.ApiError
 import com.eunilsung.talk.shared.api.ApiErrorCode
@@ -45,7 +47,13 @@ import io.ktor.websocket.close
  * 바꾸는 요청은 전부 REST 로 받는다. WebSocket 은 "무엇이 바뀌었다"를 알리는 데만 쓴다 —
  * 연결이 끊겨도 요청이 사라지지 않고, 다시 붙은 쪽은 조회만 다시 하면 같은 상태가 된다.
  */
-fun Route.chatRoutes(chats: ChatRepository, tokens: AuthTokenRepository, hub: ChatHub) {
+fun Route.chatRoutes(
+    chats: ChatRepository,
+    files: FileRepository,
+    fileStorage: FileStorage,
+    tokens: AuthTokenRepository,
+    hub: ChatHub,
+) {
 
     /** 방 참여자 모두에게 알린다. 방을 떠난 직후의 사람([alsoTo])에게도 보내야 할 때가 있다. */
     suspend fun notify(roomId: String, type: String, change: RoomChange? = null, alsoTo: String? = null) {
@@ -152,6 +160,12 @@ fun Route.chatRoutes(chats: ChatRepository, tokens: AuthTokenRepository, hub: Ch
                 val userId = call.callerUserId(tokens) ?: return@post
                 val request = call.receiveOrNull<SendMessageRequest>()
                 if (request == null || !request.isValid()) return@post call.respondBadRequest()
+                /** 파일 대화는 이 방에 올라온 파일만 가리킬 수 있다. 남의 방 파일 id 를 끼워 넣으면 그 파일이 새어 나간다. */
+                if (request.kind in MessageKind.WITH_FILE &&
+                    !db { files.belongsTo(request.payload?.fileId.orEmpty(), call.roomId()) }
+                ) {
+                    return@post call.respondBadRequest()
+                }
                 val message = db {
                     chats.send(call.roomId(), userId, request.id, request.kind, request.content, request.payload)
                 } ?: return@post call.respondRoomNotFound()
@@ -174,9 +188,17 @@ fun Route.chatRoutes(chats: ChatRepository, tokens: AuthTokenRepository, hub: Ch
             post("/recall") {
                 val userId = call.callerUserId(tokens) ?: return@post
                 val request = call.receiveOrNull<RecallRequest>() ?: return@post call.respondBadRequest()
+                val fileId = db { chats.fileIdOf(call.roomId(), request.messageId) }
                 val message = db { chats.recall(call.roomId(), userId, request.messageId) }
                     ?: return@post call.respondMessageNotFound()
                 notifyUpdated(message)
+                /** 회수한 대화의 파일은 지운다. 본문만 비우고 파일을 남기면 회수한 것이 아니다. */
+                fileId?.let { id ->
+                    db {
+                        files.delete(id)
+                        fileStorage.delete(id)
+                    }
+                }
                 /** 마지막 대화가 회수되면 목록의 미리보기도 바뀌어야 한다. */
                 notify(message.roomId, ServerEvent.TYPE_ROOM)
                 call.respond(message)
@@ -282,7 +304,7 @@ private fun SendMessageRequest.isValid(): Boolean =
     id.isNotBlank() && id.length <= MAX_ID_LENGTH &&
         kind in MessageKind.SENDABLE &&
         content.length <= MAX_CONTENT_LENGTH &&
-        (content.isNotBlank() || !payload?.emoticonId.isNullOrBlank())
+        (content.isNotBlank() || !payload?.emoticonId.isNullOrBlank() || kind in MessageKind.WITH_FILE)
 
 private fun ApplicationCall.roomId(): String = parameters["roomId"].orEmpty()
 

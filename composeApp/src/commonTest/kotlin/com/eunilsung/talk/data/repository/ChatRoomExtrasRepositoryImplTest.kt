@@ -1,10 +1,9 @@
 package com.eunilsung.talk.data.repository
 
-import com.eunilsung.talk.data.local.FileMetadata
-import com.eunilsung.talk.data.local.FileMetadataResolver
 import com.eunilsung.talk.data.mapper.ChatMapper
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.data.mapper.ServerChatMapper
+import com.eunilsung.talk.data.remote.server.ServerFileStore
 import com.eunilsung.talk.data.sample.ChatSenderOverride
 import com.eunilsung.talk.data.sample.LocalChatRoomListRepositoryImpl
 import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
@@ -12,6 +11,7 @@ import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.shared.api.ServerEvent
+import com.eunilsung.talk.testsupport.FakeFileMetadataResolver
 import com.eunilsung.talk.testsupport.FakeLoginRepository
 import com.eunilsung.talk.testsupport.FakeServerEvents
 import com.eunilsung.talk.testsupport.FakeTalkServer
@@ -40,15 +40,10 @@ class ChatRoomExtrasRepositoryImplTest {
     private lateinit var events: FakeServerEvents
     private lateinit var repo: ChatRoomRepositoryImpl
 
-    private class NoopFileMetadataResolver : FileMetadataResolver {
-        override suspend fun resolve(path: String) = FileMetadata("f.txt", ".txt", "", 1)
-        override suspend fun readBytes(path: String): ByteArray? = null
-        override suspend fun writeCacheFile(filename: String, bytes: ByteArray): String? = null
-        override suspend fun saveDownloadedFile(filename: String, bytes: ByteArray): String? = null
-        override suspend fun saveToGallery(filename: String, bytes: ByteArray): String? = null
-        override suspend fun saveVideoToGallery(filename: String, bytes: ByteArray): String? = null
-        override suspend fun findDownloadedFile(filename: String): String? = null
-    }
+    /** 기기의 파일과, 어떤 서버 파일이 기기 어디에 있는지의 기록. 저장소를 새로 만들어도(앱 재시작) 남는다. */
+    private val deviceFiles = FakeFileMetadataResolver()
+    private val fileSettings = MapSettings()
+
 
     @BeforeTest
     fun setUp() {
@@ -74,12 +69,13 @@ class ChatRoomExtrasRepositoryImplTest {
             chatMapper = ChatMapper(),
             chatRoomMapper = chatRoomMapper,
             chatRoomListRepository = localList,
-            fileMetadataResolver = NoopFileMetadataResolver(),
+            fileMetadataResolver = deviceFiles,
             senderOverride = ChatSenderOverride(),
             database = database,
             seedsSampleChats = false,
         )
-        return ChatRoomRepositoryImpl(local, server, events, ServerChatMapper(), database)
+        val fileStore = ServerFileStore(fileSettings, server, deviceFiles)
+        return ChatRoomRepositoryImpl(local, server, events, ServerChatMapper(fileStore), fileStore, deviceFiles, database)
     }
 
     private suspend fun chats(): List<Chat.Item> = repo.getChats(roomId).first()

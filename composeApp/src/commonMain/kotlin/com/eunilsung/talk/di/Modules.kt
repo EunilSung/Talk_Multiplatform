@@ -7,6 +7,7 @@ import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.data.remote.server.TalkServerClient
 import com.eunilsung.talk.data.mapper.ServerChatMapper
 import com.eunilsung.talk.data.remote.server.ServerEvents
+import com.eunilsung.talk.data.remote.server.ServerFileStore
 import com.eunilsung.talk.data.remote.server.TalkSocket
 import com.eunilsung.talk.data.repository.ChatRoomListRepositoryImpl
 import com.eunilsung.talk.data.repository.ChatRoomRepositoryImpl
@@ -83,6 +84,7 @@ val appModule = module {
     single { AuthTokenStore(get()) }
     single<TalkServer> { TalkServerClient(get(), get()) }
     single<ServerEvents> { TalkSocket(get(), get()) }
+    singleOf(::ServerFileStore)
     singleOf(::ServerChatMapper)
     /** 서버 주소가 있으면 서버에, 없으면 TestAccounts(test1~test10 / 1234) 로 인증. */
     single<LoginRepository> {
@@ -141,7 +143,7 @@ val appModule = module {
     }
     /** 서버 주소가 있으면 서버와 주고받고, 로컬 구현은 그 밑에서 캐시와 미연동 기능을 맡는다. */
     single<ChatRoomRepository> {
-        if (Config.Server.IS_ENABLED) ChatRoomRepositoryImpl(get(), get(), get(), get(), get())
+        if (Config.Server.IS_ENABLED) ChatRoomRepositoryImpl(get(), get(), get(), get(), get(), get(), get())
         else get<LocalChatRoomRepositoryImpl>()
     }
     singleOf(::GetChatsUseCase)

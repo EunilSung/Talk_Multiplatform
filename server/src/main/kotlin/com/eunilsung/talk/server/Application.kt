@@ -4,7 +4,10 @@ import com.eunilsung.talk.server.config.ServerConfig
 import com.eunilsung.talk.server.db.Database
 import com.eunilsung.talk.server.chat.ChatHub
 import com.eunilsung.talk.server.repository.AuthTokenRepository
+import com.eunilsung.talk.server.files.FileStorage
 import com.eunilsung.talk.server.repository.ChatRepository
+import com.eunilsung.talk.server.repository.FileRepository
+import com.eunilsung.talk.server.routes.fileRoutes
 import com.eunilsung.talk.server.routes.chatRoutes
 import com.eunilsung.talk.server.repository.UserRepository
 import com.eunilsung.talk.server.routes.authRoutes
@@ -27,6 +30,7 @@ import io.ktor.server.websocket.pingPeriod
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
+import java.io.File
 import javax.sql.DataSource
 import kotlin.time.Duration.Companion.seconds
 
@@ -38,13 +42,13 @@ fun main() {
 /** 운영·로컬 진입점 — 설정대로 DB 에 붙고 마이그레이션을 돌린 뒤 [module] 을 올린다. */
 fun Application.module(config: ServerConfig) {
     LoggerFactory.getLogger("Application").info(LocalAddresses.describe(config.port))
-    module(Database.connect(config.db))
+    module(Database.connect(config.db), FileStorage(File(config.filesDirectory)))
 }
 
 /**
- * 서버 본체. 이미 준비된 [dataSource] 를 받는다 — 테스트가 자기 DB 를 끼워 넣는 자리다.
+ * 서버 본체. 이미 준비된 [dataSource] 와 [fileStorage] 를 받는다 — 테스트가 자기 DB 와 임시 폴더를 끼워 넣는 자리다.
  */
-fun Application.module(dataSource: DataSource) {
+fun Application.module(dataSource: DataSource, fileStorage: FileStorage) {
     val log = LoggerFactory.getLogger("Application")
 
     install(ContentNegotiation) { json(ServerJson) }
@@ -63,12 +67,14 @@ fun Application.module(dataSource: DataSource) {
     val tokens = AuthTokenRepository(dataSource)
     val chats = ChatRepository(dataSource)
     val chatHub = ChatHub()
+    val files = FileRepository(dataSource)
     SeedAccounts.ensure(users)
 
     routing {
         healthRoutes(dataSource)
         authRoutes(users, tokens)
-        chatRoutes(chats, tokens, chatHub)
+        chatRoutes(chats, files, fileStorage, tokens, chatHub)
+        fileRoutes(files, fileStorage, tokens)
     }
 }
 

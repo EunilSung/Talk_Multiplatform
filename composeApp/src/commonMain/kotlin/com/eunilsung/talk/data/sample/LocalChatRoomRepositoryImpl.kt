@@ -222,15 +222,22 @@ class LocalChatRoomRepositoryImpl(
             reload(myId, chatRoomId)
         }
 
-    override suspend fun sendFile(chatRoomId: String, path: String) =
+    override suspend fun sendFile(chatRoomId: String, path: String) {
+        val chat = buildFileChat(chatRoomId, path, Chat.Statue.COMPLETE) ?: return
+        appendMyChat(chatRoomId, chat)
+        Log.message("[Chat/Local] sent file '${chat.originalFileName}' (${chat.chatType}) in $chatRoomId")
+    }
+
+    /** 내가 고른 파일로 대화를 [statue] 상태로 만든다. 저장하지는 않는다. 파일 정보를 읽지 못하면 null. */
+    internal suspend fun buildFileChat(chatRoomId: String, path: String, statue: String): Chat.Item? =
         withContext(Dispatchers.Default) {
             val myId = Config.MyInfo.userId
-            if (myId.isBlank() || path.isBlank()) return@withContext
+            if (myId.isBlank() || path.isBlank()) return@withContext null
 
             // 메타데이터에서 실제 표시명을 얻는다.
             val meta = runCatching { fileMetadataResolver.resolve(path) }.getOrElse {
                 Log.message("[Chat/Local] sendFile: metadata resolve failed: ${it.message}")
-                return@withContext
+                return@withContext null
             }
             val name = meta.originalName.ifBlank { "file" }
             val chatType = Chat.typeFromPath(name.takeIf { it.contains('.') } ?: path)
@@ -246,7 +253,7 @@ class LocalChatRoomRepositoryImpl(
                 path
             }
 
-            val chat = Chat.Item(
+            Chat.Item(
                 chatID = chatId,
                 chatType = chatType,
                 // title 은 요약 자리.
@@ -257,7 +264,7 @@ class LocalChatRoomRepositoryImpl(
                 },
                 // 파일 말풍선 부제 — 이미지는 "(사진)", 그 외는 파일 크기.
                 chatContent = if (chatType == Chat.Type.IMAGE) "(사진)" else formatFileSize(meta.sizeBytes),
-                chatStatue = Chat.Statue.COMPLETE,
+                chatStatue = statue,
                 date = nowChatDate(),
                 unReadCount = "0",
                 user = sender,
@@ -267,8 +274,6 @@ class LocalChatRoomRepositoryImpl(
                 // imagePath — 파일 상세 시트가 열기/다운로드에 쓰는 값(비면 시트가 안 뜬다).
                 imagePath = storedPath,
             )
-            appendMyChat(chatRoomId, chat)
-            Log.message("[Chat/Local] sent file '$name' ($chatType) in $chatRoomId")
         }
 
     override suspend fun sendEmpathy(

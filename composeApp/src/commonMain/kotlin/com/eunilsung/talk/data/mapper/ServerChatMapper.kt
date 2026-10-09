@@ -8,7 +8,9 @@ import com.eunilsung.talk.domain.model.EmpathyChat
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.model.ReplyChat
 import com.eunilsung.talk.domain.model.User
+import com.eunilsung.talk.data.remote.server.ServerFileStore
 import com.eunilsung.talk.shared.api.BookmarkDto
+import com.eunilsung.talk.shared.api.FileDto
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MessageKind
 import com.eunilsung.talk.shared.api.MessagePayloadDto
@@ -20,6 +22,7 @@ import com.eunilsung.talk.shared.api.SendMessageRequest
 import com.eunilsung.talk.util.ChatIdUtils
 import com.eunilsung.talk.util.UserListCodec
 import com.eunilsung.talk.util.chatDisplayText
+import com.eunilsung.talk.util.formatFileSize
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -34,7 +37,7 @@ import org.jetbrains.compose.resources.getString
  * 화면과 로컬 DB 는 도메인 모델([Chat.Item], [ChatRoom.Item])만 안다. 서버가 주는 모양이 바뀌어도
  * 그 영향이 여기서 멈춘다.
  */
-class ServerChatMapper {
+class ServerChatMapper(private val fileStore: ServerFileStore) {
 
     /**
      * 서버 대화 → 화면 대화.
@@ -51,6 +54,7 @@ class ServerChatMapper {
             chatContent = when (message.kind) {
                 MessageKind.INVITE -> inviteText(message.senderName, payload?.targetNames.orEmpty())
                 MessageKind.EXIT -> exitText(message.senderName)
+                MessageKind.VIDEO, MessageKind.FILE -> formatFileSize(payload?.fileSize ?: -1)
                 else -> message.content
             },
             chatStatue = Chat.Statue.COMPLETE,
@@ -69,6 +73,10 @@ class ServerChatMapper {
             emoticon = Emoticon(id = payload?.emoticonId.orEmpty()),
             empathy = empathyOf(message.id, message.reactions),
             isRecalled = message.isRecalled,
+            imagePath = localPathOf(payload),
+            localPath = localPathOf(payload),
+            imageSize = payload?.imageSize.orEmpty(),
+            originalFileName = payload?.fileName.orEmpty(),
         )
     }
 
@@ -91,6 +99,22 @@ class ServerChatMapper {
             ),
         )
     }
+
+    /** 내가 올린 파일의 대화 → 서버로 보낼 요청. 파일은 [file] 로 이미 올라가 있어야 한다. */
+    fun toFileRequest(chat: Chat.Item, file: FileDto): SendMessageRequest = SendMessageRequest(
+        id = chat.chatID,
+        kind = messageKindOf(chat.chatType),
+        payload = MessagePayloadDto(
+            fileId = file.id,
+            fileName = file.name,
+            fileSize = file.size,
+            imageSize = chat.imageSize.takeIf { it.isNotBlank() },
+        ),
+    )
+
+    /** 이 대화의 파일이 기기 어디에 있는지. 파일 대화가 아니거나 아직 받지 않았으면 빈 문자열. */
+    private fun localPathOf(payload: MessagePayloadDto?): String =
+        payload?.fileId?.let(fileStore::localPath).orEmpty()
 
     /**
      * 서버 방 → 목록의 방.
@@ -167,12 +191,18 @@ class ServerChatMapper {
         MessageKind.INVITE -> Chat.Type.INVITE
         MessageKind.EXIT -> Chat.Type.EXIT
         MessageKind.NOTICE -> Chat.Type.NOTICE
+        MessageKind.IMAGE -> Chat.Type.IMAGE
+        MessageKind.VIDEO -> Chat.Type.VIDEO
+        MessageKind.FILE -> Chat.Type.FILE
         else -> Chat.Type.TEXT
     }
 
     private fun messageKindOf(chatType: String): String = when (chatType) {
         Chat.Type.EMOTICON -> MessageKind.EMOTICON
         Chat.Type.REPLY -> MessageKind.REPLY
+        Chat.Type.IMAGE -> MessageKind.IMAGE
+        Chat.Type.VIDEO -> MessageKind.VIDEO
+        Chat.Type.FILE -> MessageKind.FILE
         else -> MessageKind.TEXT
     }
 

@@ -5,6 +5,7 @@ import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.shared.api.ApiErrorCode
 import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.ChatErrorCode
+import com.eunilsung.talk.shared.api.FileDto
 import com.eunilsung.talk.shared.api.LoginResponse
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MessageKind
@@ -43,6 +44,8 @@ class FakeTalkServer : TalkServer {
     private val notices = mutableMapOf<String, NoticeDto>()
     private val bookmarkIds = mutableMapOf<String, MutableList<String>>()
     private var noticeCount = 0
+    /** 올라온 파일들 — 파일 id → 바이트. */
+    val uploads = mutableMapOf<String, ByteArray>()
 
     /** 방을 하나 만들어 둔다. 참여자에는 늘 내가 들어간다. */
     fun addRoom(roomId: String, vararg others: Pair<String, String>, unreadCount: Int = 0): RoomDto {
@@ -202,6 +205,32 @@ class FakeTalkServer : TalkServer {
             bookmarkIds[roomId]?.remove(messageId)
             ServerResult.Success(Unit)
         }
+
+    override suspend fun uploadFile(roomId: String, fileName: String, bytes: ByteArray): ServerResult<FileDto> =
+        answer("upload:$roomId:$fileName") {
+            if (roomId !in rooms) return@answer roomNotFound()
+            val file = FileDto("file-${uploads.size + 1}", fileName, bytes.size.toLong())
+            uploads[file.id] = bytes
+            ServerResult.Success(file)
+        }
+
+    override suspend fun downloadFile(fileId: String): ServerResult<ByteArray> = answer("download:$fileId") {
+        uploads[fileId]?.let { ServerResult.Success(it) } ?: ServerResult.Rejected(404, ChatErrorCode.FILE_NOT_FOUND)
+    }
+
+    /** 누군가 파일을 올리고 그 파일의 대화를 보낸다. 돌려준 값을 알림으로 흘려보낼 수 있다. */
+    fun receiveFile(roomId: String, senderId: String, senderName: String, kind: String, fileName: String, bytes: ByteArray): MessageDto {
+        val fileId = "file-${uploads.size + 1}"
+        uploads[fileId] = bytes
+        return append(
+            roomId, senderId, senderName,
+            SendMessageRequest(
+                id = "$senderId-$fileName",
+                kind = kind,
+                payload = MessagePayloadDto(fileId = fileId, fileName = fileName, fileSize = bytes.size.toLong(), imageSize = "30:40"),
+            ),
+        )
+    }
 
     /** [userId] 가 공감을 누른다(같은 종류면 끄고, 다르면 갈아탄다). 바뀐 대화를 돌려준다. */
     fun react(roomId: String, messageId: String, userId: String, userName: String, kind: String): MessageDto {

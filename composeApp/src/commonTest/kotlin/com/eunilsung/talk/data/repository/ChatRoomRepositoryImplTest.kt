@@ -1,16 +1,16 @@
 package com.eunilsung.talk.data.repository
 
-import com.eunilsung.talk.data.local.FileMetadata
-import com.eunilsung.talk.data.local.FileMetadataResolver
 import com.eunilsung.talk.data.mapper.ChatMapper
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.data.mapper.ServerChatMapper
+import com.eunilsung.talk.data.remote.server.ServerFileStore
 import com.eunilsung.talk.data.sample.ChatSenderOverride
 import com.eunilsung.talk.data.sample.LocalChatRoomListRepositoryImpl
 import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.shared.api.ServerEvent
+import com.eunilsung.talk.testsupport.FakeFileMetadataResolver
 import com.eunilsung.talk.testsupport.FakeLoginRepository
 import com.eunilsung.talk.testsupport.FakeServerEvents
 import com.eunilsung.talk.testsupport.FakeTalkServer
@@ -42,15 +42,10 @@ class ChatRoomRepositoryImplTest {
     private lateinit var events: FakeServerEvents
     private lateinit var repo: ChatRoomRepositoryImpl
 
-    private class NoopFileMetadataResolver : FileMetadataResolver {
-        override suspend fun resolve(path: String) = FileMetadata("f.txt", ".txt", "", 1)
-        override suspend fun readBytes(path: String): ByteArray? = null
-        override suspend fun writeCacheFile(filename: String, bytes: ByteArray): String? = null
-        override suspend fun saveDownloadedFile(filename: String, bytes: ByteArray): String? = null
-        override suspend fun saveToGallery(filename: String, bytes: ByteArray): String? = null
-        override suspend fun saveVideoToGallery(filename: String, bytes: ByteArray): String? = null
-        override suspend fun findDownloadedFile(filename: String): String? = null
-    }
+    /** 기기의 파일과, 어떤 서버 파일이 기기 어디에 있는지의 기록. 저장소를 새로 만들어도(앱 재시작) 남는다. */
+    private val deviceFiles = FakeFileMetadataResolver()
+    private val fileSettings = MapSettings()
+
 
     @BeforeTest
     fun setUp() {
@@ -74,12 +69,13 @@ class ChatRoomRepositoryImplTest {
             chatMapper = ChatMapper(),
             chatRoomMapper = chatRoomMapper,
             chatRoomListRepository = localList,
-            fileMetadataResolver = NoopFileMetadataResolver(),
+            fileMetadataResolver = deviceFiles,
             senderOverride = ChatSenderOverride(),
             database = database,
             seedsSampleChats = false,
         )
-        return ChatRoomRepositoryImpl(local, server, events, ServerChatMapper(), database)
+        val fileStore = ServerFileStore(fileSettings, server, deviceFiles)
+        return ChatRoomRepositoryImpl(local, server, events, ServerChatMapper(fileStore), fileStore, deviceFiles, database)
     }
 
     private suspend fun chats(): List<Chat.Item> = repo.getChats(roomId).first()
@@ -246,7 +242,7 @@ class ChatRoomRepositoryImplTest {
         val local = LocalChatRoomRepositoryImpl(
             ChatMapper(), ChatRoomMapper(),
             LocalChatRoomListRepositoryImpl(FakeLoginRepository(), MapSettings(), ChatRoomMapper(), database, seedsSampleRooms = false),
-            NoopFileMetadataResolver(), ChatSenderOverride(), database, seedsSampleChats = false,
+            deviceFiles, ChatSenderOverride(), database, seedsSampleChats = false,
         )
         local.appendMyChat(roomId, local.buildTextChat(roomId, "보내다 꺼짐", null, null, Chat.Statue.SENDING))
 
@@ -268,5 +264,85 @@ class ChatRoomRepositoryImplTest {
 
         awaitUntil { left == listOf(roomId) }
         collector.cancel()
+    }
+
+    @Test
+    fun 사진을_보내면_올린_뒤_대화로_가고_내_말풍선은_원본을_그대로_쓴다() = runTest {
+        val photo = ByteArray(300) { it.toByte() }
+        deviceFiles.put("/gallery/trip.jpg", photo)
+        repo.fetchChats(roomId)
+
+        repo.sendFile(roomId, "/gallery/trip.jpg")
+
+        val stored = server.messagesOf(roomId).single()
+        assertEquals("image", stored.kind)
+        assertEquals("trip.jpg", stored.payload?.fileName)
+        assertEquals(300L, stored.payload?.fileSize)
+        assertEquals(FakeFileMetadataResolver.IMAGE_SIZE, stored.payload?.imageSize)
+        assertTrue(photo.contentEquals(server.uploads[stored.payload?.fileId]))
+        val mine = chats().single()
+        assertEquals(Chat.Statue.COMPLETE, mine.chatStatue)
+        assertEquals(Chat.Type.IMAGE, mine.chatType)
+        assertEquals("/gallery/trip.jpg", mine.imagePath)
+        assertTrue(server.calls.none { it.startsWith("download") })
+    }
+
+    @Test
+    fun 파일을_올리지_못하면_실패로_남고_다시_보내면_올라간다() = runTest {
+        deviceFiles.put("/docs/report.pdf", ByteArray(64))
+        repo.fetchChats(roomId)
+        server.isReachable = false
+        repo.sendFile(roomId, "/docs/report.pdf")
+        val failed = chats().single()
+        assertEquals(Chat.Statue.FAIL, failed.chatStatue)
+        assertEquals(Chat.Type.FILE, failed.chatType)
+
+        server.isReachable = true
+        repo.resendFailedChat(roomId, failed.chatID)
+
+        assertEquals(Chat.Statue.COMPLETE, chats().single().chatStatue)
+        assertEquals(listOf(failed.chatID), server.messagesOf(roomId).map { it.id })
+        assertEquals("file", server.messagesOf(roomId).single().kind)
+    }
+
+    @Test
+    fun 받은_사진은_내려받아_기기_경로로_말풍선에_연결된다() = runTest {
+        val photo = ByteArray(128) { 7 }
+        val message = server.receiveFile(roomId, "test2", "이서연", "image", "cat.png", photo)
+
+        repo.fetchChats(roomId)
+
+        awaitUntil { chats().single().imagePath.isNotBlank() }
+        val shown = chats().single()
+        assertEquals(Chat.Type.IMAGE, shown.chatType)
+        assertEquals("cat.png", shown.originalFileName)
+        assertEquals("30:40", shown.imageSize)
+        assertTrue(photo.contentEquals(deviceFiles.files[shown.imagePath]))
+        assertEquals(message.id, shown.chatID)
+    }
+
+    @Test
+    fun 한_번_받은_파일은_다시_켜도_또_받지_않는다() = runTest {
+        server.receiveFile(roomId, "test2", "이서연", "file", "spec.docx", ByteArray(32))
+        repo.fetchChats(roomId)
+        awaitUntil { chats().single().imagePath.isNotBlank() }
+        val firstPath = chats().single().imagePath
+
+        repo = newRepository()
+        repo.fetchChats(roomId)
+
+        assertEquals(firstPath, chats().single().imagePath)
+        assertEquals(1, server.calls.count { it.startsWith("download") })
+    }
+
+    @Test
+    fun 알림으로_온_파일_대화도_내려받는다() = runTest {
+        repo.fetchChats(roomId)
+
+        val message = server.receiveFile(roomId, "test2", "이서연", "video", "clip.mp4", ByteArray(256))
+        events.push(ServerEvent(ServerEvent.TYPE_MESSAGE, roomId, message))
+
+        awaitUntil { chats().singleOrNull()?.imagePath?.isNotBlank() == true }
+        assertEquals(Chat.Type.VIDEO, chats().single().chatType)
     }
 }

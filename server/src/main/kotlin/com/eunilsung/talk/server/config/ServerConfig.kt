@@ -8,6 +8,8 @@ package com.eunilsung.talk.server.config
 data class ServerConfig(
     val port: Int,
     val db: DbConfig,
+    /** 올라온 파일을 두는 폴더. 컨테이너에서는 볼륨을 여기에 붙여야 재배포해도 파일이 남는다. */
+    val filesDirectory: String,
 ) {
     companion object {
         const val DEFAULT_PORT = 8080
@@ -20,6 +22,7 @@ data class ServerConfig(
                 password = env("DB_PASSWORD") ?: "talk_local_dev",
                 poolSize = env("DB_POOL_SIZE")?.toIntOrNull() ?: DbConfig.DEFAULT_POOL_SIZE,
             ),
+            filesDirectory = env("FILES_DIR") ?: "files",
         )
 
         private fun env(name: String): String? = System.getenv(name)?.takeIf { it.isNotBlank() }

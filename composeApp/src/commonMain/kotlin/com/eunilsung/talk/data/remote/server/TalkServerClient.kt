@@ -6,6 +6,7 @@ import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.BookmarkRequest
 import com.eunilsung.talk.shared.api.BookmarksResponse
 import com.eunilsung.talk.shared.api.CreateRoomRequest
+import com.eunilsung.talk.shared.api.FileDto
 import com.eunilsung.talk.shared.api.InviteRequest
 import com.eunilsung.talk.shared.api.LoginRequest
 import com.eunilsung.talk.shared.api.LoginResponse
@@ -37,6 +38,7 @@ import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.readRawBytes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
@@ -134,6 +136,12 @@ interface TalkServer {
     suspend fun addBookmark(roomId: String, messageId: String): ServerResult<Unit>
 
     suspend fun removeBookmark(roomId: String, messageId: String): ServerResult<Unit>
+
+    /** 방에 파일을 올린다. 받은 id 를 대화에 실어 보내야 상대에게 보인다. */
+    suspend fun uploadFile(roomId: String, fileName: String, bytes: ByteArray): ServerResult<FileDto>
+
+    /** 파일 바이트를 받는다. 그 방의 참여자만 받을 수 있다. */
+    suspend fun downloadFile(fileId: String): ServerResult<ByteArray>
 }
 
 class TalkServerClient(
@@ -304,6 +312,30 @@ class TalkServerClient(
             }
         }
 
+    override suspend fun uploadFile(roomId: String, fileName: String, bytes: ByteArray): ServerResult<FileDto> =
+        request("파일 올리기", FileDto.serializer(), FILE_TIMEOUT_MS) {
+            httpClient.post("${roomUrl(roomId)}/files") {
+                auth()
+                parameter("name", fileName)
+                contentType(ContentType.Application.OctetStream)
+                setBody(bytes)
+            }
+        }
+
+    override suspend fun downloadFile(fileId: String): ServerResult<ByteArray> {
+        val response = runCatching {
+            withTimeoutOrNull(FILE_TIMEOUT_MS) {
+                val response = httpClient.get("$baseUrl/files/${fileId.encodeURLPathPart()}") { auth() }
+                response to if (response.status.isSuccess()) response.readRawBytes() else ByteArray(0)
+            }
+        }.getOrNull() ?: return ServerResult.Unreachable
+        return if (response.first.status.isSuccess()) {
+            ServerResult.Success(response.second)
+        } else {
+            rejected("파일 받기", response.first, "")
+        }
+    }
+
     private fun roomUrl(roomId: String): String = "$baseUrl/rooms/${roomId.encodeURLPathPart()}"
 
     /**
@@ -326,9 +358,10 @@ class TalkServerClient(
     private suspend fun <T> request(
         label: String,
         serializer: KSerializer<T>,
+        timeoutMs: Long = REQUEST_TIMEOUT_MS,
         call: suspend () -> HttpResponse,
     ): ServerResult<T> {
-        val (response, text) = send(label, call) ?: return ServerResult.Unreachable
+        val (response, text) = send(label, timeoutMs, call) ?: return ServerResult.Unreachable
         if (!response.status.isSuccess()) return rejected(label, response, text)
         val value = runCatching { json.decodeFromString(serializer, text) }.getOrNull()
         if (value == null) {
@@ -340,14 +373,18 @@ class TalkServerClient(
 
     /** 본문 없이 성공 여부만 돌아오는 요청. */
     private suspend fun command(label: String, call: suspend () -> HttpResponse): ServerResult<Unit> {
-        val (response, text) = send(label, call) ?: return ServerResult.Unreachable
+        val (response, text) = send(label, call = call) ?: return ServerResult.Unreachable
         return if (response.status.isSuccess()) ServerResult.Success(Unit) else rejected(label, response, text)
     }
 
     /** 요청을 보내고 상태와 본문을 받는다. 닿지 못하면 null. */
-    private suspend fun send(label: String, call: suspend () -> HttpResponse): Pair<HttpResponse, String>? =
+    private suspend fun send(
+        label: String,
+        timeoutMs: Long = REQUEST_TIMEOUT_MS,
+        call: suspend () -> HttpResponse,
+    ): Pair<HttpResponse, String>? =
         runCatching {
-            withTimeoutOrNull(REQUEST_TIMEOUT_MS) {
+            withTimeoutOrNull(timeoutMs) {
                 val response = call()
                 response to response.bodyAsText()
             }
@@ -373,5 +410,7 @@ class TalkServerClient(
 
     private companion object {
         const val REQUEST_TIMEOUT_MS = 10_000L
+        /** 파일은 크기만큼 오래 걸린다. 일반 요청과 같은 제한을 걸면 큰 파일이 늘 끊긴다. */
+        const val FILE_TIMEOUT_MS = 120_000L
     }
 }
