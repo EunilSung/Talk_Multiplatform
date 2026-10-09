@@ -25,11 +25,13 @@ object TestDatabase {
      *
      * 표는 남기고 내용만 지운다 — 마이그레이션을 매번 다시 돌리는 것보다 빠르다.
      * 표를 추가하면 여기에도 넣는다.
+     *
+     * 시연용 계정(app_user)은 남긴다. 비밀번호 해시가 일부러 느려서 매번 다시 만들면 테스트가 늘어진다.
      */
     fun clean() {
         dataSource.connection.use { conn ->
             conn.createStatement().use { st ->
-                st.execute("TRUNCATE auth_token, app_user RESTART IDENTITY CASCADE")
+                st.execute("TRUNCATE auth_token RESTART IDENTITY CASCADE")
             }
         }
     }

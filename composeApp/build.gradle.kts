@@ -1,5 +1,6 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -11,6 +12,48 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.googleServices)
     alias(libs.plugins.firebaseCrashlytics)
+}
+
+/**
+ * 서버 주소를 `local.properties` 의 `server.baseUrl` 에서 읽는다.
+ *
+ * 비워 두면 서버 없이 로컬 데이터만으로 도는 모드로 빌드된다. 값을 넣으면 그 서버에 붙는다.
+ *   - Android 에뮬레이터: http://10.0.2.2:8080
+ *   - iOS 시뮬레이터:     http://localhost:8080
+ */
+val serverBaseUrlProperty: String = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+}.getProperty("server.baseUrl").orEmpty().trim()
+
+/**
+ * configuration cache 가 켜져 있어 빌드 스크립트 객체를 붙잡는 doLast 람다는 쓸 수 없다.
+ * 입력과 출력을 프로퍼티로 선언한 타입 태스크로 만든다.
+ */
+abstract class GenerateServerConfigTask : DefaultTask() {
+    @get:Input
+    abstract val serverBaseUrl: Property<String>
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun generate() {
+        val directory = outputDir.get().asFile.resolve("com/eunilsung/talk/data/remote/server")
+        directory.mkdirs()
+        directory.resolve("ServerBuildConfig.kt").writeText(
+            """
+            package com.eunilsung.talk.data.remote.server
+
+            /** local.properties 의 server.baseUrl 에서 빌드 시점에 생성됨. 직접 수정하지 말 것. */
+            internal const val SERVER_BASE_URL: String = "${serverBaseUrl.get()}"
+            """.trimIndent() + "\n"
+        )
+    }
+}
+
+val generateServerConfig by tasks.registering(GenerateServerConfigTask::class) {
+    serverBaseUrl.set(serverBaseUrlProperty)
+    outputDir.set(layout.buildDirectory.dir("generated/serverConfig/commonMain/kotlin"))
 }
 
 kotlin {
@@ -47,7 +90,12 @@ kotlin {
             implementation(libs.shortcut.badger)   // 런처 앱아이콘 숫자 배지
             implementation(libs.androidx.biometric) // 지문/얼굴 BiometricPrompt
         }
+        commonMain {
+            kotlin.srcDir(generateServerConfig)
+        }
         commonMain.dependencies {
+            implementation(projects.shared)
+
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
