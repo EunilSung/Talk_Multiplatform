@@ -10,6 +10,13 @@ data class ServerConfig(
     val db: DbConfig,
     /** 올라온 파일을 두는 폴더. 컨테이너에서는 볼륨을 여기에 붙여야 재배포해도 파일이 남는다. */
     val filesDirectory: String,
+    /**
+     * Firebase 서비스 계정 키(JSON 본문). 비면 푸시를 보내지 않고 나머지는 그대로 동작한다.
+     *
+     * `FIREBASE_CREDENTIALS`(파일 경로, 로컬용) 또는 `FIREBASE_CREDENTIALS_B64`(같은 JSON 을 base64 로 감싼 값,
+     * 컨테이너용)로 받는다. 여러 줄짜리 private key 가 셸을 거치며 깨지지 않게 한 줄로 감싼 것이다.
+     */
+    val firebaseCredentialsJson: String = "",
 ) {
     companion object {
         const val DEFAULT_PORT = 8080
@@ -23,9 +30,20 @@ data class ServerConfig(
                 poolSize = env("DB_POOL_SIZE")?.toIntOrNull() ?: DbConfig.DEFAULT_POOL_SIZE,
             ),
             filesDirectory = env("FILES_DIR") ?: "files",
+            firebaseCredentialsJson = firebaseCredentialsFromEnv(),
         )
 
         private fun env(name: String): String? = System.getenv(name)?.takeIf { it.isNotBlank() }
+
+        /** base64 를 먼저 본다. 배포 환경의 값이 로컬 경로보다 우선이어야 한다. */
+        fun firebaseCredentialsFromEnv(): String {
+            env("FIREBASE_CREDENTIALS_B64")?.let { encoded ->
+                return runCatching { String(java.util.Base64.getDecoder().decode(encoded.trim())) }.getOrDefault("")
+            }
+            return env("FIREBASE_CREDENTIALS")
+                ?.let { path -> runCatching { java.io.File(path).readText() }.getOrDefault("") }
+                .orEmpty()
+        }
     }
 }
 

@@ -24,6 +24,7 @@ import com.eunilsung.talk.shared.api.NoticeChangeResponse
 import com.eunilsung.talk.shared.api.NoticeDto
 import com.eunilsung.talk.shared.api.PinRoomRequest
 import com.eunilsung.talk.shared.api.RecallRequest
+import com.eunilsung.talk.shared.api.RegisterPushTokenRequest
 import com.eunilsung.talk.shared.api.RenameRoomRequest
 import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.RoomsResponse
@@ -92,6 +93,9 @@ interface TalkServer {
 
     /** 지금 토큰의 주인. 토큰이 아직 유효한지 확인하는 데도 쓴다. */
     suspend fun me(): ServerResult<UserDto>
+
+    /** 이 기기의 푸시 토큰을 지금 로그인에 묶어 등록한다. 로그아웃하면 서버에서 함께 지워진다. */
+    suspend fun registerPushToken(token: String, platform: String): ServerResult<Unit>
 
     /** 전체 사용자. 접속 여부가 함께 온다. */
     suspend fun users(): ServerResult<List<UserDto>>
@@ -213,6 +217,14 @@ class TalkServerClient(
     override suspend fun me(): ServerResult<UserDto> =
         request("내 정보", UserDto.serializer()) {
             httpClient.get("$baseUrl/users/me") { auth() }
+        }
+
+    override suspend fun registerPushToken(token: String, platform: String): ServerResult<Unit> =
+        command("푸시 토큰 등록") {
+            httpClient.post("$baseUrl/push/token") {
+                auth()
+                jsonBody(RegisterPushTokenRequest.serializer(), RegisterPushTokenRequest(token, platform))
+            }
         }
 
     override suspend fun users(): ServerResult<List<UserDto>> =

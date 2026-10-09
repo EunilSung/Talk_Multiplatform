@@ -17,7 +17,9 @@ fun main() {
     val postgres = LocalPostgres.startPersistent(File(LOCAL_DB_DIRECTORY), LOCAL_DB_PORT)
     Runtime.getRuntime().addShutdownHook(Thread { postgres.close() })
 
-    val config = ServerConfig(port = port, db = LocalPostgres.configOf(postgres), filesDirectory = LOCAL_FILES_DIRECTORY)
+    val config = ServerConfig(port = port, db = LocalPostgres.configOf(postgres), filesDirectory = LOCAL_FILES_DIRECTORY,
+        firebaseCredentialsJson = ServerConfig.firebaseCredentialsFromEnv(),
+    )
     println("로컬 DB — ${config.db.url} (user=${config.db.user}, 비밀번호 없음)")
     embeddedServer(Netty, port = port) { module(config) }.start(wait = true)
 }

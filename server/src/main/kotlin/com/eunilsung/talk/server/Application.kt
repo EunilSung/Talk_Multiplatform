@@ -15,6 +15,15 @@ import com.eunilsung.talk.server.repository.ChatGroupRepository
 import com.eunilsung.talk.server.routes.chatGroupRoutes
 import com.eunilsung.talk.server.repository.ContactGroupRepository
 import com.eunilsung.talk.server.routes.peopleRoutes
+import com.eunilsung.talk.server.push.ChatPushService
+import com.eunilsung.talk.server.push.FcmSender
+import com.eunilsung.talk.server.push.GoogleAccessTokenProvider
+import com.eunilsung.talk.server.push.PushSender
+import com.eunilsung.talk.server.push.ServiceAccount
+import com.eunilsung.talk.server.repository.PushTokenRepository
+import com.eunilsung.talk.server.routes.pushRoutes
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import com.eunilsung.talk.server.routes.chatRoutes
 import com.eunilsung.talk.server.repository.UserRepository
 import com.eunilsung.talk.server.routes.authRoutes
@@ -48,14 +57,40 @@ fun main() {
 
 /** 운영·로컬 진입점 — 설정대로 DB 에 붙고 마이그레이션을 돌린 뒤 [module] 을 올린다. */
 fun Application.module(config: ServerConfig) {
-    LoggerFactory.getLogger("Application").info(LocalAddresses.describe(config.port))
-    module(Database.connect(config.db), FileStorage(File(config.filesDirectory)))
+    val log = LoggerFactory.getLogger("Application")
+    log.info(LocalAddresses.describe(config.port))
+    module(
+        dataSource = Database.connect(config.db),
+        fileStorage = FileStorage(File(config.filesDirectory)),
+        pushSender = fcmSenderOf(config.firebaseCredentialsJson),
+    )
+}
+
+/**
+ * 서비스 계정 키로 푸시 발송기를 만든다. 키가 없거나 읽을 수 없으면 null — 푸시만 꺼지고 서버는 뜬다.
+ * 키 하나 때문에 서버 전체가 안 뜨면 로컬 개발이 매번 막힌다.
+ */
+private fun fcmSenderOf(credentialsJson: String): PushSender? {
+    val log = LoggerFactory.getLogger("Application")
+    if (credentialsJson.isBlank()) {
+        log.warn("FIREBASE_CREDENTIALS 없음 — 푸시가 나가지 않는다")
+        return null
+    }
+    val account = ServiceAccount.parse(credentialsJson)
+    if (account == null) {
+        log.warn("서비스 계정 키를 해석하지 못했다 — 푸시가 나가지 않는다")
+        return null
+    }
+    log.info("푸시 사용 — project={}", account.projectId)
+    val httpClient = HttpClient(OkHttp)
+    return FcmSender(account.projectId, GoogleAccessTokenProvider(account, httpClient), httpClient)
 }
 
 /**
  * 서버 본체. 이미 준비된 [dataSource] 와 [fileStorage] 를 받는다 — 테스트가 자기 DB 와 임시 폴더를 끼워 넣는 자리다.
+ * [pushSender] 가 null 이면 푸시를 보내지 않는다.
  */
-fun Application.module(dataSource: DataSource, fileStorage: FileStorage) {
+fun Application.module(dataSource: DataSource, fileStorage: FileStorage, pushSender: PushSender? = null) {
     val log = LoggerFactory.getLogger("Application")
 
     install(ContentNegotiation) { json(ServerJson) }
@@ -73,7 +108,8 @@ fun Application.module(dataSource: DataSource, fileStorage: FileStorage) {
     val users = UserRepository(dataSource)
     val tokens = AuthTokenRepository(dataSource)
     val chats = ChatRepository(dataSource)
-    val chatHub = ChatHub()
+    val pushTokens = PushTokenRepository(dataSource)
+    val chatHub = ChatHub(ChatPushService(pushTokens, pushSender, this))
     val files = FileRepository(dataSource)
     SeedAccounts.ensure(users)
 
@@ -85,6 +121,7 @@ fun Application.module(dataSource: DataSource, fileStorage: FileStorage) {
         voteRoutes(VoteRepository(chats), chats, tokens, chatHub)
         chatGroupRoutes(ChatGroupRepository(dataSource), tokens)
         peopleRoutes(users, ContactGroupRepository(dataSource), tokens, chatHub)
+        pushRoutes(pushTokens, tokens)
     }
 }
 

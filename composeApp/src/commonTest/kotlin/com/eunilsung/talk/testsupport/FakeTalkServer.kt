@@ -103,6 +103,9 @@ class FakeTalkServer : TalkServer {
         else -> ServerResult.Success(USER)
     }
 
+    override suspend fun registerPushToken(token: String, platform: String): ServerResult<Unit> =
+        answer("registerPush:$token:$platform") { ServerResult.Success(Unit) }
+
     override suspend fun users(): ServerResult<List<UserDto>> = answer("users") { ServerResult.Success(people) }
 
     override suspend fun user(userId: String): ServerResult<UserDto> = answer("user:$userId") {

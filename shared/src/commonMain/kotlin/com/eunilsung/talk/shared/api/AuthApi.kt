@@ -63,3 +63,30 @@ data class ContactGroupDto(
 /** 내그룹 전부. 바꿀 때도 이 모양으로 전체를 보낸다. */
 @Serializable
 data class ContactGroupsDto(val groups: List<ContactGroupDto> = emptyList())
+
+/** 이 기기의 푸시 토큰 등록. [platform] 은 앱이 밝힌 플랫폼 이름이다(`ANDROID`, `IPHONE`). */
+@Serializable
+data class RegisterPushTokenRequest(
+    val token: String,
+    val platform: String,
+)
+
+/**
+ * 푸시 data 에 실리는 키와 값.
+ *
+ * 앱의 푸시 수신 코드가 이 이름으로 읽는다. 서버와 앱이 같은 상수를 보게 해 이름이 어긋나지 않게 한다.
+ */
+object PushKeys {
+    const val MSG = "msg"
+    /** 알림을 눌렀을 때 열 대화방 id. */
+    const val MSG_KEY = "msgkey"
+    const val MSG_KIND = "msgkind"
+    /** 대화 종류 — 앱의 대화 타입 코드. */
+    const val MSG_TYPE = "msgtype"
+    const val SENDER_NAME = "senderName"
+    /** 받는 사람의 전체 안읽음 수. 앱 아이콘 배지에 쓴다. */
+    const val UNREAD_COUNT = "unReadCount"
+    const val CATEGORY_ID = "msgCategoryId"
+
+    const val KIND_TALK = "TALK"
+}
