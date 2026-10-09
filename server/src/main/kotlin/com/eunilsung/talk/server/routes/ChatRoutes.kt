@@ -18,6 +18,7 @@ import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MessageKind
 import com.eunilsung.talk.shared.api.MessagesResponse
 import com.eunilsung.talk.shared.api.MuteRoomRequest
+import com.eunilsung.talk.shared.api.PinRoomRequest
 import com.eunilsung.talk.shared.api.NoticeChangeResponse
 import com.eunilsung.talk.shared.api.RecallRequest
 import com.eunilsung.talk.shared.api.RenameRoomRequest
@@ -130,6 +131,13 @@ fun Route.chatRoutes(
                 if (title.isNullOrBlank() || title.length > MAX_TITLE_LENGTH) return@put call.respondBadRequest()
                 if (!db { chats.rename(call.roomId(), userId, title) }) return@put call.respondRoomNotFound()
                 notify(call.roomId(), ServerEvent.TYPE_ROOM)
+                call.respond(HttpStatusCode.NoContent)
+            }
+
+            put("/pin") {
+                val userId = call.callerUserId(tokens) ?: return@put
+                val request = call.receiveOrNull<PinRoomRequest>() ?: return@put call.respondBadRequest()
+                if (!db { chats.setPinned(call.roomId(), userId, request.isPinned) }) return@put call.respondRoomNotFound()
                 call.respond(HttpStatusCode.NoContent)
             }
 

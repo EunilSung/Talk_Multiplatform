@@ -10,6 +10,8 @@ import com.eunilsung.talk.server.repository.FileRepository
 import com.eunilsung.talk.server.routes.fileRoutes
 import com.eunilsung.talk.server.repository.VoteRepository
 import com.eunilsung.talk.server.routes.voteRoutes
+import com.eunilsung.talk.server.repository.ChatGroupRepository
+import com.eunilsung.talk.server.routes.chatGroupRoutes
 import com.eunilsung.talk.server.routes.chatRoutes
 import com.eunilsung.talk.server.repository.UserRepository
 import com.eunilsung.talk.server.routes.authRoutes
@@ -78,6 +80,7 @@ fun Application.module(dataSource: DataSource, fileStorage: FileStorage) {
         chatRoutes(chats, files, fileStorage, tokens, chatHub)
         fileRoutes(files, fileStorage, tokens)
         voteRoutes(VoteRepository(chats), chats, tokens, chatHub)
+        chatGroupRoutes(ChatGroupRepository(dataSource), tokens)
     }
 }
 

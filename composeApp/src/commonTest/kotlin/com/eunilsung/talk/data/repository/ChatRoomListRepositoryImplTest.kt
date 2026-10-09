@@ -152,4 +152,69 @@ class ChatRoomListRepositoryImplTest {
 
         awaitUntil { rooms().map { it.id } == listOf("a") }
     }
+
+    @Test
+    fun 고정하면_서버에_적용된_뒤_목록_맨_위로_오고_풀면_제자리로_간다() = runTest {
+        server.addRoom("a", "test2" to "이서연")
+        server.addRoom("b", "test3" to "박도윤")
+        server.receive("b", "test3", "박도윤", "최근 대화")
+        repo.fetchChatRooms()
+        assertEquals(listOf("b", "a"), rooms().map { it.id })
+
+        assertTrue(repo.setChatRoomPin("a", true))
+        assertEquals(listOf("a", "b"), rooms().map { it.id })
+        assertTrue(rooms().first().pinDate.isNotBlank())
+
+        assertTrue(repo.setChatRoomPin("a", false))
+        assertEquals(listOf("b", "a"), rooms().map { it.id })
+    }
+
+    @Test
+    fun 서버에_닿지_못하면_고정되지_않는다() = runTest {
+        server.addRoom("a", "test2" to "이서연")
+        repo.fetchChatRooms()
+        server.isReachable = false
+
+        assertFalse(repo.setChatRoomPin("a", true))
+
+        assertEquals("", rooms().single().pinDate)
+    }
+
+    @Test
+    fun 그룹을_만들고_방을_담으면_서버에_전체_목록이_올라간다() = runTest {
+        server.addRoom("a", "test2" to "이서연")
+        repo.fetchChatRooms()
+
+        repo.createChatGroup("업무")
+        val groupId = repo.getChatGroups().first().single().id
+        repo.addRoomToGroup(groupId, "a")
+
+        assertEquals(listOf("업무"), server.chatGroups.map { it.name })
+        assertEquals(listOf("a"), server.chatGroups.single().roomIds)
+        assertEquals(listOf("a"), repo.getChatGroups().first().single().roomIds)
+    }
+
+    @Test
+    fun 다른_기기에서_고친_그룹이_목록을_받을_때_반영된다() = runTest {
+        server.addRoom("a", "test2" to "이서연")
+        server.chatGroups = listOf(com.eunilsung.talk.shared.api.ChatGroupDto("g1", "가족", 1, listOf("a")))
+
+        repo.fetchChatRooms()
+
+        val group = repo.getChatGroups().first().single()
+        assertEquals("가족", group.name)
+        assertEquals(listOf("a"), group.roomIds)
+    }
+
+    @Test
+    fun 서버가_받아_주지_않은_그룹_변경은_되돌린다() = runTest {
+        repo.createChatGroup("업무")
+        server.isReachable = false
+
+        repo.createChatGroup("반영되면 안 되는 그룹")
+        repo.renameChatGroup(repo.getChatGroups().first().single().id, "바뀌면 안 되는 이름")
+
+        assertEquals(listOf("업무"), repo.getChatGroups().first().map { it.name })
+        assertEquals(listOf("업무"), server.chatGroups.map { it.name })
+    }
 }

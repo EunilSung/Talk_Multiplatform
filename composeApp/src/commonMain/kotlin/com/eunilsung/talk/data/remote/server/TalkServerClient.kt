@@ -6,6 +6,8 @@ import com.eunilsung.talk.shared.api.BallotRequest
 import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.BookmarkRequest
 import com.eunilsung.talk.shared.api.BookmarksResponse
+import com.eunilsung.talk.shared.api.ChatGroupDto
+import com.eunilsung.talk.shared.api.ChatGroupsDto
 import com.eunilsung.talk.shared.api.CreateRoomRequest
 import com.eunilsung.talk.shared.api.CreateVoteRequest
 import com.eunilsung.talk.shared.api.FileDto
@@ -18,6 +20,7 @@ import com.eunilsung.talk.shared.api.MessagesResponse
 import com.eunilsung.talk.shared.api.MuteRoomRequest
 import com.eunilsung.talk.shared.api.NoticeChangeResponse
 import com.eunilsung.talk.shared.api.NoticeDto
+import com.eunilsung.talk.shared.api.PinRoomRequest
 import com.eunilsung.talk.shared.api.RecallRequest
 import com.eunilsung.talk.shared.api.RenameRoomRequest
 import com.eunilsung.talk.shared.api.RoomDto
@@ -147,6 +150,15 @@ interface TalkServer {
 
     /** 파일 바이트를 받는다. 그 방의 참여자만 받을 수 있다. */
     suspend fun downloadFile(fileId: String): ServerResult<ByteArray>
+
+    /** 방을 상단에 고정하거나 푼다. 나에게만 적용된다. */
+    suspend fun pinRoom(roomId: String, isPinned: Boolean): ServerResult<Unit>
+
+    /** 내 대화그룹(대화함 위쪽의 칩) 전부. */
+    suspend fun chatGroups(): ServerResult<List<ChatGroupDto>>
+
+    /** 내 대화그룹을 [groups] 로 통째로 바꾼다. */
+    suspend fun putChatGroups(groups: List<ChatGroupDto>): ServerResult<List<ChatGroupDto>>
 
     /** 방의 투표 전부, 최근 것부터. */
     suspend fun votes(roomId: String): ServerResult<List<VoteDto>>
@@ -353,6 +365,27 @@ class TalkServerClient(
             rejected("파일 받기", response.first, "")
         }
     }
+
+    override suspend fun pinRoom(roomId: String, isPinned: Boolean): ServerResult<Unit> =
+        command("방 고정") {
+            httpClient.put("${roomUrl(roomId)}/pin") {
+                auth()
+                jsonBody(PinRoomRequest.serializer(), PinRoomRequest(isPinned))
+            }
+        }
+
+    override suspend fun chatGroups(): ServerResult<List<ChatGroupDto>> =
+        request("대화그룹 조회", ChatGroupsDto.serializer()) {
+            httpClient.get("$baseUrl/chat-groups") { auth() }
+        }.map { it.groups }
+
+    override suspend fun putChatGroups(groups: List<ChatGroupDto>): ServerResult<List<ChatGroupDto>> =
+        request("대화그룹 저장", ChatGroupsDto.serializer()) {
+            httpClient.put("$baseUrl/chat-groups") {
+                auth()
+                jsonBody(ChatGroupsDto.serializer(), ChatGroupsDto(groups))
+            }
+        }.map { it.groups }
 
     override suspend fun votes(roomId: String): ServerResult<List<VoteDto>> =
         request("투표 목록", VotesResponse.serializer()) {

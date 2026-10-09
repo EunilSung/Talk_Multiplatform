@@ -5,6 +5,7 @@ import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.shared.api.ApiErrorCode
 import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.ChatErrorCode
+import com.eunilsung.talk.shared.api.ChatGroupDto
 import com.eunilsung.talk.shared.api.CreateVoteRequest
 import com.eunilsung.talk.shared.api.FileDto
 import com.eunilsung.talk.shared.api.LoginResponse
@@ -51,6 +52,9 @@ class FakeTalkServer : TalkServer {
     private var noticeCount = 0
     private val votesByRoom = mutableMapOf<String, MutableList<VoteDto>>()
     private var voteCount = 0
+    private var pinCount = 0
+    /** 서버에 저장된 내 대화그룹. 테스트가 직접 바꿔 "다른 기기에서 고쳤다"를 흉내 낸다. */
+    var chatGroups: List<ChatGroupDto> = emptyList()
     /** 올라온 파일들 — 파일 id → 바이트. */
     val uploads = mutableMapOf<String, ByteArray>()
 
@@ -243,6 +247,22 @@ class FakeTalkServer : TalkServer {
             ),
         )
     }
+
+    override suspend fun pinRoom(roomId: String, isPinned: Boolean): ServerResult<Unit> = answer("pin:$roomId:$isPinned") {
+        val room = rooms[roomId] ?: return@answer roomNotFound()
+        rooms[roomId] = room.copy(pinnedAtEpochMillis = if (isPinned) BASE_TIME + ++pinCount else 0)
+        ServerResult.Success(Unit)
+    }
+
+    override suspend fun chatGroups(): ServerResult<List<ChatGroupDto>> = answer("chatGroups") {
+        ServerResult.Success(chatGroups)
+    }
+
+    override suspend fun putChatGroups(groups: List<ChatGroupDto>): ServerResult<List<ChatGroupDto>> =
+        answer("putChatGroups:${groups.map { it.name }}") {
+            chatGroups = groups
+            ServerResult.Success(groups)
+        }
 
     override suspend fun votes(roomId: String): ServerResult<List<VoteDto>> = answer("votes:$roomId") {
         ServerResult.Success(votesByRoom[roomId].orEmpty().reversed())
