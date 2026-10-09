@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.chatroom
 
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -11,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -55,6 +57,20 @@ fun ChatScrollController(
                                 onAction(ChatRoomActions.OnReachStart)
                             }
                         }
+                }
+
+                /**
+                 * 사용자가 **이 방에서 목록을 직접 끌었는지.**
+                 *
+                 * 입장 신호(`entryScroll`)가 오기 전에 화면이 이미 로컬 대화를 그려 놓아 사용자가 먼저 스크롤할 수 있다.
+                 * 그때 신호가 도착해 맨 아래로 끌어내리면 읽으려던 자리를 잃는다. 손가락으로 끌었다는 사실을 기억해 입장
+                 * 스크롤을 존중한다. `scrollToItem` 같은 프로그램 스크롤은 드래그 신호를 내지 않아 섞이지 않는다.
+                 */
+                var userDragged by remember(currentChatRoomId) { mutableStateOf(false) }
+                LaunchedEffect(listState, currentChatRoomId) {
+                    listState.interactionSource.interactions.collect { interaction ->
+                        if (interaction is DragInteraction.Start) userDragged = true
+                    }
                 }
 
                 val groupedForScroll = androidx.compose.runtime.rememberUpdatedState(groupedChats)
@@ -103,11 +119,22 @@ fun ChatScrollController(
                                         }
                                 }
                             } else {
+                                /** 사용자가 이미 자리를 잡았으면 건드리지 않는다. */
+                                if (userDragged) return@collect
                                 listState.scrollToItem(0)
+                                /**
+                                 * 들어온 직후에는 대화가 뒤늦게 더 붙을 수 있어 잠시 최신 자리를 붙든다. 사용자가 목록에 손을
+                                 * 대는 순간 그만둔다 — 위로 올리면 과거 한 페이지가 로드돼 항목 수가 바뀌므로, 조건 없이 끌어내리면
+                                 * 읽으려고 올린 사람이 도로 맨 아래로 끌려 내려간다.
+                                 */
                                 withTimeoutOrNull(LATEST_LOAD_TIMEOUT_MS) {
-                                    snapshotFlow { listState.layoutInfo.totalItemsCount }
-                                        .distinctUntilChanged()
-                                        .collect { listState.scrollToItem(0) }
+                                    val pinning = launch {
+                                        snapshotFlow { listState.layoutInfo.totalItemsCount }
+                                            .distinctUntilChanged()
+                                            .collect { listState.scrollToItem(0) }
+                                    }
+                                    listState.interactionSource.interactions.first { it is DragInteraction.Start }
+                                    pinning.cancel()
                                 }
                             }
                         }
