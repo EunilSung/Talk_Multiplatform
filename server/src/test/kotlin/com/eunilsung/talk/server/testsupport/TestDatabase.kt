@@ -40,7 +40,7 @@ object TestDatabase {
     fun clean() {
         dataSource.connection.use { conn ->
             conn.createStatement().use { st ->
-                st.execute("TRUNCATE contact_group_member, contact_group, chat_group_room, chat_group, chat_vote_ballot, chat_vote_item, chat_vote, chat_mention, chat_file, chat_bookmark, chat_notice, chat_reaction, chat_message, chat_room_member, chat_room, auth_token RESTART IDENTITY CASCADE")
+                st.execute("TRUNCATE push_token, contact_group_member, contact_group, chat_group_room, chat_group, chat_vote_ballot, chat_vote_item, chat_vote, chat_mention, chat_file, chat_bookmark, chat_notice, chat_reaction, chat_message, chat_room_member, chat_room, auth_token RESTART IDENTITY CASCADE")
             }
         }
     }

@@ -16,6 +16,7 @@ import com.eunilsung.talk.data.remote.server.UserDirectory
 import com.eunilsung.talk.data.repository.GroupRepositoryImpl
 import com.eunilsung.talk.data.repository.GroupRepositoryImpl.Companion.toGroupUser
 import com.eunilsung.talk.data.repository.LoginRepositoryImpl
+import com.eunilsung.talk.data.repository.PushTokenRepositoryImpl
 import com.eunilsung.talk.data.repository.UserProfileRepositoryImpl
 import com.eunilsung.talk.data.repository.VoteRepositoryImpl
 import com.eunilsung.talk.data.local.DatabaseDriverFactory
@@ -75,8 +76,10 @@ val appModule = module {
         val factory: DatabaseDriverFactory = get()
         AppDatabase(factory.createDriver())
     }
-    // FCM 토큰은 로그만 남긴다.
-    single<PushTokenRepository>(createdAtStart = true) { LocalPushTokenRepositoryImpl() }
+    /** 서버 주소가 있으면 FCM 토큰을 서버에 등록하고, 없으면 로그만 남긴다. */
+    single<PushTokenRepository>(createdAtStart = true) {
+        if (Config.Server.IS_ENABLED) PushTokenRepositoryImpl(get(), get(), get()) else LocalPushTokenRepositoryImpl()
+    }
     single { com.eunilsung.talk.data.remote.push.PushPayloadParser() }
 
     single { com.eunilsung.talk.data.remote.linkpreview.LinkPreviewRepository(get()) }

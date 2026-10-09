@@ -57,6 +57,9 @@ class AuthTokenRepository(private val dataSource: DataSource) {
         }
     }
 
+    /** 토큰의 저장용 해시. 토큰에 다른 기록(푸시 토큰 등)을 묶을 때 이 값을 쓴다. */
+    fun hashOf(token: String): String = hash(token)
+
     private fun hash(token: String): String {
         val digest = MessageDigest.getInstance("SHA-256").digest(token.toByteArray())
         return Base64.getEncoder().encodeToString(digest)
