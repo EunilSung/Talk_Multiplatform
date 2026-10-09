@@ -41,6 +41,9 @@ CREATE TABLE GroupUserEntity (
     FOREIGN KEY (myId, groupId) REFERENCES GroupEntity(myId, groupId) ON DELETE CASCADE
 );
 
+-- 그룹마다 멤버를 읽는 조회(myId, groupId)가 쓴다. 기본 키는 userId 가 가운데라 이 조건에 못 쓴다.
+CREATE INDEX GroupUserEntity_group ON GroupUserEntity(myId, groupId);
+
 CREATE TABLE OrganDepartmentEntity (
     myId TEXT NOT NULL,
     departmentCode TEXT NOT NULL,
@@ -285,6 +288,10 @@ CREATE TABLE ChatEntity (
     voteCompleteJson TEXT,
     PRIMARY KEY (myId, chatRoomId, chatId)
 );
+
+-- 방 대화를 날짜순으로 읽는 조회(입장·위아래 페이지·마지막 대화·검색)가 쓴다.
+-- 기본 키 (myId, chatRoomId, chatId) 만으로는 방의 행을 전부 읽어 날짜로 정렬한 뒤에야 LIMIT 을 적용했다.
+CREATE INDEX ChatEntity_room_date ON ChatEntity(myId, chatRoomId, date);
 
 insertChat:
 INSERT OR REPLACE INTO ChatEntity VALUES ?;
