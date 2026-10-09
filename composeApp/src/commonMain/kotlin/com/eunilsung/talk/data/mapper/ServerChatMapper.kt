@@ -155,6 +155,7 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
             exitUserList = UserListCodec.encode(left.map { it.id to it.name }),
             exitUserCount = left.size.toString(),
             mentionCount = room.mentionCount.toString(),
+            pinDate = room.pinnedAtEpochMillis.takeIf { it > 0 }?.toString().orEmpty(),
             enableMode = "0",
         )
     }

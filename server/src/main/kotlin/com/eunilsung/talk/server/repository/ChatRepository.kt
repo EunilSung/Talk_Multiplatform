@@ -111,10 +111,16 @@ class ChatRepository(private val dataSource: DataSource) {
 
         val message = insertSystemMessage(conn, roomId, userId, MessageKind.EXIT, emptyList())
         conn.prepareStatement(
-            "UPDATE chat_room_member SET left_at = now() WHERE room_id = ? AND user_id = ?"
+            "UPDATE chat_room_member SET left_at = now(), pinned_at = NULL WHERE room_id = ? AND user_id = ?"
         ).use { st ->
             st.setString(1, roomId)
             st.setString(2, userId)
+            st.executeUpdate()
+        }
+        /** 나간 방은 내 대화그룹에서도 뺀다. 남겨 두면 다시 초대받았을 때 예전 그룹에 저절로 들어가 있다. */
+        conn.prepareStatement("DELETE FROM chat_group_room WHERE user_id = ? AND room_id = ?").use { st ->
+            st.setString(1, userId)
+            st.setString(2, roomId)
             st.executeUpdate()
         }
         RoomChange(roomId, message)
@@ -129,6 +135,23 @@ class ChatRepository(private val dataSource: DataSource) {
             st.executeUpdate() > 0
         }
     }
+
+    /** 이 방을 상단에 고정하거나 푼다. 나에게만 적용된다. 이미 고정한 방을 다시 고정해도 시각은 그대로다. */
+    fun setPinned(roomId: String, userId: String, isPinned: Boolean): Boolean =
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(
+                """
+                UPDATE chat_room_member
+                SET pinned_at = CASE WHEN ? THEN coalesce(pinned_at, now()) ELSE NULL END
+                WHERE room_id = ? AND user_id = ? AND left_at IS NULL
+                """.trimIndent()
+            ).use { st ->
+                st.setBoolean(1, isPinned)
+                st.setString(2, roomId)
+                st.setString(3, userId)
+                st.executeUpdate() > 0
+            }
+        }
 
     /** 이 방의 알림을 끄거나 켠다. 나에게만 적용된다. */
     fun setMuted(roomId: String, userId: String, isMuted: Boolean): Boolean =
@@ -461,11 +484,12 @@ class ChatRepository(private val dataSource: DataSource) {
     )
 
     private fun selectRooms(conn: Connection, userId: String, roomId: String?): List<RoomDto> {
-        data class Row(val id: String, val title: String, val lastSeq: Long, val readSeq: Long, val joinedSeq: Long, val isMuted: Boolean, val createdAt: Long, val mentions: Int)
+        data class Row(val id: String, val title: String, val lastSeq: Long, val readSeq: Long, val joinedSeq: Long, val isMuted: Boolean, val createdAt: Long, val mentions: Int, val pinnedAt: Long)
 
         val rows = conn.prepareStatement(
             """
             SELECT r.id, r.title, r.next_seq - 1 AS last_seq, m.last_read_seq, m.joined_seq, m.is_muted, r.created_at,
+                   coalesce(extract(epoch FROM m.pinned_at) * 1000, 0)::bigint AS pinned_at,
                    (SELECT count(*) FROM chat_mention t
                     WHERE t.room_id = r.id AND t.user_id = m.user_id AND t.seq > m.last_read_seq) AS mentions
             FROM chat_room r JOIN chat_room_member m ON m.room_id = r.id
@@ -477,7 +501,7 @@ class ChatRepository(private val dataSource: DataSource) {
             st.executeQuery().use { rs ->
                 buildList {
                     while (rs.next()) {
-                        add(Row(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getLong(4), rs.getLong(5), rs.getBoolean(6), rs.getTimestamp(7).time, rs.getInt(8)))
+                        add(Row(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getLong(4), rs.getLong(5), rs.getBoolean(6), rs.getTimestamp(7).time, rs.getInt(9), rs.getLong(8)))
                     }
                 }
             }
@@ -493,6 +517,7 @@ class ChatRepository(private val dataSource: DataSource) {
                 isMuted = row.isMuted,
                 createdAtEpochMillis = row.createdAt,
                 mentionCount = row.mentions,
+                pinnedAtEpochMillis = row.pinnedAt,
             )
         }
     }

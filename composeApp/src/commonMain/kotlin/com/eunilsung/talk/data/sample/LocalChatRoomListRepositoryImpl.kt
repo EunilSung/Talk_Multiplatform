@@ -258,7 +258,20 @@ class LocalChatRoomListRepositoryImpl(
                 }
             rooms.forEach { dbQueries.insertChatRoom(mapper.toEntity(myId, it)) }
         }
+        /** 화면은 고정 시각을 설정에서 읽는다. 받아 온 값으로 맞춰 두어야 다른 기기에서 고정한 것이 보인다. */
+        rooms.forEach { room ->
+            if (room.pinDate.isBlank()) settings.remove(pinKey(myId, room.id))
+            else settings.putString(pinKey(myId, room.id), room.pinDate)
+        }
         refreshFromDb(myId)
+    }
+
+    /** 지금의 그룹 칩 목록. */
+    internal fun currentChatGroups(): List<ChatGroup> = _chatGroups.value
+
+    /** 그룹 칩 목록을 [groups] 로 통째로 바꾼다. 서버에서 받은 목록을 반영할 때 쓴다. */
+    internal fun replaceChatGroups(groups: List<ChatGroup>) {
+        updateChatGroups(Config.MyInfo.userId) { groups }
     }
 
     /** DB 를 읽고 pinDate 만 Settings 값으로 덮은 뒤 정렬. */

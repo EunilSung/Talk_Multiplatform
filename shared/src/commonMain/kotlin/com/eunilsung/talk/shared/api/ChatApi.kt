@@ -23,6 +23,8 @@ data class RoomDto(
     /** 내가 아직 읽지 않은 대화 중 나를 부른(멘션한) 것의 수. */
     val mentionCount: Int = 0,
     val isMuted: Boolean = false,
+    /** 내가 이 방을 상단에 고정한 시각. 0 이면 고정하지 않았다. */
+    val pinnedAtEpochMillis: Long = 0,
     /** 방이 만들어진 시각. 아직 대화가 없는 방을 목록에 세울 때 쓴다. */
     val createdAtEpochMillis: Long = 0,
 )
@@ -320,3 +322,19 @@ data class VoteChangeResponse(
     val vote: VoteDto,
     val message: MessageDto,
 )
+
+@Serializable
+data class PinRoomRequest(val isPinned: Boolean)
+
+/** 대화그룹 하나 — 대화함 위쪽의 칩. [roomIds] 가 그 칩에 담긴 방이다. */
+@Serializable
+data class ChatGroupDto(
+    val id: String,
+    val name: String,
+    val sort: Int = 0,
+    val roomIds: List<String> = emptyList(),
+)
+
+/** 내 대화그룹 전부. 바꿀 때도 이 모양으로 전체를 보낸다. */
+@Serializable
+data class ChatGroupsDto(val groups: List<ChatGroupDto> = emptyList())
