@@ -529,7 +529,7 @@ class ChatRepository(private val dataSource: DataSource) {
         }
 
     /** 방 행을 잠그고 지금까지의 마지막 번호를 돌려준다. 방이 없으면 null. */
-    private fun lockRoom(conn: Connection, roomId: String): Long? =
+    internal fun lockRoom(conn: Connection, roomId: String): Long? =
         conn.prepareStatement("SELECT next_seq - 1 FROM chat_room WHERE id = ? FOR UPDATE").use { st ->
             st.setString(1, roomId)
             st.executeQuery().use { rs -> if (rs.next()) rs.getLong(1) else null }
@@ -596,7 +596,7 @@ class ChatRepository(private val dataSource: DataSource) {
     )
 
     /** 번호를 뽑아 대화를 넣고, 보낸 사람은 거기까지 읽은 것으로 적는다. 방 행을 잠근 채로 불러야 한다. */
-    private fun insertMessage(
+    internal fun insertMessage(
         conn: Connection,
         roomId: String,
         senderId: String,
@@ -666,7 +666,7 @@ class ChatRepository(private val dataSource: DataSource) {
         }
     }
 
-    private fun isActiveMember(conn: Connection, roomId: String, userId: String): Boolean =
+    internal fun isActiveMember(conn: Connection, roomId: String, userId: String): Boolean =
         joinedSeq(conn, roomId, userId) != null
 
     /** 참여 중이면 어디서부터 볼 수 있는지, 아니면 null. */
@@ -715,7 +715,7 @@ class ChatRepository(private val dataSource: DataSource) {
         reactions = if (isRecalled) emptyList() else json.decodeFromString(REACTIONS_SERIALIZER, getString("reactions")),
     )
 
-    private fun <T> transaction(block: (Connection) -> T): T =
+    internal fun <T> transaction(block: (Connection) -> T): T =
         dataSource.connection.use { conn ->
             conn.autoCommit = false
             try {

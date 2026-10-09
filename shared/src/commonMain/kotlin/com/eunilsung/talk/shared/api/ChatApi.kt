@@ -89,6 +89,10 @@ object MessageKind {
     const val EXIT = "exit"
     /** 공지 등록·삭제 알림. 본문이 공지 내용이고, 어느 쪽인지는 [MessagePayloadDto.noticeAction] 에 있다. */
     const val NOTICE = "notice"
+    /** 투표가 만들어졌다는 알림. 투표 내용은 [MessagePayloadDto.vote] 에 있다. */
+    const val VOTE = "vote"
+    /** 투표가 끝났다는 알림. 항목별 득표가 [MessagePayloadDto.vote] 에 있다. */
+    const val VOTE_CLOSED = "vote_closed"
 
     /** 앱이 직접 보낼 수 있는 종류. 초대·퇴장은 서버만 만든다. */
     val SENDABLE = setOf(TEXT, EMOTICON, REPLY, IMAGE, VIDEO, FILE)
@@ -119,6 +123,8 @@ data class MessagePayloadDto(
     val fileSize: Long? = null,
     /** 사진·동영상의 `"가로:세로"`. 말풍선 틀을 미리 잡는 데 쓴다. */
     val imageSize: String? = null,
+    /** 투표 알림 — 그 시점의 투표 모습. */
+    val vote: VoteDto? = null,
     /** 공지 알림 — [NoticeAction] 값. */
     val noticeAction: String? = null,
 )
@@ -180,6 +186,8 @@ object ChatErrorCode {
     /** 그런 파일이 없거나 내가 받을 수 없는 파일이다. */
     const val FILE_NOT_FOUND = "file_not_found"
     const val FILE_TOO_LARGE = "file_too_large"
+    /** 그런 투표가 없거나 그 투표에 할 수 없는 일이다. */
+    const val VOTE_NOT_FOUND = "vote_not_found"
 }
 
 /** 공감 한 칸 — 누가 어떤 반응을 눌렀는지. [kind] 는 `"0"`~`"5"` 다. */
@@ -257,3 +265,58 @@ data class FileDto(
 
 /** 파일 한 개의 최대 크기. 앱과 서버가 같은 값을 본다. */
 const val MAX_FILE_BYTES: Long = 20L * 1024 * 1024
+
+/** 투표 한 건. 항목별 득표와 누가 어디에 표를 줬는지를 함께 담는다. */
+@Serializable
+data class VoteDto(
+    val id: String,
+    val title: String,
+    val writerId: String = "",
+    val isClosed: Boolean = false,
+    val multiSelect: Boolean = false,
+    val allowAddItem: Boolean = false,
+    val useEndTime: Boolean = false,
+    val endTime: String = "",
+    val items: List<VoteItemDto> = emptyList(),
+    val voters: List<VoteVoterDto> = emptyList(),
+)
+
+@Serializable
+data class VoteItemDto(
+    val idx: Int,
+    val content: String,
+    val voteCount: Int = 0,
+    val writerId: String = "",
+)
+
+/** 표 한 장 — 누가 몇 번 항목에 줬는지. 여러 개를 고르는 투표면 한 사람이 여러 장을 가진다. */
+@Serializable
+data class VoteVoterDto(
+    val itemIdx: Int,
+    val userId: String,
+    val userName: String = "",
+)
+
+@Serializable
+data class VotesResponse(val votes: List<VoteDto> = emptyList())
+
+@Serializable
+data class CreateVoteRequest(
+    val title: String,
+    val items: List<String>,
+    val multiSelect: Boolean = false,
+    val allowAddItem: Boolean = false,
+    val useEndTime: Boolean = false,
+    val endTime: String = "",
+)
+
+/** 내 표. 비워 보내면 표를 거둔다("다시 투표하기"). */
+@Serializable
+data class BallotRequest(val selectedIdx: List<Int>)
+
+/** 투표를 만들거나 끝낸 결과 — 바뀐 뒤의 투표와, 그 일을 알리는 대화. */
+@Serializable
+data class VoteChangeResponse(
+    val vote: VoteDto,
+    val message: MessageDto,
+)

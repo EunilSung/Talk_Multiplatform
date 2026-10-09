@@ -2,10 +2,12 @@ package com.eunilsung.talk.data.remote.server
 
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.shared.api.ApiError
+import com.eunilsung.talk.shared.api.BallotRequest
 import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.BookmarkRequest
 import com.eunilsung.talk.shared.api.BookmarksResponse
 import com.eunilsung.talk.shared.api.CreateRoomRequest
+import com.eunilsung.talk.shared.api.CreateVoteRequest
 import com.eunilsung.talk.shared.api.FileDto
 import com.eunilsung.talk.shared.api.InviteRequest
 import com.eunilsung.talk.shared.api.LoginRequest
@@ -26,6 +28,9 @@ import com.eunilsung.talk.shared.api.ToggleReactionRequest
 import com.eunilsung.talk.shared.api.UnreadCountDto
 import com.eunilsung.talk.shared.api.UnreadCountsResponse
 import com.eunilsung.talk.shared.api.UserDto
+import com.eunilsung.talk.shared.api.VoteChangeResponse
+import com.eunilsung.talk.shared.api.VoteDto
+import com.eunilsung.talk.shared.api.VotesResponse
 import com.eunilsung.talk.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
@@ -142,6 +147,19 @@ interface TalkServer {
 
     /** 파일 바이트를 받는다. 그 방의 참여자만 받을 수 있다. */
     suspend fun downloadFile(fileId: String): ServerResult<ByteArray>
+
+    /** 방의 투표 전부, 최근 것부터. */
+    suspend fun votes(roomId: String): ServerResult<List<VoteDto>>
+
+    suspend fun vote(roomId: String, voteId: String): ServerResult<VoteDto>
+
+    suspend fun createVote(roomId: String, request: CreateVoteRequest): ServerResult<VoteChangeResponse>
+
+    /** 내 표를 [selectedIdx] 로 바꾼다. 비우면 표를 거둔다. */
+    suspend fun castVote(roomId: String, voteId: String, selectedIdx: List<Int>): ServerResult<VoteDto>
+
+    /** 투표를 끝낸다. 만든 사람만 할 수 있다. */
+    suspend fun closeVote(roomId: String, voteId: String): ServerResult<VoteChangeResponse>
 }
 
 class TalkServerClient(
@@ -336,7 +354,41 @@ class TalkServerClient(
         }
     }
 
+    override suspend fun votes(roomId: String): ServerResult<List<VoteDto>> =
+        request("투표 목록", VotesResponse.serializer()) {
+            httpClient.get("${roomUrl(roomId)}/votes") { auth() }
+        }.map { it.votes }
+
+    override suspend fun vote(roomId: String, voteId: String): ServerResult<VoteDto> =
+        request("투표 조회", VoteDto.serializer()) {
+            httpClient.get(voteUrl(roomId, voteId)) { auth() }
+        }
+
+    override suspend fun createVote(roomId: String, request: CreateVoteRequest): ServerResult<VoteChangeResponse> =
+        request("투표 만들기", VoteChangeResponse.serializer()) {
+            httpClient.post("${roomUrl(roomId)}/votes") {
+                auth()
+                jsonBody(CreateVoteRequest.serializer(), request)
+            }
+        }
+
+    override suspend fun castVote(roomId: String, voteId: String, selectedIdx: List<Int>): ServerResult<VoteDto> =
+        request("투표하기", VoteDto.serializer()) {
+            httpClient.put("${voteUrl(roomId, voteId)}/ballot") {
+                auth()
+                jsonBody(BallotRequest.serializer(), BallotRequest(selectedIdx))
+            }
+        }
+
+    override suspend fun closeVote(roomId: String, voteId: String): ServerResult<VoteChangeResponse> =
+        request("투표 종료", VoteChangeResponse.serializer()) {
+            httpClient.post("${voteUrl(roomId, voteId)}/close") { auth() }
+        }
+
     private fun roomUrl(roomId: String): String = "$baseUrl/rooms/${roomId.encodeURLPathPart()}"
+
+    private fun voteUrl(roomId: String, voteId: String): String =
+        "${roomUrl(roomId)}/votes/${voteId.encodeURLPathPart()}"
 
     /**
      * 인증 헤더.
