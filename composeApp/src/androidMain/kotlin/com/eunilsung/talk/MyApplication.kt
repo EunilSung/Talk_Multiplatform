@@ -11,6 +11,7 @@ import org.koin.core.context.startKoin
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        com.eunilsung.talk.data.local.AndroidLocalSecretSetup.init(this)
 
         startKoin {
             androidContext(this@MyApplication)
