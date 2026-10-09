@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider 공유 경로.
+
+    다운로드한 첨부는 MediaStore(content://) 또는 파일 경로로 저장되는데, 파일 경로를 다른 앱에
+    넘기려면 file:// 가 아니라 content:// 로 바꿔야 한다(API 24+ FileUriExposedException).
+    저장 fallback 이 쓰는 위치를 모두 덮는다.
+-->
+<paths>
+    <external-path name="external" path="." />
+    <external-files-path name="external_files" path="." />
+    <files-path name="files" path="." />
+    <cache-path name="cache" path="." />
+</paths>
