@@ -1,0 +1,4 @@
+-- 자주 도는 조회용 인덱스. 기존 설치(v1)는 여기서 만들고, 새 설치는 AppDatabase.sq 에서 함께 만든다.
+-- 방 대화를 날짜순으로 읽는 조회가 방의 행을 전부 읽어 정렬하던 것, 그룹 멤버 조회가 기본 키를 못 쓰던 것을 줄인다.
+CREATE INDEX IF NOT EXISTS ChatEntity_room_date ON ChatEntity(myId, chatRoomId, date);
+CREATE INDEX IF NOT EXISTS GroupUserEntity_group ON GroupUserEntity(myId, groupId);
