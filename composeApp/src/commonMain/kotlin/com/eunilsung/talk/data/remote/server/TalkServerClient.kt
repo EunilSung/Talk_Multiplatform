@@ -2,21 +2,36 @@ package com.eunilsung.talk.data.remote.server
 
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.shared.api.ApiError
+import com.eunilsung.talk.shared.api.CreateRoomRequest
+import com.eunilsung.talk.shared.api.InviteRequest
 import com.eunilsung.talk.shared.api.LoginRequest
 import com.eunilsung.talk.shared.api.LoginResponse
+import com.eunilsung.talk.shared.api.MarkReadRequest
+import com.eunilsung.talk.shared.api.MessageDto
+import com.eunilsung.talk.shared.api.MessagesResponse
+import com.eunilsung.talk.shared.api.MuteRoomRequest
+import com.eunilsung.talk.shared.api.RenameRoomRequest
+import com.eunilsung.talk.shared.api.RoomDto
+import com.eunilsung.talk.shared.api.RoomsResponse
+import com.eunilsung.talk.shared.api.SendMessageRequest
+import com.eunilsung.talk.shared.api.UnreadCountDto
+import com.eunilsung.talk.shared.api.UnreadCountsResponse
 import com.eunilsung.talk.shared.api.UserDto
 import com.eunilsung.talk.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import io.ktor.http.encodeURLPathPart
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.KSerializer
@@ -38,6 +53,9 @@ sealed interface ServerResult<out T> {
     data object Unreachable : ServerResult<Nothing>
 }
 
+/** 성공했으면 그 값, 아니면 null. 실패 이유를 가릴 필요가 없는 자리에 쓴다. */
+fun <T> ServerResult<T>.valueOrNull(): T? = (this as? ServerResult.Success)?.value
+
 /**
  * Talk 서버와 주고받는 것들.
  *
@@ -52,6 +70,41 @@ interface TalkServer {
 
     /** 지금 토큰의 주인. 토큰이 아직 유효한지 확인하는 데도 쓴다. */
     suspend fun me(): ServerResult<UserDto>
+
+    /** 내가 참여 중인 방 전부. */
+    suspend fun rooms(): ServerResult<List<RoomDto>>
+
+    suspend fun room(roomId: String): ServerResult<RoomDto>
+
+    /** 방을 만든다. 상대가 한 명이고 이미 방이 있으면 그 방이 온다. */
+    suspend fun createRoom(memberIds: List<String>): ServerResult<RoomDto>
+
+    suspend fun invite(roomId: String, userIds: List<String>): ServerResult<RoomDto>
+
+    suspend fun leaveRoom(roomId: String): ServerResult<Unit>
+
+    suspend fun renameRoom(roomId: String, title: String): ServerResult<Unit>
+
+    suspend fun muteRoom(roomId: String, isMuted: Boolean): ServerResult<Unit>
+
+    /**
+     * 대화 한 쪽. [afterId] 를 주면 그 뒤를 앞에서부터, [beforeId] 를 주면 그 앞을 뒤에서부터,
+     * 둘 다 없으면 가장 최근 것을 받는다.
+     */
+    suspend fun messages(
+        roomId: String,
+        afterId: String? = null,
+        beforeId: String? = null,
+        limit: Int,
+    ): ServerResult<List<MessageDto>>
+
+    /** 대화를 보낸다. 같은 [SendMessageRequest.id] 로 다시 보내도 서버에는 한 번만 들어간다. */
+    suspend fun sendMessage(roomId: String, request: SendMessageRequest): ServerResult<MessageDto>
+
+    suspend fun markRead(roomId: String, messageId: String): ServerResult<Unit>
+
+    /** [fromId] 부터 뒤쪽 대화들의 안읽음 수. */
+    suspend fun unreadCounts(roomId: String, fromId: String): ServerResult<List<UnreadCountDto>>
 }
 
 class TalkServerClient(
@@ -80,6 +133,94 @@ class TalkServerClient(
         request("내 정보", UserDto.serializer()) {
             httpClient.get("$baseUrl/users/me") { auth() }
         }
+
+    override suspend fun rooms(): ServerResult<List<RoomDto>> =
+        request("방 목록", RoomsResponse.serializer()) {
+            httpClient.get("$baseUrl/rooms") { auth() }
+        }.map { it.rooms }
+
+    override suspend fun room(roomId: String): ServerResult<RoomDto> =
+        request("방 정보", RoomDto.serializer()) {
+            httpClient.get(roomUrl(roomId)) { auth() }
+        }
+
+    override suspend fun createRoom(memberIds: List<String>): ServerResult<RoomDto> =
+        request("방 만들기", RoomDto.serializer()) {
+            httpClient.post("$baseUrl/rooms") {
+                auth()
+                jsonBody(CreateRoomRequest.serializer(), CreateRoomRequest(memberIds))
+            }
+        }
+
+    override suspend fun invite(roomId: String, userIds: List<String>): ServerResult<RoomDto> =
+        request("초대", RoomDto.serializer()) {
+            httpClient.post("${roomUrl(roomId)}/members") {
+                auth()
+                jsonBody(InviteRequest.serializer(), InviteRequest(userIds))
+            }
+        }
+
+    override suspend fun leaveRoom(roomId: String): ServerResult<Unit> =
+        command("방 나가기") {
+            httpClient.post("${roomUrl(roomId)}/leave") { auth() }
+        }
+
+    override suspend fun renameRoom(roomId: String, title: String): ServerResult<Unit> =
+        command("방 이름 변경") {
+            httpClient.put("${roomUrl(roomId)}/title") {
+                auth()
+                jsonBody(RenameRoomRequest.serializer(), RenameRoomRequest(title))
+            }
+        }
+
+    override suspend fun muteRoom(roomId: String, isMuted: Boolean): ServerResult<Unit> =
+        command("방 알림 설정") {
+            httpClient.put("${roomUrl(roomId)}/mute") {
+                auth()
+                jsonBody(MuteRoomRequest.serializer(), MuteRoomRequest(isMuted))
+            }
+        }
+
+    override suspend fun messages(
+        roomId: String,
+        afterId: String?,
+        beforeId: String?,
+        limit: Int,
+    ): ServerResult<List<MessageDto>> =
+        request("대화 받기", MessagesResponse.serializer()) {
+            httpClient.get("${roomUrl(roomId)}/messages") {
+                auth()
+                afterId?.let { parameter("after", it) }
+                beforeId?.let { parameter("before", it) }
+                parameter("limit", limit)
+            }
+        }.map { it.messages }
+
+    override suspend fun sendMessage(roomId: String, request: SendMessageRequest): ServerResult<MessageDto> =
+        request("대화 보내기", MessageDto.serializer()) {
+            httpClient.post("${roomUrl(roomId)}/messages") {
+                auth()
+                jsonBody(SendMessageRequest.serializer(), request)
+            }
+        }
+
+    override suspend fun markRead(roomId: String, messageId: String): ServerResult<Unit> =
+        command("읽음") {
+            httpClient.post("${roomUrl(roomId)}/read") {
+                auth()
+                jsonBody(MarkReadRequest.serializer(), MarkReadRequest(messageId))
+            }
+        }
+
+    override suspend fun unreadCounts(roomId: String, fromId: String): ServerResult<List<UnreadCountDto>> =
+        request("안읽음 수", UnreadCountsResponse.serializer()) {
+            httpClient.get("${roomUrl(roomId)}/unread") {
+                auth()
+                parameter("from", fromId)
+            }
+        }.map { it.counts }
+
+    private fun roomUrl(roomId: String): String = "$baseUrl/rooms/${roomId.encodeURLPathPart()}"
 
     /**
      * 인증 헤더.
@@ -113,6 +254,12 @@ class TalkServerClient(
         return ServerResult.Success(value)
     }
 
+    /** 본문 없이 성공 여부만 돌아오는 요청. */
+    private suspend fun command(label: String, call: suspend () -> HttpResponse): ServerResult<Unit> {
+        val (response, text) = send(label, call) ?: return ServerResult.Unreachable
+        return if (response.status.isSuccess()) ServerResult.Success(Unit) else rejected(label, response, text)
+    }
+
     /** 요청을 보내고 상태와 본문을 받는다. 닿지 못하면 null. */
     private suspend fun send(label: String, call: suspend () -> HttpResponse): Pair<HttpResponse, String>? =
         runCatching {
@@ -132,6 +279,12 @@ class TalkServerClient(
         val code = runCatching { json.decodeFromString(ApiError.serializer(), text).code }.getOrDefault("")
         Log.message("[Server] $label 거절 — ${response.status.value} $code")
         return ServerResult.Rejected(response.status.value, code)
+    }
+
+    private fun <T, R> ServerResult<T>.map(transform: (T) -> R): ServerResult<R> = when (this) {
+        is ServerResult.Success -> ServerResult.Success(transform(value))
+        is ServerResult.Rejected -> this
+        ServerResult.Unreachable -> ServerResult.Unreachable
     }
 
     private companion object {

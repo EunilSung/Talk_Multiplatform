@@ -23,9 +23,14 @@ object Config {
         const val IS_KEEP_CACHE_DAY: Boolean = false
     }
 
-    /** 로컬 데이터베이스 (SQLDelight) 설정. [NAME] 을 바꾸면 새 DB 로 시작. */
+    /**
+     * 로컬 데이터베이스 (SQLDelight) 설정. [NAME] 을 바꾸면 새 DB 로 시작.
+     *
+     * 서버 모드는 파일을 따로 쓴다. 한 파일을 같이 쓰면 시연용 대화방과 서버에서 받은 대화방이 섞이고,
+     * 서버 목록에 없는 방을 지울 때 시연용 데이터까지 지워진다.
+     */
     object Database {
-        const val NAME: String = "AppDatabase_v12.db"
+        val NAME: String = if (Server.IS_ENABLED) "AppDatabase_server_v1.db" else "AppDatabase_v12.db"
     }
 
     object MyInfo {

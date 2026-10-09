@@ -34,6 +34,7 @@ dependencies {
     testImplementation(libs.kotlin.test)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.ktor.client.content.negotiation)
+    testImplementation(libs.ktor.client.websockets)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)

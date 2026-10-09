@@ -13,7 +13,7 @@ import java.io.File
  * 다른 점은 DB 를 스스로 마련한다는 것 하나다.
  */
 fun main() {
-    val port = System.getenv("PORT")?.toIntOrNull() ?: ServerConfig.DEFAULT_PORT
+    val port = System.getenv("PORT")?.toIntOrNull() ?: LOCAL_SERVER_PORT
     val postgres = LocalPostgres.startPersistent(File(LOCAL_DB_DIRECTORY), LOCAL_DB_PORT)
     Runtime.getRuntime().addShutdownHook(Thread { postgres.close() })
 
@@ -22,5 +22,7 @@ fun main() {
     embeddedServer(Netty, port = port) { module(config) }.start(wait = true)
 }
 
+/** 운영 기본 포트(8080)를 피한다. 같은 PC 에서 다른 프로젝트의 서버가 그 포트를 쓰면 서로의 앱이 엉뚱한 서버에 붙는다. */
+private const val LOCAL_SERVER_PORT = 8090
 private const val LOCAL_DB_DIRECTORY = ".localdb"
 private const val LOCAL_DB_PORT = 54329

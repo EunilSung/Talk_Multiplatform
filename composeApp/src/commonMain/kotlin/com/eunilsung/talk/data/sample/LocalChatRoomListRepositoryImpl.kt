@@ -38,6 +38,8 @@ class LocalChatRoomListRepositoryImpl(
     private val settings: Settings,
     private val mapper: ChatRoomMapper,
     database: AppDatabase,
+    /** 시연용 대화방과 그룹 칩을 채울지. 서버 모드에서는 끈다 — 방은 서버에서만 온다. */
+    private val seedsSampleRooms: Boolean = true,
 ) : ChatRoomListRepository {
 
     private val dbQueries = database.appDatabaseQueries
@@ -218,7 +220,7 @@ class LocalChatRoomListRepositoryImpl(
         val myId = Config.MyInfo.userId
         if (myId.isBlank()) return@withContext
 
-        if (dbQueries.selectChatRoomsByMyId(myId).executeAsList().isEmpty()) {
+        if (seedsSampleRooms && dbQueries.selectChatRoomsByMyId(myId).executeAsList().isEmpty()) {
             val seeded = TestChatRooms.seed(myId)
             dbQueries.transaction {
                 seeded.forEach { dbQueries.insertChatRoom(mapper.toEntity(myId, it)) }
@@ -230,10 +232,32 @@ class LocalChatRoomListRepositoryImpl(
             Log.message("[ChatRoomList/Local] seeded into DB — ${seeded.size} rooms (me=$myId)")
         }
 
-        if (settings.getStringOrNull(chatGroupsKey(myId)) == null) {
+        if (seedsSampleRooms && settings.getStringOrNull(chatGroupsKey(myId)) == null) {
             writeChatGroups(myId, TestChatRooms.seedGroups())
         }
         _chatGroups.value = readChatGroups(myId)
+        refreshFromDb(myId)
+    }
+
+    /**
+     * 내 대화방 목록을 [rooms] 로 통째로 바꾼다. [rooms] 에 없는 방은 대화와 함께 지운다.
+     *
+     * 서버에서 받은 목록을 로컬에 반영할 때 쓴다. 한 트랜잭션으로 바꾸므로 중간 상태가 화면에 보이지 않는다.
+     * 상단고정과 그룹 칩은 이 기기의 설정이라 건드리지 않는다.
+     */
+    internal suspend fun replaceRooms(rooms: List<ChatRoom.Item>) = withContext(Dispatchers.Default) {
+        val myId = Config.MyInfo.userId
+        if (myId.isBlank()) return@withContext
+        val keptIds = rooms.map { it.id }.toSet()
+        dbQueries.transaction {
+            dbQueries.selectChatRoomsByMyId(myId).executeAsList()
+                .filterNot { it.roomId in keptIds }
+                .forEach {
+                    dbQueries.deleteChatRoomById(myId = myId, roomId = it.roomId)
+                    dbQueries.deleteChatsByRoom(myId, it.roomId)
+                }
+            rooms.forEach { dbQueries.insertChatRoom(mapper.toEntity(myId, it)) }
+        }
         refreshFromDb(myId)
     }
 

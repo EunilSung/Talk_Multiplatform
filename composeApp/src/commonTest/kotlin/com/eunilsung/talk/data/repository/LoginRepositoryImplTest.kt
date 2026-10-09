@@ -6,12 +6,9 @@ import com.eunilsung.talk.domain.model.Login
 import com.eunilsung.talk.testsupport.FakeTalkServer
 import com.eunilsung.talk.testsupport.TestLocalSecret
 import com.eunilsung.talk.testsupport.TestMyInfo
+import com.eunilsung.talk.testsupport.awaitUntil
 import com.russhwolf.settings.MapSettings
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withTimeout
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -139,16 +136,5 @@ class LoginRepositoryImplTest {
         assertTrue(repository.isLoggedIn.value)
         assertEquals("token-1", tokenStore.token())
     }
-
-    /** 저장소가 자기 스코프에서 돌리는 일이 끝나기를 실제 시간으로 기다린다. */
-    private suspend fun awaitUntil(condition: () -> Boolean) = withContext(Dispatchers.Default) {
-        withTimeout(AWAIT_TIMEOUT_MS) {
-            while (!condition()) kotlinx.coroutines.delay(AWAIT_POLL_MS)
-        }
-    }
-
-    private companion object {
-        const val AWAIT_TIMEOUT_MS = 5_000L
-        const val AWAIT_POLL_MS = 10L
-    }
 }
+

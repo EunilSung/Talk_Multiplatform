@@ -47,6 +47,8 @@ class LocalChatRoomRepositoryImpl(
     private val fileMetadataResolver: FileMetadataResolver,
     private val senderOverride: SenderOverrideRepository,
     database: AppDatabase,
+    /** 빈 방에 시연용 대화를 채울지. 서버 모드에서는 끈다 — 대화는 서버에서만 온다. */
+    private val seedsSampleChats: Boolean = true,
 ) : ChatRoomRepository {
 
     private val dbQueries = database.appDatabaseQueries
@@ -84,7 +86,9 @@ class LocalChatRoomRepositoryImpl(
         val myId = Config.MyInfo.userId
         if (myId.isBlank() || chatRoomId.isBlank()) return@withContext
 
-        if (dbQueries.selectRecentChatsByRoom(myId, chatRoomId, LOAD_LIMIT).executeAsList().isEmpty()) {
+        if (seedsSampleChats &&
+            dbQueries.selectRecentChatsByRoom(myId, chatRoomId, LOAD_LIMIT).executeAsList().isEmpty()
+        ) {
             seedChats(myId, chatRoomId)
         }
         reload(myId, chatRoomId)
@@ -162,10 +166,24 @@ class LocalChatRoomRepositoryImpl(
         if (myId.isBlank() || chatRoomId.isBlank()) return@withContext
         if (text.isBlank() && emoticonId.isNullOrBlank()) return@withContext
 
+        /** 서버가 없으므로 곧바로 전송 완료 상태로 둔다. */
+        val chat = buildTextChat(chatRoomId, text, replyTarget, emoticonId, Chat.Statue.COMPLETE)
+        appendMyChat(chatRoomId, chat)
+        Log.message("[Chat/Local] sent ${chat.chatID} in $chatRoomId")
+    }
+
+    /** 내가 쓴 텍스트·답장·이모티콘 대화를 [statue] 상태로 만든다. 저장하지는 않는다. */
+    internal fun buildTextChat(
+        chatRoomId: String,
+        text: String,
+        replyTarget: Chat.Item?,
+        emoticonId: String?,
+        statue: String,
+    ): Chat.Item {
         val sender = senderOf(chatRoomId)
         val hasEmoticon = !emoticonId.isNullOrBlank()
         // 답장이면 REPLY, 이모티콘이면 EMOTICON, 아니면 TEXT.
-        val chat = Chat.Item(
+        return Chat.Item(
             chatID = ChatIdUtils.generateChatId(sender.id),
             chatType = when {
                 replyTarget != null -> Chat.Type.REPLY
@@ -173,8 +191,7 @@ class LocalChatRoomRepositoryImpl(
                 else -> Chat.Type.TEXT
             },
             chatContent = text,
-            // 곧바로 전송 완료 상태로 둔다.
-            chatStatue = Chat.Statue.COMPLETE,
+            chatStatue = statue,
             date = nowChatDate(),
             unReadCount = "0",
             user = sender,
@@ -193,9 +210,6 @@ class LocalChatRoomRepositoryImpl(
             } ?: ReplyChat(),
             emoticon = if (hasEmoticon) Emoticon(id = emoticonId!!) else Emoticon(),
         )
-
-        appendMyChat(chatRoomId, chat)
-        Log.message("[Chat/Local] sent ${chat.chatID} in $chatRoomId")
     }
 
     /** 재전송 대상 없음. */
@@ -458,6 +472,34 @@ class LocalChatRoomRepositoryImpl(
         if (chat.isMe) _mySendPush.tryEmit(chatRoomId)
         _newChatPush.tryEmit(chatRoomId)
     }
+
+    /**
+     * 대화 여러 건을 저장하고 화면 목록을 다시 읽는다. 새 대화 신호는 내지 않는다.
+     *
+     * 서버에서 받아 온 대화를 채워 넣거나, 이미 있는 대화의 상태(전송 중 → 완료·실패)를 고칠 때 쓴다.
+     * 같은 id 는 덮어쓴다.
+     */
+    internal suspend fun storeChats(chatRoomId: String, chats: List<Chat.Item>) = withContext(Dispatchers.Default) {
+        val myId = Config.MyInfo.userId
+        if (myId.isBlank() || chatRoomId.isBlank()) return@withContext
+        dbQueries.transaction { chats.forEach { persist(myId, chatRoomId, it) } }
+        reload(myId, chatRoomId)
+    }
+
+    /** 대화별 안읽음 수(대화 id → 수)를 고치고 화면 목록을 다시 읽는다. 로컬에 없는 대화는 건너뛴다. */
+    internal suspend fun updateUnreadCounts(chatRoomId: String, counts: Map<String, String>) =
+        withContext(Dispatchers.Default) {
+            val myId = Config.MyInfo.userId
+            if (myId.isBlank() || chatRoomId.isBlank() || counts.isEmpty()) return@withContext
+            dbQueries.transaction {
+                counts.forEach { (chatId, count) ->
+                    dbQueries.updateChatUnreadCount(
+                        unReadCount = count, myId = myId, chatRoomId = chatRoomId, chatId = chatId
+                    )
+                }
+            }
+            reload(myId, chatRoomId)
+        }
 
     private fun persist(myId: String, chatRoomId: String, chat: Chat.Item) {
         dbQueries.insertChat(chatMapper.toEntity(myId, chatRoomId, chat))

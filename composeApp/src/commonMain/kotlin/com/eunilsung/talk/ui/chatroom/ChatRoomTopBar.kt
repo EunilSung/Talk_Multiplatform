@@ -84,27 +84,29 @@ fun ChatRoomTopBar(
                 },
                 actions = {
                     if (!isSearchMode) {
-                        // 전송 주체 전환(샘플 전용).
-                        IconButton(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (senderOverride != null) AppColors.UserSelectBg
-                                    else AppColors.Transparent
-                                ),
-                            onClick = {
-                                hideKeyboard()
-                                onSenderPick()
-                            }) {
-                            Icon(
-                                painter = painterResource(Res.drawable.search_user_icon),
-                                modifier = Modifier.size(22.dp),
-                                contentDescription = "Change Sender",
-                                tint = MaterialTheme.colorScheme.onBackground
-                            )
+                        /** 전송 주체 전환 — 서버가 없을 때 상대 대화를 흉내 내는 시연용 기능이라 서버 모드에서는 숨긴다. */
+                        if (!Config.Server.IS_ENABLED) {
+                            IconButton(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (senderOverride != null) AppColors.UserSelectBg
+                                        else AppColors.Transparent
+                                    ),
+                                onClick = {
+                                    hideKeyboard()
+                                    onSenderPick()
+                                }) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.search_user_icon),
+                                    modifier = Modifier.size(22.dp),
+                                    contentDescription = "Change Sender",
+                                    tint = MaterialTheme.colorScheme.onBackground
+                                )
+                            }
+                            Spacer(modifier = Modifier.size(10.dp))
                         }
-                        Spacer(modifier = Modifier.size(10.dp))
                         if (Config.ChatRoom.IS_BOOK_MARK_ENABLED) {
                             IconButton(
                                 modifier = Modifier.size(28.dp),

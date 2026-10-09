@@ -2,7 +2,10 @@ package com.eunilsung.talk.server
 
 import com.eunilsung.talk.server.config.ServerConfig
 import com.eunilsung.talk.server.db.Database
+import com.eunilsung.talk.server.chat.ChatHub
 import com.eunilsung.talk.server.repository.AuthTokenRepository
+import com.eunilsung.talk.server.repository.ChatRepository
+import com.eunilsung.talk.server.routes.chatRoutes
 import com.eunilsung.talk.server.repository.UserRepository
 import com.eunilsung.talk.server.routes.authRoutes
 import com.eunilsung.talk.server.routes.healthRoutes
@@ -58,11 +61,14 @@ fun Application.module(dataSource: DataSource) {
 
     val users = UserRepository(dataSource)
     val tokens = AuthTokenRepository(dataSource)
+    val chats = ChatRepository(dataSource)
+    val chatHub = ChatHub()
     SeedAccounts.ensure(users)
 
     routing {
         healthRoutes(dataSource)
         authRoutes(users, tokens)
+        chatRoutes(chats, tokens, chatHub)
     }
 }
 

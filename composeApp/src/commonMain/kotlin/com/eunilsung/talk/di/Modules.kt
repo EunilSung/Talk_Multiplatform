@@ -5,6 +5,12 @@ import com.eunilsung.talk.Config
 import com.eunilsung.talk.data.remote.server.AuthTokenStore
 import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.data.remote.server.TalkServerClient
+import com.eunilsung.talk.data.mapper.ServerChatMapper
+import com.eunilsung.talk.data.remote.server.ServerEvents
+import com.eunilsung.talk.data.remote.server.TalkSocket
+import com.eunilsung.talk.data.repository.ChatRoomListRepositoryImpl
+import com.eunilsung.talk.data.repository.ChatRoomRepositoryImpl
+import com.eunilsung.talk.data.repository.InviteRepositoryImpl
 import com.eunilsung.talk.data.repository.LoginRepositoryImpl
 import com.eunilsung.talk.data.local.DatabaseDriverFactory
 import com.eunilsung.talk.data.local.NoticeUiStateStore
@@ -76,6 +82,8 @@ val appModule = module {
     viewModelOf(::LoginViewModel)
     single { AuthTokenStore(get()) }
     single<TalkServer> { TalkServerClient(get(), get()) }
+    single<ServerEvents> { TalkSocket(get(), get()) }
+    singleOf(::ServerChatMapper)
     /** 서버 주소가 있으면 서버에, 없으면 TestAccounts(test1~test10 / 1234) 로 인증. */
     single<LoginRepository> {
         if (Config.Server.IS_ENABLED) LoginRepositoryImpl(get(), get(), get()) else LocalLoginRepositoryImpl(get())
@@ -106,7 +114,9 @@ val appModule = module {
     viewModelOf(::InviteViewModel)
     viewModelOf(::InviteGroupViewModel)
     // ChatRoomEntity 에 직접 방을 만들고 참여자를 추가.
-    single<InviteRepository> { LocalInviteRepositoryImpl(get(), get(), get()) }
+    single<InviteRepository> {
+        if (Config.Server.IS_ENABLED) InviteRepositoryImpl(get(), get()) else LocalInviteRepositoryImpl(get(), get(), get())
+    }
     singleOf(::InviteUsersUseCase)
     singleOf(::InviteUseCases)
 
@@ -123,8 +133,17 @@ val appModule = module {
     // ChatEntity 에 대화를 직접 읽고 쓴다. (투표 저장소도 구현 타입이 필요해 둘 다 등록)
     // 전송 주체 전환(샘플 전용) — 싱글턴.
     single<SenderOverrideRepository> { ChatSenderOverride() }
-    single { LocalChatRoomRepositoryImpl(get(), get(), get(), get(), get(), get()) }
-    single<ChatRoomRepository> { get<LocalChatRoomRepositoryImpl>() }
+    single {
+        LocalChatRoomRepositoryImpl(
+            get(), get(), get<LocalChatRoomListRepositoryImpl>(), get(), get(), get(),
+            seedsSampleChats = !Config.Server.IS_ENABLED,
+        )
+    }
+    /** 서버 주소가 있으면 서버와 주고받고, 로컬 구현은 그 밑에서 캐시와 미연동 기능을 맡는다. */
+    single<ChatRoomRepository> {
+        if (Config.Server.IS_ENABLED) ChatRoomRepositoryImpl(get(), get(), get(), get(), get())
+        else get<LocalChatRoomRepositoryImpl>()
+    }
     singleOf(::GetChatsUseCase)
     singleOf(::FetchChatsUseCase)
     singleOf(::FetchMoreChatsUseCase)
@@ -152,7 +171,13 @@ val appModule = module {
     viewModelOf(::ChatRoomListViewModel)
     singleOf(::ChatRoomMapper)
     // TestChatRooms 로 대화방/그룹 칩 구성.
-    single<ChatRoomListRepository> { LocalChatRoomListRepositoryImpl(get(), get(), get(), get()) }
+    single {
+        LocalChatRoomListRepositoryImpl(get(), get(), get(), get(), seedsSampleRooms = !Config.Server.IS_ENABLED)
+    }
+    single<ChatRoomListRepository> {
+        if (Config.Server.IS_ENABLED) ChatRoomListRepositoryImpl(get(), get(), get(), get(), get())
+        else get<LocalChatRoomListRepositoryImpl>()
+    }
     singleOf(::GetChatRoomsUseCase)
     singleOf(::FetchChatRoomsUseCase)
     singleOf(::RenameChatRoomUseCase)
