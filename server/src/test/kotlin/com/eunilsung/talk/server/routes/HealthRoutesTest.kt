@@ -16,7 +16,7 @@ class HealthRoutesTest {
 
     @Test
     fun `DB 가 살아 있으면 ok 로 답한다`() = testApplication {
-        application { module(TestDatabase.dataSource) }
+        application { module(TestDatabase.dataSource, TestDatabase.fileStorage) }
 
         val response = client.get("/health")
 

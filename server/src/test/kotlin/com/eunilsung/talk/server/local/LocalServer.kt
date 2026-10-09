@@ -17,7 +17,7 @@ fun main() {
     val postgres = LocalPostgres.startPersistent(File(LOCAL_DB_DIRECTORY), LOCAL_DB_PORT)
     Runtime.getRuntime().addShutdownHook(Thread { postgres.close() })
 
-    val config = ServerConfig(port = port, db = LocalPostgres.configOf(postgres))
+    val config = ServerConfig(port = port, db = LocalPostgres.configOf(postgres), filesDirectory = LOCAL_FILES_DIRECTORY)
     println("로컬 DB — ${config.db.url} (user=${config.db.user}, 비밀번호 없음)")
     embeddedServer(Netty, port = port) { module(config) }.start(wait = true)
 }
@@ -25,4 +25,5 @@ fun main() {
 /** 운영 기본 포트(8080)를 피한다. 같은 PC 에서 다른 프로젝트의 서버가 그 포트를 쓰면 서로의 앱이 엉뚱한 서버에 붙는다. */
 private const val LOCAL_SERVER_PORT = 8090
 private const val LOCAL_DB_DIRECTORY = ".localdb"
+private const val LOCAL_FILES_DIRECTORY = ".localfiles"
 private const val LOCAL_DB_PORT = 54329

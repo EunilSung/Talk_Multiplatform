@@ -2,7 +2,9 @@ package com.eunilsung.talk.data.repository
 
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.data.mapper.ServerChatMapper
+import com.eunilsung.talk.data.local.FileMetadataResolver
 import com.eunilsung.talk.data.remote.server.ServerEvents
+import com.eunilsung.talk.data.remote.server.ServerFileStore
 import com.eunilsung.talk.data.remote.server.ServerResult
 import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.data.remote.server.valueOrNull
@@ -13,6 +15,8 @@ import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.repository.ChatRoomRepository
 import com.eunilsung.talk.shared.api.ChatErrorCode
+import com.eunilsung.talk.shared.api.MAX_FILE_BYTES
+import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.NoticeChangeResponse
 import com.eunilsung.talk.shared.api.ServerEvent
 import com.eunilsung.talk.util.ChatIdUtils
@@ -29,6 +33,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 
 /**
@@ -38,13 +44,15 @@ import kotlinx.coroutines.withContext
  * 서버로 보낸다. 서버가 완결된 응답을 준 것만 로컬에 반영하므로, 요청이 실패하면 가지고 있던 대화가
  * 그대로 남는다.
  *
- * 파일 전송은 아직 서버에 연동하지 않았다. [local] 이 이 기기 안에서만 처리한다.
+ * 받은 파일은 기기 캐시에 내려받아 둔다. 화면이 파일을 기기 안 경로로 열기 때문이다([ServerFileStore]).
  */
 class ChatRoomRepositoryImpl(
     private val local: LocalChatRoomRepositoryImpl,
     private val server: TalkServer,
     private val serverEvents: ServerEvents,
     private val mapper: ServerChatMapper,
+    private val fileStore: ServerFileStore,
+    private val fileMetadataResolver: FileMetadataResolver,
     database: AppDatabase,
 ) : ChatRoomRepository by local {
 
@@ -61,6 +69,8 @@ class ChatRoomRepositoryImpl(
 
     /** 지금 서버로 보내는 중인 대화 id. 여기에 없는데 '전송 중'인 대화는 지난 실행이 남긴 것이다. */
     private val sendingIds = MutableStateFlow<Set<String>>(emptySet())
+
+    private val downloadPermits = Semaphore(MAX_PARALLEL_DOWNLOADS)
 
     private val _roomUsersChanged = MutableSharedFlow<String>(extraBufferCapacity = PUSH_BUFFER)
     override val roomUsersChanged: SharedFlow<String> = _roomUsersChanged.asSharedFlow()
@@ -196,7 +206,7 @@ class ChatRoomRepositoryImpl(
         )
         sendingIds.update { it + retry.chatID }
         local.storeChats(chatRoomId, listOf(retry))
-        deliver(chatRoomId, retry)
+        if (retry.chatType in FILE_CHAT_TYPES) deliverFile(chatRoomId, retry) else deliver(chatRoomId, retry)
     }
 
     /** 서버에 읽은 자리를 알리고, 목록의 안읽음 배지를 내린다. 서버에 닿지 못해도 배지는 내린다. */
@@ -231,7 +241,7 @@ class ChatRoomRepositoryImpl(
         var cursor = lastKnown
         repeat(MAX_SYNC_PAGES) {
             val page = server.messages(chatRoomId, afterId = cursor, limit = PAGE_SIZE).valueOrNull() ?: return
-            if (page.isNotEmpty()) local.storeChats(chatRoomId, page.map { mapper.toChat(it) })
+            if (page.isNotEmpty()) storeFromServer(chatRoomId, page)
             syncedRooms.update { it + chatRoomId }
             if (cursor == null || page.size < PAGE_SIZE) {
                 if (lastKnown != null) refreshRecentChats(chatRoomId)
@@ -249,7 +259,67 @@ class ChatRoomRepositoryImpl(
      */
     private suspend fun refreshRecentChats(chatRoomId: String) {
         val recent = server.messages(chatRoomId, limit = PAGE_SIZE).valueOrNull() ?: return
-        if (recent.isNotEmpty()) local.storeChats(chatRoomId, recent.map { mapper.toChat(it) })
+        if (recent.isNotEmpty()) storeFromServer(chatRoomId, recent)
+    }
+
+    /**
+     * 파일을 올린 뒤 대화로 보낸다. 고르는 즉시 '전송 중'으로 보이고, 둘 다 끝나야 완료가 된다.
+     *
+     * 파일만 올라가고 대화가 못 간 경우에도 실패로 남긴다 — 상대에게는 아무것도 보이지 않았기 때문이다.
+     */
+    override suspend fun sendFile(chatRoomId: String, path: String) {
+        val chat = local.buildFileChat(chatRoomId, path, Chat.Statue.SENDING) ?: return
+        sendingIds.update { it + chat.chatID }
+        local.appendMyChat(chatRoomId, chat)
+        deliverFile(chatRoomId, chat)
+    }
+
+    private suspend fun deliverFile(chatRoomId: String, chat: Chat.Item) {
+        val settled = uploadAndSend(chatRoomId, chat) ?: chat.copy(chatStatue = Chat.Statue.FAIL)
+        local.storeChats(chatRoomId, listOf(settled))
+        sendingIds.update { it - chat.chatID }
+    }
+
+    /** 성공하면 서버가 확정한 대화, 어느 단계든 실패하면 null. */
+    private suspend fun uploadAndSend(chatRoomId: String, chat: Chat.Item): Chat.Item? {
+        val source = chat.localPath.ifBlank { chat.imagePath }
+        val bytes = fileMetadataResolver.readBytes(source) ?: return null
+        if (bytes.size > MAX_FILE_BYTES) return null
+        val file = server.uploadFile(chatRoomId, chat.originalFileName.ifBlank { DEFAULT_FILE_NAME }, bytes)
+            .valueOrNull() ?: return null
+        /** 내가 올린 파일은 원본이 이미 기기에 있다. 경로를 적어 두어 다시 내려받지 않게 한다. */
+        fileStore.remember(file.id, source)
+        val message = server.sendMessage(chatRoomId, mapper.toFileRequest(chat, file)).valueOrNull() ?: return null
+        return mapper.toChat(message)
+    }
+
+    /** 서버에서 받은 대화들을 로컬에 반영하고, 아직 기기에 없는 파일은 뒤에서 받는다. */
+    private suspend fun storeFromServer(chatRoomId: String, messages: List<MessageDto>) {
+        local.storeChats(chatRoomId, messages.map { mapper.toChat(it) })
+        downloadMissingFiles(chatRoomId, messages)
+    }
+
+    /**
+     * 파일 대화 중 기기에 파일이 없는 것을 내려받아 말풍선에 연결한다.
+     *
+     * 대화 저장을 기다리게 하지 않고 뒤에서 받는다. 다 받으면 그 대화에 경로만 채워 다시 저장한다 —
+     * 받는 사이 달라졌을 수 있는 공감·안읽음 수를 옛 값으로 되돌리지 않기 위해서다.
+     */
+    private fun downloadMissingFiles(chatRoomId: String, messages: List<MessageDto>) {
+        messages.forEach { message ->
+            val fileId = message.payload?.fileId ?: return@forEach
+            if (message.isRecalled || fileStore.localPath(fileId) != null) return@forEach
+            repositoryScope.launch {
+                val path = downloadPermits.withPermit {
+                    fileStore.download(fileId, message.payload?.fileName ?: DEFAULT_FILE_NAME)
+                } ?: return@launch
+                val current = local.getChats(chatRoomId).first().firstOrNull { it.chatID == message.id }
+                    ?: return@launch
+                if (!current.isRecalled) {
+                    local.storeChats(chatRoomId, listOf(current.copy(imagePath = path, localPath = path)))
+                }
+            }
+        }
     }
 
     /** 서버로 보내고, 결과에 따라 '전송 중'을 완료 또는 실패로 바꾼다. */
@@ -299,6 +369,7 @@ class ChatRoomRepositoryImpl(
         val chat = mapper.toChat(message)
         /** 내가 보낸 대화의 메아리는 저장만 한다. 새 대화 신호를 내면 화면이 받은 대화처럼 반응한다. */
         if (chat.isMe) local.storeChats(event.roomId, listOf(chat)) else local.appendMyChat(event.roomId, chat)
+        downloadMissingFiles(event.roomId, listOf(message))
     }
 
     /** 방 정보가 바뀌었다. 내가 더 이상 참여자가 아니면 나간 것으로, 아니면 참여자가 바뀐 것으로 알린다. */
@@ -318,5 +389,9 @@ class ChatRoomRepositoryImpl(
         /** 한 번에 따라잡는 최대 쪽 수. 이보다 밀려 있으면 다음 진입 때 이어서 받는다. */
         const val MAX_SYNC_PAGES = 20
         const val PUSH_BUFFER = 8
+        /** 파일을 한꺼번에 몇 개까지 받을지. 방에 들어갈 때 사진이 많아도 연결을 독차지하지 않게 한다. */
+        const val MAX_PARALLEL_DOWNLOADS = 2
+        const val DEFAULT_FILE_NAME = "file"
+        val FILE_CHAT_TYPES = setOf(Chat.Type.IMAGE, Chat.Type.VIDEO, Chat.Type.FILE)
     }
 }

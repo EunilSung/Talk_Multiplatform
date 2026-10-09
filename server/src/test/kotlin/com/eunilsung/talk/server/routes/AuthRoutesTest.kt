@@ -138,7 +138,7 @@ class AuthRoutesTest {
         }
 
     private fun serverTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        application { module(TestDatabase.dataSource) }
+        application { module(TestDatabase.dataSource, TestDatabase.fileStorage) }
         block()
     }
 

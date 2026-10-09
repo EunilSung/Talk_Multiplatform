@@ -301,6 +301,19 @@ class ChatRepository(private val dataSource: DataSource) {
         selectMessage(conn, roomId, seq)
     }
 
+    /** 이 대화에 딸린 파일의 id. 파일 대화가 아니면 null. */
+    fun fileIdOf(roomId: String, messageId: String): String? =
+        dataSource.connection.use { conn ->
+            conn.prepareStatement("SELECT payload FROM chat_message WHERE room_id = ? AND client_id = ?").use { st ->
+                st.setString(1, roomId)
+                st.setString(2, messageId)
+                st.executeQuery().use { rs ->
+                    if (!rs.next()) return@use null
+                    rs.getString(1)?.let { json.decodeFromString(MessagePayloadDto.serializer(), it).fileId }
+                }
+            }
+        }
+
     /** 방의 공지. 공지가 없으면 내용이 빈 값을 돌려준다. 참여 중이 아니면 null. */
     fun notice(roomId: String, userId: String): NoticeDto? = dataSource.connection.use { conn ->
         if (!isActiveMember(conn, roomId, userId)) return@use null
