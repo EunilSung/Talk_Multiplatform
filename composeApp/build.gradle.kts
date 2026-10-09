@@ -18,8 +18,8 @@ plugins {
  * 서버 주소를 `local.properties` 의 `server.baseUrl` 에서 읽는다.
  *
  * 비워 두면 서버 없이 로컬 데이터만으로 도는 모드로 빌드된다. 값을 넣으면 그 서버에 붙는다.
- *   - Android 에뮬레이터: http://10.0.2.2:8080
- *   - iOS 시뮬레이터:     http://localhost:8080
+ *   - Android 에뮬레이터: http://10.0.2.2:8090
+ *   - iOS 시뮬레이터:     http://localhost:8090
  */
 val serverBaseUrlProperty: String = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
@@ -116,6 +116,7 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.client.websockets)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
 

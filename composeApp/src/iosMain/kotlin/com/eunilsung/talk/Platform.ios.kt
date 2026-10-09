@@ -2,6 +2,7 @@ package com.eunilsung.talk
 
 import coil3.PlatformContext
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.engine.darwin.Darwin
 import com.eunilsung.talk.data.local.AppExiter
 import com.eunilsung.talk.data.local.AppVersionProvider
@@ -52,7 +53,7 @@ val platformModule = module {
     single<PushNotifier> { IosPushNotifier(get()) }
     single<SystemNotificationGate> { IosSystemNotificationGate() }
     single<NotificationSoundPreviewer> { IosNotificationSoundPreviewer() }
-    single { HttpClient(Darwin) }
+    single { HttpClient(Darwin) { install(WebSockets) } }
     single<AppVersionProvider> { IosAppVersionProvider() }
     single<com.eunilsung.talk.data.local.BiometricAuthenticator> {
         com.eunilsung.talk.data.local.IosBiometricAuthenticator()

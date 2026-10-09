@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.provider.Settings
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.engine.okhttp.OkHttp
 import com.eunilsung.talk.data.local.AndroidAppExiter
 import com.eunilsung.talk.data.local.AndroidVideoThumbnailLoader
@@ -52,7 +53,7 @@ val platformModule = module {
     single<PushNotifier> { AndroidPushNotifier(get(), get()) }
     single<SystemNotificationGate> { AndroidSystemNotificationGate(get()) }
     single<NotificationSoundPreviewer> { AndroidNotificationSoundPreviewer(get()) }
-    single { HttpClient(OkHttp) }
+    single { HttpClient(OkHttp) { install(WebSockets) } }
     single<AppVersionProvider> { AndroidAppVersionProvider(get()) }
     single<com.eunilsung.talk.data.local.BiometricAuthenticator> {
         com.eunilsung.talk.data.local.AndroidBiometricAuthenticator(get())

@@ -42,8 +42,13 @@ class MainViewModel(
         settings.putString(SettingsKeys.KEY_IMAGE_CACHE_CLEAR_DATE, today)
     }
 
-    /** 이번 버전의 안내 팝업을 아직 안 봤으면 버전 문자열, 이미 봤거나 버전을 모르면 null. */
+    /**
+     * 이번 버전의 안내 팝업을 아직 안 봤으면 버전 문자열, 이미 봤거나 버전을 모르면 null.
+     *
+     * 안내는 "서버 없이 기기 안 데이터로 도는 샘플"이라는 내용이라 서버 모드에서는 띄우지 않는다.
+     */
     fun pendingNoticeVersion(): String? {
+        if (Config.Server.IS_ENABLED) return null
         val version = appVersionProvider.currentVersionName().takeIf { it.isNotBlank() } ?: return null
         val shown = settings.getStringOrNull(SettingsKeys.KEY_NOTICE_SHOWN_VERSION)
         return version.takeIf { it != shown }
