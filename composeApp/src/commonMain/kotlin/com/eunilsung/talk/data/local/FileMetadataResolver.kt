@@ -48,3 +48,19 @@ data class FileMetadata(
     val widthHeight: String,
     val sizeBytes: Long = -1L,
 )
+
+/**
+ * 저장된 픽셀 크기와 EXIF 방향(Orientation 태그 값)으로 **화면에 보이는 방향의** `"width:height"` 를 만든다.
+ *
+ * 휴대폰 카메라는 세로로 찍어도 픽셀은 가로(예: 4000×2250)로 저장하고 "90° 돌려 보라" 는 EXIF 방향만 붙인다.
+ * 이미지 로더는 방향을 반영해 세로로 그리는데, 픽셀 크기를 그대로 쓰면 말풍선 틀이 가로로 잡혀 세로 사진의
+ * 가로·세로 비율이 뒤집혀 보인다.
+ *
+ * EXIF 방향 5(전치)·6(90°)·7(횡단)·8(270°)은 가로와 세로가 바뀐다. 1~4 와 알 수 없는 값은 그대로다.
+ *
+ * @return 크기를 모르면 ""
+ */
+fun orientedWidthHeight(width: Int, height: Int, exifOrientation: Int): String {
+    if (width <= 0 || height <= 0) return ""
+    return if (exifOrientation in 5..8) "$height:$width" else "$width:$height"
+}
