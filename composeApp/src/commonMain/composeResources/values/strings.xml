@@ -6,6 +6,7 @@
     <string name="login">Login</string>
     <string name="login_fail">Login Fail</string>
     <string name="login_invalid_credentials">Incorrect ID or password</string>
+    <string name="login_too_many_attempts">Too many login attempts.\nPlease try again in a few minutes.</string>
     <string name="login_forced_logout">You have logged in from another device and have been logged out</string>
     <string name="no_server_response">No server response</string>
     <string name="login_time_out">Login Time Out</string>

@@ -1,5 +1,6 @@
 package com.eunilsung.talk.server.routes
 
+import com.eunilsung.talk.server.auth.LoginAttemptLimiter
 import com.eunilsung.talk.server.auth.PasswordHasher
 import com.eunilsung.talk.server.repository.AuthTokenRepository
 import com.eunilsung.talk.server.repository.UserRepository
@@ -7,15 +8,17 @@ import com.eunilsung.talk.shared.api.ApiError
 import com.eunilsung.talk.shared.api.ApiErrorCode
 import com.eunilsung.talk.shared.api.LoginRequest
 import com.eunilsung.talk.shared.api.LoginResponse
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
+import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 
 /** 로그인·로그아웃·내 정보. */
-fun Route.authRoutes(users: UserRepository, tokens: AuthTokenRepository) {
+fun Route.authRoutes(users: UserRepository, tokens: AuthTokenRepository, limiter: LoginAttemptLimiter) {
 
     /**
      * 로그인. 아이디가 없는 것과 비밀번호가 틀린 것을 같은 응답으로 돌려준다 —
@@ -25,6 +28,17 @@ fun Route.authRoutes(users: UserRepository, tokens: AuthTokenRepository) {
         val request = runCatching { call.receive<LoginRequest>() }.getOrNull()
         if (request == null || request.id.isBlank() || request.password.isBlank()) {
             call.respond(HttpStatusCode.BadRequest, ApiError(ApiErrorCode.BAD_REQUEST, "아이디와 비밀번호가 필요합니다"))
+            return@post
+        }
+
+        /** 잠겨 있는 동안에는 비밀번호를 확인하지 않는다. 맞는 비밀번호여도 받지 않아야 넣어 보기가 멈춘다. */
+        val lockedSeconds = limiter.secondsUntilUnlocked(request.id)
+        if (lockedSeconds > 0) {
+            call.response.header(HttpHeaders.RetryAfter, lockedSeconds.toString())
+            call.respond(
+                HttpStatusCode.TooManyRequests,
+                ApiError(ApiErrorCode.TOO_MANY_ATTEMPTS, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요"),
+            )
             return@post
         }
 
@@ -41,6 +55,8 @@ fun Route.authRoutes(users: UserRepository, tokens: AuthTokenRepository) {
                 null
             }
         }
+
+        if (response == null) limiter.recordFailure(request.id) else limiter.recordSuccess(request.id)
 
         if (response == null) {
             call.respond(

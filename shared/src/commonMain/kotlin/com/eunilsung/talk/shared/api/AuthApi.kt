@@ -44,6 +44,8 @@ object ApiErrorCode {
     /** 토큰이 없거나 더 이상 유효하지 않다. 다시 로그인해야 한다. */
     const val UNAUTHORIZED = "unauthorized"
     const val BAD_REQUEST = "bad_request"
+    /** 틀린 비밀번호가 연달아 들어와 잠시 로그인을 받지 않는다. 응답의 `Retry-After` 헤더가 남은 초다. */
+    const val TOO_MANY_ATTEMPTS = "too_many_attempts"
 }
 
 @Serializable

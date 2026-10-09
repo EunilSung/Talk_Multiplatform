@@ -1,5 +1,6 @@
 package com.eunilsung.talk.server
 
+import com.eunilsung.talk.server.auth.LoginAttemptLimiter
 import com.eunilsung.talk.server.config.ServerConfig
 import com.eunilsung.talk.server.db.Database
 import com.eunilsung.talk.server.chat.ChatHub
@@ -78,7 +79,7 @@ fun Application.module(dataSource: DataSource, fileStorage: FileStorage) {
 
     routing {
         healthRoutes(dataSource)
-        authRoutes(users, tokens)
+        authRoutes(users, tokens, LoginAttemptLimiter())
         chatRoutes(chats, files, fileStorage, tokens, chatHub)
         fileRoutes(files, fileStorage, tokens)
         voteRoutes(VoteRepository(chats), chats, tokens, chatHub)
