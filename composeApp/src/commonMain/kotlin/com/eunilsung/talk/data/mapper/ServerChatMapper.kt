@@ -140,7 +140,7 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
             totalUserCount = room.members.size.toString(),
             exitUserList = UserListCodec.encode(left.map { it.id to it.name }),
             exitUserCount = left.size.toString(),
-            mentionCount = "0",
+            mentionCount = room.mentionCount.toString(),
             enableMode = "0",
         )
     }

@@ -274,4 +274,29 @@ class ChatRepositoryTest {
         assertEquals(payload, stored.payload)
         assertEquals("김민준", stored.senderName)
     }
+
+    @Test
+    fun `나를 부른 안읽은 대화가 멘션 수로 잡히고 읽으면 내려간다`() {
+        val room = groupRoom()
+        say(room, "test1", "그냥 하는 말")
+        val call = say(room, "test1", "<mention>@이서연</mention> 확인 부탁해요")
+        say(room, "test1", "<mention>@이서연</mention> <mention>@박도윤</mention> 둘 다요", id = "both")
+
+        assertEquals(2, chats.room(room, "test2")?.mentionCount)
+        assertEquals(1, chats.room(room, "test3")?.mentionCount)
+        assertEquals(0, chats.room(room, "test1")?.mentionCount)
+
+        chats.markRead(room, "test2", call.id)
+        assertEquals(1, chats.room(room, "test2")?.mentionCount)
+    }
+
+    @Test
+    fun `방에 없는 이름과 자기 자신은 멘션으로 세지 않는다`() {
+        val room = groupRoom()
+
+        say(room, "test1", "<mention>@김민준</mention> <mention>@최지우</mention> <mention>@없는사람</mention>")
+
+        assertEquals(0, chats.room(room, "test1")?.mentionCount)
+        assertEquals(0, chats.room(room, "test2")?.mentionCount)
+    }
 }

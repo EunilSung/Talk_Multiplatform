@@ -57,6 +57,12 @@ class LocalChatRoomRepositoryImpl(
     /** 방별 대화 목록 — 화면이 구독하는 단일 출처. */
     private val chatsByRoom = MutableStateFlow<Map<String, List<Chat.Item>>>(emptyMap())
 
+    /**
+     * 방마다 화면에 올려 둘 대화 수. 위로 올려 더 불러올 때마다 늘어나고, 방을 닫으면 기본값으로 돌아간다.
+     * 여러 스레드에서 읽고 쓰지만 방 하나를 여는 동안 한 화면만 건드린다.
+     */
+    private val loadLimits = mutableMapOf<String, Long>()
+
     private val _newChatPush = MutableSharedFlow<String>(extraBufferCapacity = 8)
     override val newChatPush: SharedFlow<String> = _newChatPush.asSharedFlow()
 
@@ -150,6 +156,7 @@ class LocalChatRoomRepositoryImpl(
     }
 
     override fun clearCurrentRoom(chatRoomId: String) {
+        loadLimits.remove(chatRoomId)
         _currentNotice.value = null
         _bookmarks.value = emptyList()
     }
@@ -491,6 +498,19 @@ class LocalChatRoomRepositoryImpl(
         reload(myId, chatRoomId)
     }
 
+    /**
+     * 더 오래된 대화를 저장하고, 화면에 올려 둔 범위를 그만큼 넓혀 다시 읽는다.
+     *
+     * 범위를 넓히지 않으면 저장만 되고 화면에는 여전히 최근 대화만 보인다.
+     */
+    internal suspend fun storeOlderChats(chatRoomId: String, chats: List<Chat.Item>) = withContext(Dispatchers.Default) {
+        val myId = Config.MyInfo.userId
+        if (myId.isBlank() || chatRoomId.isBlank() || chats.isEmpty()) return@withContext
+        dbQueries.transaction { chats.forEach { persist(myId, chatRoomId, it) } }
+        loadLimits[chatRoomId] = (loadLimits[chatRoomId] ?: LOAD_LIMIT) + chats.size
+        reload(myId, chatRoomId)
+    }
+
     /** 대화별 안읽음 수(대화 id → 수)를 고치고 화면 목록을 다시 읽는다. 로컬에 없는 대화는 건너뛴다. */
     internal suspend fun updateUnreadCounts(chatRoomId: String, counts: Map<String, String>) =
         withContext(Dispatchers.Default) {
@@ -512,7 +532,7 @@ class LocalChatRoomRepositoryImpl(
 
     /** DB 를 다시 읽어 해당 방 목록을 갱신하고 리스트 미리보기까지 맞춘다. */
     private suspend fun reload(myId: String, chatRoomId: String) {
-        val chats = dbQueries.selectRecentChatsByRoom(myId, chatRoomId, LOAD_LIMIT)
+        val chats = dbQueries.selectRecentChatsByRoom(myId, chatRoomId, loadLimits[chatRoomId] ?: LOAD_LIMIT)
             .executeAsList()
             .map { chatMapper.toModel(it) }
             .sortedWith(compareBy({ it.date }, { Chat.Statue.displayPriority(it.chatStatue) }))
