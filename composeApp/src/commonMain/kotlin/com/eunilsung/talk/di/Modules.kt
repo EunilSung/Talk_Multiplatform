@@ -12,7 +12,11 @@ import com.eunilsung.talk.data.remote.server.TalkSocket
 import com.eunilsung.talk.data.repository.ChatRoomListRepositoryImpl
 import com.eunilsung.talk.data.repository.ChatRoomRepositoryImpl
 import com.eunilsung.talk.data.repository.InviteRepositoryImpl
+import com.eunilsung.talk.data.remote.server.UserDirectory
+import com.eunilsung.talk.data.repository.GroupRepositoryImpl
+import com.eunilsung.talk.data.repository.GroupRepositoryImpl.Companion.toGroupUser
 import com.eunilsung.talk.data.repository.LoginRepositoryImpl
+import com.eunilsung.talk.data.repository.UserProfileRepositoryImpl
 import com.eunilsung.talk.data.repository.VoteRepositoryImpl
 import com.eunilsung.talk.data.local.DatabaseDriverFactory
 import com.eunilsung.talk.data.local.NoticeUiStateStore
@@ -102,7 +106,20 @@ val appModule = module {
 
     viewModelOf(::GroupViewModel)
     // TestAccounts / TestGroups 로 그룹 구성.
-    single<GroupRepository> { LocalGroupRepositoryImpl(get(), get(), get(), get()) }
+    singleOf(::UserDirectory)
+    single<GroupRepository> {
+        if (Config.Server.IS_ENABLED) {
+            val directory: UserDirectory = get()
+            val local = LocalGroupRepositoryImpl(
+                get(), get(), get(), get(),
+                seedsSampleGroups = false,
+                findUser = { userId, groupId -> directory.find(userId)?.toGroupUser(groupId) },
+            )
+            GroupRepositoryImpl(local, get(), directory, get())
+        } else {
+            LocalGroupRepositoryImpl(get(), get(), get(), get())
+        }
+    }
     singleOf(::GroupMapper)
     singleOf(::GetGroupsUseCase)
     singleOf(::FetchGroupsUseCase)
@@ -127,7 +144,9 @@ val appModule = module {
 
     viewModelOf(::UserProfileViewModel)
     // TestAccounts 를 프로필로 사용.
-    single<UserProfileRepository> { LocalUserProfileRepositoryImpl() }
+    single<UserProfileRepository> {
+        if (Config.Server.IS_ENABLED) UserProfileRepositoryImpl(get(), get()) else LocalUserProfileRepositoryImpl()
+    }
 
     viewModelOf(::ChatRoomViewModel)
     singleOf(::NoticeUiStateStore)
@@ -144,7 +163,7 @@ val appModule = module {
     }
     /** 서버 주소가 있으면 서버와 주고받고, 로컬 구현은 그 밑에서 캐시와 미연동 기능을 맡는다. */
     single<ChatRoomRepository> {
-        if (Config.Server.IS_ENABLED) ChatRoomRepositoryImpl(get(), get(), get(), get(), get(), get(), get())
+        if (Config.Server.IS_ENABLED) ChatRoomRepositoryImpl(get(), get(), get(), get(), get(), get(), get(), get())
         else get<LocalChatRoomRepositoryImpl>()
     }
     singleOf(::GetChatsUseCase)

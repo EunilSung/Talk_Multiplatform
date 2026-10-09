@@ -6,6 +6,7 @@ import com.eunilsung.talk.shared.api.ApiErrorCode
 import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.ChatErrorCode
 import com.eunilsung.talk.shared.api.ChatGroupDto
+import com.eunilsung.talk.shared.api.ContactGroupDto
 import com.eunilsung.talk.shared.api.CreateVoteRequest
 import com.eunilsung.talk.shared.api.FileDto
 import com.eunilsung.talk.shared.api.LoginResponse
@@ -53,6 +54,14 @@ class FakeTalkServer : TalkServer {
     private val votesByRoom = mutableMapOf<String, MutableList<VoteDto>>()
     private var voteCount = 0
     private var pinCount = 0
+    /** 서버의 사용자 목록과 내그룹. 테스트가 직접 바꿔 다른 기기의 변경이나 접속 상태를 흉내 낸다. */
+    var people: List<UserDto> = listOf(
+        USER,
+        UserDto(id = "test2", name = "이서연", organName = "개발1팀", positionName = "대리", positionSort = 4),
+        UserDto(id = "test3", name = "박도윤", organName = "개발2팀", positionName = "과장", positionSort = 3),
+        UserDto(id = "test5", name = "정하윤", organName = "기획팀", positionName = "차장", positionSort = 1),
+    )
+    var contactGroups: List<ContactGroupDto> = emptyList()
     /** 서버에 저장된 내 대화그룹. 테스트가 직접 바꿔 "다른 기기에서 고쳤다"를 흉내 낸다. */
     var chatGroups: List<ChatGroupDto> = emptyList()
     /** 올라온 파일들 — 파일 id → 바이트. */
@@ -93,6 +102,23 @@ class FakeTalkServer : TalkServer {
         !isTokenValid -> ServerResult.Rejected(401, ApiErrorCode.UNAUTHORIZED)
         else -> ServerResult.Success(USER)
     }
+
+    override suspend fun users(): ServerResult<List<UserDto>> = answer("users") { ServerResult.Success(people) }
+
+    override suspend fun user(userId: String): ServerResult<UserDto> = answer("user:$userId") {
+        people.firstOrNull { it.id == userId }?.let { ServerResult.Success(it) }
+            ?: ServerResult.Rejected(404, ChatErrorCode.USER_NOT_FOUND)
+    }
+
+    override suspend fun contactGroups(): ServerResult<List<ContactGroupDto>> = answer("contactGroups") {
+        ServerResult.Success(contactGroups)
+    }
+
+    override suspend fun putContactGroups(groups: List<ContactGroupDto>): ServerResult<List<ContactGroupDto>> =
+        answer("putContactGroups:${groups.map { it.name to it.memberIds }}") {
+            contactGroups = groups
+            ServerResult.Success(groups)
+        }
 
     override suspend fun rooms(): ServerResult<List<RoomDto>> = answer("rooms") {
         ServerResult.Success(rooms.values.map { it.withLastMessage() })

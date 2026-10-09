@@ -33,6 +33,8 @@ data class UserDto(
     val phoneNumber: String = "",
     val birthday: String = "",
     val statusMessage: String = "",
+    /** 지금 앱이 서버에 붙어 있는지. 목록을 받은 순간의 값이다. */
+    val isOnline: Boolean = false,
 )
 
 /** [ApiError.code] 로 오는 값들. 앱은 이 값으로 보여 줄 문구를 고른다. */
@@ -43,3 +45,19 @@ object ApiErrorCode {
     const val UNAUTHORIZED = "unauthorized"
     const val BAD_REQUEST = "bad_request"
 }
+
+@Serializable
+data class UsersResponse(val users: List<UserDto> = emptyList())
+
+/** 내그룹 하나 — 내가 묶어 둔 사람들. */
+@Serializable
+data class ContactGroupDto(
+    val id: String,
+    val name: String,
+    val sort: Int = 0,
+    val memberIds: List<String> = emptyList(),
+)
+
+/** 내그룹 전부. 바꿀 때도 이 모양으로 전체를 보낸다. */
+@Serializable
+data class ContactGroupsDto(val groups: List<ContactGroupDto> = emptyList())

@@ -7,12 +7,14 @@ import com.eunilsung.talk.data.remote.server.ServerEvents
 import com.eunilsung.talk.data.remote.server.ServerFileStore
 import com.eunilsung.talk.data.remote.server.ServerResult
 import com.eunilsung.talk.data.remote.server.TalkServer
+import com.eunilsung.talk.data.remote.server.UserDirectory
 import com.eunilsung.talk.data.remote.server.valueOrNull
 import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.Notice
+import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.repository.ChatRoomRepository
 import com.eunilsung.talk.shared.api.ChatErrorCode
 import com.eunilsung.talk.shared.api.MAX_FILE_BYTES
@@ -53,6 +55,7 @@ class ChatRoomRepositoryImpl(
     private val mapper: ServerChatMapper,
     private val fileStore: ServerFileStore,
     private val fileMetadataResolver: FileMetadataResolver,
+    private val directory: UserDirectory,
     database: AppDatabase,
 ) : ChatRoomRepository by local {
 
@@ -125,6 +128,26 @@ class ChatRoomRepositoryImpl(
         local.storeOlderChats(chatRoomId, older.map { mapper.toChat(it) })
         downloadMissingFiles(chatRoomId, older)
         return true
+    }
+
+    /**
+     * 방에 참여 중인 사람들. 서버의 참여자 목록에 부서·직위·접속 여부를 입혀 돌려준다.
+     *
+     * 서버에 닿지 못하면 로컬에 받아 둔 방 정보로 대신한다 — 멘션이나 참여자 보기가 빈 목록이 되지 않게.
+     */
+    override suspend fun fetchChatRoomUsers(chatRoomId: String): List<User> {
+        val room = server.room(chatRoomId).valueOrNull() ?: return local.fetchChatRoomUsers(chatRoomId)
+        return room.members.filterNot { it.hasLeft }.map { member ->
+            val person = directory.find(member.id)
+            User(
+                id = member.id,
+                name = member.name,
+                departmentName = person?.organName,
+                positionName = person?.positionName,
+                presencePc = STATUS_OFFLINE,
+                presenceMobile = if (person?.isOnline == true) STATUS_ONLINE else STATUS_OFFLINE,
+            )
+        }
     }
 
     override fun clearCurrentRoom(chatRoomId: String) {
@@ -414,6 +437,8 @@ class ChatRoomRepositoryImpl(
         /** 파일을 한꺼번에 몇 개까지 받을지. 방에 들어갈 때 사진이 많아도 연결을 독차지하지 않게 한다. */
         const val MAX_PARALLEL_DOWNLOADS = 2
         const val DEFAULT_FILE_NAME = "file"
+        const val STATUS_ONLINE = "1"
+        const val STATUS_OFFLINE = "0"
         val FILE_CHAT_TYPES = setOf(Chat.Type.IMAGE, Chat.Type.VIDEO, Chat.Type.FILE)
     }
 }

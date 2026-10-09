@@ -8,6 +8,8 @@ import com.eunilsung.talk.shared.api.BookmarkRequest
 import com.eunilsung.talk.shared.api.BookmarksResponse
 import com.eunilsung.talk.shared.api.ChatGroupDto
 import com.eunilsung.talk.shared.api.ChatGroupsDto
+import com.eunilsung.talk.shared.api.ContactGroupDto
+import com.eunilsung.talk.shared.api.ContactGroupsDto
 import com.eunilsung.talk.shared.api.CreateRoomRequest
 import com.eunilsung.talk.shared.api.CreateVoteRequest
 import com.eunilsung.talk.shared.api.FileDto
@@ -31,6 +33,7 @@ import com.eunilsung.talk.shared.api.ToggleReactionRequest
 import com.eunilsung.talk.shared.api.UnreadCountDto
 import com.eunilsung.talk.shared.api.UnreadCountsResponse
 import com.eunilsung.talk.shared.api.UserDto
+import com.eunilsung.talk.shared.api.UsersResponse
 import com.eunilsung.talk.shared.api.VoteChangeResponse
 import com.eunilsung.talk.shared.api.VoteDto
 import com.eunilsung.talk.shared.api.VotesResponse
@@ -89,6 +92,17 @@ interface TalkServer {
 
     /** 지금 토큰의 주인. 토큰이 아직 유효한지 확인하는 데도 쓴다. */
     suspend fun me(): ServerResult<UserDto>
+
+    /** 전체 사용자. 접속 여부가 함께 온다. */
+    suspend fun users(): ServerResult<List<UserDto>>
+
+    suspend fun user(userId: String): ServerResult<UserDto>
+
+    /** 내그룹 전부. */
+    suspend fun contactGroups(): ServerResult<List<ContactGroupDto>>
+
+    /** 내그룹을 [groups] 로 통째로 바꾼다. */
+    suspend fun putContactGroups(groups: List<ContactGroupDto>): ServerResult<List<ContactGroupDto>>
 
     /** 내가 참여 중인 방 전부. */
     suspend fun rooms(): ServerResult<List<RoomDto>>
@@ -200,6 +214,29 @@ class TalkServerClient(
         request("내 정보", UserDto.serializer()) {
             httpClient.get("$baseUrl/users/me") { auth() }
         }
+
+    override suspend fun users(): ServerResult<List<UserDto>> =
+        request("사용자 목록", UsersResponse.serializer()) {
+            httpClient.get("$baseUrl/users") { auth() }
+        }.map { it.users }
+
+    override suspend fun user(userId: String): ServerResult<UserDto> =
+        request("프로필", UserDto.serializer()) {
+            httpClient.get("$baseUrl/users/${userId.encodeURLPathPart()}") { auth() }
+        }
+
+    override suspend fun contactGroups(): ServerResult<List<ContactGroupDto>> =
+        request("내그룹 조회", ContactGroupsDto.serializer()) {
+            httpClient.get("$baseUrl/contact-groups") { auth() }
+        }.map { it.groups }
+
+    override suspend fun putContactGroups(groups: List<ContactGroupDto>): ServerResult<List<ContactGroupDto>> =
+        request("내그룹 저장", ContactGroupsDto.serializer()) {
+            httpClient.put("$baseUrl/contact-groups") {
+                auth()
+                jsonBody(ContactGroupsDto.serializer(), ContactGroupsDto(groups))
+            }
+        }.map { it.groups }
 
     override suspend fun rooms(): ServerResult<List<RoomDto>> =
         request("방 목록", RoomsResponse.serializer()) {

@@ -25,6 +25,16 @@ class UserRepository(private val dataSource: DataSource) {
             }
         }
 
+    /** 전체 사용자, 직급이 높은 순 → 이름 순. */
+    fun all(): List<UserDto> =
+        dataSource.connection.use { conn ->
+            conn.createStatement().use { st ->
+                st.executeQuery("SELECT * FROM app_user ORDER BY position_sort, name").use { rs ->
+                    buildList { while (rs.next()) add(rs.toUser()) }
+                }
+            }
+        }
+
     fun count(): Int =
         dataSource.connection.use { conn ->
             conn.createStatement().use { st ->
