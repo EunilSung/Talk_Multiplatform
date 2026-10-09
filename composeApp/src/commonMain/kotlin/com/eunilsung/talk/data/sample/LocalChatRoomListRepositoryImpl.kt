@@ -21,6 +21,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import com.eunilsung.talk.Config
+import com.eunilsung.talk.data.local.LocalSecret
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.ChatGroup
@@ -105,7 +106,7 @@ class LocalChatRoomListRepositoryImpl(
             val myId = Config.MyInfo.userId
             if (!roomExists(myId, chatRoomId)) return@withContext false
 
-            dbQueries.updateChatRoomTitle(title = newName, myId = myId, roomId = chatRoomId)
+            dbQueries.updateChatRoomTitle(title = LocalSecret.encrypt(newName), myId = myId, roomId = chatRoomId)
             refreshFromDb(myId)
             Log.message("[ChatRoomList/Local] rename $chatRoomId → '$newName'")
             true

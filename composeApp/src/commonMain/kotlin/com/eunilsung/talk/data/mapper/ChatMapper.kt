@@ -1,5 +1,6 @@
 package com.eunilsung.talk.data.mapper
 
+import com.eunilsung.talk.data.local.LocalSecret
 import com.eunilsung.talk.util.Log
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -29,8 +30,8 @@ class ChatMapper {
         chatRoomId = chatRoomId,
         chatId = chat.chatID,
         chatType = chat.chatType,
-        title = chat.title,
-        chatContent = chat.chatContent,
+        title = LocalSecret.encrypt(chat.title),
+        chatContent = LocalSecret.encrypt(chat.chatContent),
         chatStatue = chat.chatStatue,
         date = chat.date,
         unReadCount = chat.unReadCount,
@@ -40,26 +41,26 @@ class ChatMapper {
         isRecalled = if (chat.isRecalled) "1" else "0",
         userJson = encodeUser(chat.user),
         empathyJson = encodeEmpathy(chat.empathy),
-        replyChatJson = encodeReply(chat.replyChat),
+        replyChatJson = encodeReply(chat.replyChat).let { if (chat.replyChat.chatID.isBlank()) it else LocalSecret.encrypt(it) },
         emoticonJson = encodeEmoticon(chat.emoticon),
-        voteJson = encodeVote(chat.vote),
-        voteCompleteJson = encodeVoteComplete(chat.voteComplete)
+        voteJson = encodeVote(chat.vote)?.let(LocalSecret::encrypt),
+        voteCompleteJson = encodeVoteComplete(chat.voteComplete)?.let(LocalSecret::encrypt)
     )
 
     fun toModel(entity: ChatEntity): Chat.Item = Chat.Item(
         chatID = entity.chatId,
         chatType = entity.chatType,
-        title = entity.title.orEmpty(),
-        chatContent = entity.chatContent.orEmpty(),
+        title = LocalSecret.decrypt(entity.title.orEmpty()),
+        chatContent = LocalSecret.decrypt(entity.chatContent.orEmpty()),
         chatStatue = entity.chatStatue,
         date = entity.date.orEmpty(),
         unReadCount = entity.unReadCount ?: "0",
         empathy = decodeEmpathy(entity.empathyJson),
         user = decodeUser(entity.userJson),
-        replyChat = decodeReply(entity.replyChatJson),
+        replyChat = decodeReply(LocalSecret.decrypt(entity.replyChatJson)),
         emoticon = decodeEmoticon(entity.emoticonJson),
-        vote = decodeVote(entity.voteJson),
-        voteComplete = decodeVoteComplete(entity.voteCompleteJson),
+        vote = decodeVote(LocalSecret.decryptNullable(entity.voteJson)),
+        voteComplete = decodeVoteComplete(LocalSecret.decryptNullable(entity.voteCompleteJson)),
         imagePath = entity.imagePath.orEmpty(),
         imageSize = entity.imageSize.orEmpty(),
         originalFileName = entity.originalFileName.orEmpty(),
@@ -141,6 +142,10 @@ class ChatMapper {
             fallback
         }
 
+    /**
+     * 보낸 사람 정보. 아이디는 조회·비교에 쓰므로 평문으로 두고 이름·부서·직급·별명만 칸마다 잠근다. 공감·답장 인용 속의
+     * 사람도 같은 형식이다.
+     */
     @Serializable
     private data class UserDto(
         val id: String = "",
@@ -151,18 +156,18 @@ class ChatMapper {
     ) {
         fun toUser() = User(
             id = id,
-            name = name,
-            departmentName = departmentName,
-            positionName = positionName,
-            nickname = nickname
+            name = LocalSecret.decrypt(name),
+            departmentName = LocalSecret.decryptNullable(departmentName),
+            positionName = LocalSecret.decryptNullable(positionName),
+            nickname = LocalSecret.decryptNullable(nickname)
         )
         companion object {
             fun from(u: User) = UserDto(
                 id = u.id,
-                name = u.name,
-                departmentName = u.departmentName,
-                positionName = u.positionName,
-                nickname = u.nickname
+                name = LocalSecret.encrypt(u.name),
+                departmentName = LocalSecret.encryptNullable(u.departmentName),
+                positionName = LocalSecret.encryptNullable(u.positionName),
+                nickname = LocalSecret.encryptNullable(u.nickname)
             )
         }
     }
