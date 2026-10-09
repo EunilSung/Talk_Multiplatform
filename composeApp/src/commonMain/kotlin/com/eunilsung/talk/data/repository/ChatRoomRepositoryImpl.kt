@@ -105,6 +105,28 @@ class ChatRoomRepositoryImpl(
         fetchBookmarks(chatRoomId)
     }
 
+    /**
+     * 위로 올렸을 때 더 오래된 대화 한 쪽을 서버에서 받는다. 받은 것이 있으면 true.
+     *
+     * 서버에 닿지 못한 것과 더 없는 것을 구분하지 못한 채 false 를 돌려주면 화면이 "끝"으로 알고 다시
+     * 묻지 않는다. 그래서 닿지 못했을 때는 던져서, 다음에 올렸을 때 다시 시도하게 한다.
+     */
+    override suspend fun fetchMoreChats(chatRoomId: String): Boolean {
+        val oldest = local.getChats(chatRoomId).first()
+            .firstOrNull { it.chatStatue == Chat.Statue.COMPLETE }
+            ?.chatID
+            ?: return false
+        val older = when (val result = server.messages(chatRoomId, beforeId = oldest, limit = PAGE_SIZE)) {
+            is ServerResult.Success -> result.value
+            is ServerResult.Rejected -> return false
+            ServerResult.Unreachable -> error("서버에 닿지 못해 이전 대화를 받지 못했다")
+        }
+        if (older.isEmpty()) return false
+        local.storeOlderChats(chatRoomId, older.map { mapper.toChat(it) })
+        downloadMissingFiles(chatRoomId, older)
+        return true
+    }
+
     override fun clearCurrentRoom(chatRoomId: String) {
         local.clearCurrentRoom(chatRoomId)
         showRoomExtras(null)

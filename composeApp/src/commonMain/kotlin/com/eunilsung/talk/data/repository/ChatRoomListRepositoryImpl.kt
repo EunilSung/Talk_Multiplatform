@@ -124,7 +124,7 @@ class ChatRoomListRepositoryImpl(
         val item = mapper.toRoom(room, myId)
         val isViewing = loginRepository.isForeground.value &&
             CurrentChatRoomTracker.currentChatRoomId == room.id
-        return if (isViewing) item.copy(unReadCount = "0") else item
+        return if (isViewing) item.copy(unReadCount = "0", mentionCount = "0") else item
     }
 
     private companion object {

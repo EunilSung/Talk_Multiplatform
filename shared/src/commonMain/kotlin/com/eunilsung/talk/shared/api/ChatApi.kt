@@ -20,6 +20,8 @@ data class RoomDto(
     val lastMessage: MessageDto? = null,
     /** 내가 아직 읽지 않은 대화 수. */
     val unreadCount: Int = 0,
+    /** 내가 아직 읽지 않은 대화 중 나를 부른(멘션한) 것의 수. */
+    val mentionCount: Int = 0,
     val isMuted: Boolean = false,
     /** 방이 만들어진 시각. 아직 대화가 없는 방을 목록에 세울 때 쓴다. */
     val createdAtEpochMillis: Long = 0,

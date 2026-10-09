@@ -161,6 +161,7 @@ class ChatRepository(private val dataSource: DataSource) {
         if (!isActiveMember(conn, roomId, senderId)) return@transaction null
         seqOf(conn, roomId, clientId)?.let { return@transaction selectMessage(conn, roomId, it) }
         insertMessage(conn, roomId, senderId, clientId, kind, content, payload)
+            .also { insertMentions(conn, roomId, it.seq, senderId, content) }
     }
 
     /**
@@ -460,11 +461,13 @@ class ChatRepository(private val dataSource: DataSource) {
     )
 
     private fun selectRooms(conn: Connection, userId: String, roomId: String?): List<RoomDto> {
-        data class Row(val id: String, val title: String, val lastSeq: Long, val readSeq: Long, val joinedSeq: Long, val isMuted: Boolean, val createdAt: Long)
+        data class Row(val id: String, val title: String, val lastSeq: Long, val readSeq: Long, val joinedSeq: Long, val isMuted: Boolean, val createdAt: Long, val mentions: Int)
 
         val rows = conn.prepareStatement(
             """
-            SELECT r.id, r.title, r.next_seq - 1 AS last_seq, m.last_read_seq, m.joined_seq, m.is_muted, r.created_at
+            SELECT r.id, r.title, r.next_seq - 1 AS last_seq, m.last_read_seq, m.joined_seq, m.is_muted, r.created_at,
+                   (SELECT count(*) FROM chat_mention t
+                    WHERE t.room_id = r.id AND t.user_id = m.user_id AND t.seq > m.last_read_seq) AS mentions
             FROM chat_room r JOIN chat_room_member m ON m.room_id = r.id
             WHERE m.user_id = ? AND m.left_at IS NULL ${if (roomId != null) "AND r.id = ?" else ""}
             """.trimIndent()
@@ -474,7 +477,7 @@ class ChatRepository(private val dataSource: DataSource) {
             st.executeQuery().use { rs ->
                 buildList {
                     while (rs.next()) {
-                        add(Row(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getLong(4), rs.getLong(5), rs.getBoolean(6), rs.getTimestamp(7).time))
+                        add(Row(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getLong(4), rs.getLong(5), rs.getBoolean(6), rs.getTimestamp(7).time, rs.getInt(8)))
                     }
                 }
             }
@@ -489,6 +492,7 @@ class ChatRepository(private val dataSource: DataSource) {
                 unreadCount = (row.lastSeq - maxOf(row.readSeq, row.joinedSeq)).coerceAtLeast(0).toInt(),
                 isMuted = row.isMuted,
                 createdAtEpochMillis = row.createdAt,
+                mentionCount = row.mentions,
             )
         }
     }
@@ -633,6 +637,35 @@ class ChatRepository(private val dataSource: DataSource) {
         return checkNotNull(selectMessage(conn, roomId, seq))
     }
 
+    /**
+     * 본문의 멘션 태그가 부른 사람들을 적어 둔다.
+     *
+     * 태그에는 이름만 들어 있다(`<mention>@이름</mention>`). 이 방에 참여 중인 사람 가운데 그 이름인
+     * 사람을 찾는다. 이름이 같은 사람이 둘이면 둘 다 불린 것으로 본다. 자기 자신은 세지 않는다.
+     */
+    private fun insertMentions(conn: Connection, roomId: String, seq: Long, senderId: String, content: String) {
+        val names = MENTION_TAG.findAll(content).map { it.groupValues[1].trim().removePrefix("@") }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toList()
+        if (names.isEmpty()) return
+        conn.prepareStatement(
+            """
+            INSERT INTO chat_mention (room_id, seq, user_id)
+            SELECT m.room_id, ?, m.user_id
+            FROM chat_room_member m JOIN app_user u ON u.id = m.user_id
+            WHERE m.room_id = ? AND m.left_at IS NULL AND m.user_id <> ? AND u.name = ANY (?)
+            ON CONFLICT DO NOTHING
+            """.trimIndent()
+        ).use { st ->
+            st.setLong(1, seq)
+            st.setString(2, roomId)
+            st.setString(3, senderId)
+            st.setArray(4, conn.createArrayOf("text", names.toTypedArray()))
+            st.executeUpdate()
+        }
+    }
+
     private fun isActiveMember(conn: Connection, roomId: String, userId: String): Boolean =
         joinedSeq(conn, roomId, userId) != null
 
@@ -701,6 +734,9 @@ class ChatRepository(private val dataSource: DataSource) {
         /** 참여자가 이 수 이하이면 1:1 방(둘) 또는 나와의 대화방(하나)이다. */
         const val DIRECT_ROOM_MAX_MEMBERS = 2
         const val DIRECT_KEY_SEPARATOR = "|"
+
+        /** 앱이 멘션을 감싸는 태그. 안쪽이 `@이름` 이다. */
+        val MENTION_TAG = Regex("""<mention>([\s\S]*?)</mention>""", RegexOption.IGNORE_CASE)
 
         /** 이 대화를 아직 읽지 않은 참여자 수. 나간 사람은 세지 않는다. */
         const val UNREAD_COUNT =

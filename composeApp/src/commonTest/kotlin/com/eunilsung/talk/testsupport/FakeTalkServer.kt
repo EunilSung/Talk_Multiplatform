@@ -129,7 +129,12 @@ class FakeTalkServer : TalkServer {
         if (roomId !in rooms) return@answer roomNotFound()
         val all = messagesOf(roomId)
         val afterSeq = all.firstOrNull { it.id == afterId }?.seq
-        val page = if (afterSeq != null) all.filter { it.seq > afterSeq }.take(limit) else all.takeLast(limit)
+        val beforeSeq = all.firstOrNull { it.id == beforeId }?.seq
+        val page = when {
+            afterSeq != null -> all.filter { it.seq > afterSeq }.take(limit)
+            beforeSeq != null -> all.filter { it.seq < beforeSeq }.takeLast(limit)
+            else -> all.takeLast(limit)
+        }
         ServerResult.Success(page)
     }
 

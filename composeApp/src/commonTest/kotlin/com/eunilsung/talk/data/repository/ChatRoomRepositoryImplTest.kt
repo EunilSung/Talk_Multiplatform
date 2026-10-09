@@ -27,6 +27,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -344,5 +345,36 @@ class ChatRoomRepositoryImplTest {
 
         awaitUntil { chats().singleOrNull()?.imagePath?.isNotBlank() == true }
         assertEquals(Chat.Type.VIDEO, chats().single().chatType)
+    }
+
+    @Test
+    fun 위로_올리면_더_오래된_대화를_한_쪽씩_받고_끝에_닿으면_더_없다고_알린다() = runTest {
+        repeat(250) { peerSays("m$it") }
+        repo.fetchChats(roomId)
+        assertEquals(100, chats().size)
+        assertEquals("m150", contents().first())
+
+        assertTrue(repo.fetchMoreChats(roomId))
+        assertEquals(200, chats().size)
+        assertEquals("m50", contents().first())
+
+        assertTrue(repo.fetchMoreChats(roomId))
+        assertEquals(250, chats().size)
+        assertEquals("m0", contents().first())
+        assertEquals("m249", contents().last())
+
+        assertFalse(repo.fetchMoreChats(roomId))
+    }
+
+    @Test
+    fun 서버에_닿지_못해_이전_대화를_못_받은_것은_끝에_닿은_것과_구분된다() = runTest {
+        repeat(150) { peerSays("m$it") }
+        repo.fetchChats(roomId)
+        server.isReachable = false
+
+        val result = runCatching { repo.fetchMoreChats(roomId) }
+
+        assertTrue(result.isFailure)
+        assertEquals(100, chats().size)
     }
 }
