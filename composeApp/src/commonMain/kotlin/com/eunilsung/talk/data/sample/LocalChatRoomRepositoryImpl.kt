@@ -334,6 +334,9 @@ class LocalChatRoomRepositoryImpl(
         _currentNotice.value = loadNotice(Config.MyInfo.userId, chatRoomId)
     }
 
+    /** 서버가 없는 로컬 모드에는 번역할 모델이 없다. */
+    override suspend fun translateChat(chatRoomId: String, chatId: String, languageCode: String): String? = null
+
     override suspend fun addNotice(chatRoomId: String, content: String) {
         if (content.isBlank()) return
         val myId = Config.MyInfo.userId

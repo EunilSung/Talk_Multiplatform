@@ -10,3 +10,9 @@ sealed interface ChatRoomUiState {
     data class Success(val groupedChats: List<GroupedChat>) : ChatRoomUiState
     data class Error(val message: String) : ChatRoomUiState
 }
+
+/** 말풍선 아래에 붙는 번역의 상태. 번역은 요청한 사람의 화면에만 있고 화면을 나가면 사라진다. */
+sealed interface ChatTranslationUiState {
+    data object Loading : ChatTranslationUiState
+    data class Ready(val text: String) : ChatTranslationUiState
+}

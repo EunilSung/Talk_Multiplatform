@@ -57,6 +57,7 @@ import multiplatformtalk.composeapp.generated.resources.cancel
 import multiplatformtalk.composeapp.generated.resources.delete
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.eunilsung.talk.data.local.RecentPhotosResult
 import com.eunilsung.talk.data.remote.push.CurrentChatRoomTracker
@@ -158,6 +159,7 @@ class ChatRoomScreen(
         val replyTarget by viewModel.replyTarget.collectAsState()
         val currentNotice by viewModel.currentNotice.collectAsState()
         val noticeBar by viewModel.noticeBar.collectAsState()
+        val translations by viewModel.translations.collectAsState()
         val signals = remember(viewModel) {
             ChatRoomSignals(
                 newChat = viewModel.newChatPush,
@@ -252,6 +254,8 @@ class ChatRoomScreen(
             enterToSend = chatSettings.enterToSend,
             chatFontSize = chatSettings.fontSize.sp,
             noticeBindings = noticeBindings,
+            translations = translations,
+            translationFailed = viewModel.translationFailed,
             bookmarksFlow = viewModel.bookmarks,
             initialEmoticonTab = remember { viewModel.lastEmoticonTab() },
             onEmoticonTabSelected = { viewModel.saveEmoticonTab(it) },
@@ -285,6 +289,8 @@ fun ChatRoomContent(
     enterToSend: Boolean = false,
     chatFontSize: TextUnit = 13.sp,
     noticeBindings: NoticeBindings = NoticeBindings(),
+    translations: Map<String, ChatTranslationUiState> = emptyMap(),
+    translationFailed: SharedFlow<Unit>? = null,
     bookmarksFlow: StateFlow<List<Bookmark>> = MutableStateFlow(emptyList()),
     initialEmoticonTab: Int = 0,
     onEmoticonTabSelected: (Int) -> Unit = {},
@@ -358,6 +364,9 @@ fun ChatRoomContent(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val isSearchMode = searchState.isActive
 
+    LaunchedEffect(translationFailed) {
+        translationFailed?.collect { toastManager.show(strings.translateUnavailable) }
+    }
     LaunchedEffect(replyTarget?.chatID) {
         if (replyTarget != null) {
             runCatching { chatInputFocusRequester.requestFocus() }
@@ -525,6 +534,7 @@ fun ChatRoomContent(
                                 hideKeyboard = hideKeyboard,
                                 users = users,
                                 onLongPress = { longPressedChat = it },
+                                translations = translations,
                                 // 지금 걸린 공지가 아니라 그 대화가 담고 있던 본문을 보여준다.
                                 onNoticeClick = { noticeDialogText = it.chatContent },
                                 onAction = onAction,
@@ -739,6 +749,7 @@ fun ChatRoomContent(
         ChatActionMenu(
             target = longPressedChat,
             isBookmarked = longPressedChat?.let { bookmarkedChatIds.contains(it.chatID) } == true,
+            isTranslated = longPressedChat?.let { translations.containsKey(it.chatID) } == true,
             strings = strings,
             onDismiss = { longPressedChat = null },
             onAction = onAction,

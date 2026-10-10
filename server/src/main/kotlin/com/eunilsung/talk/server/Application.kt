@@ -30,6 +30,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import com.eunilsung.talk.server.routes.chatRoutes
 import com.eunilsung.talk.server.repository.UserRepository
+import com.eunilsung.talk.server.routes.aiRoutes
 import com.eunilsung.talk.server.routes.authRoutes
 import com.eunilsung.talk.server.routes.healthRoutes
 import com.eunilsung.talk.server.seed.SeedAccounts
@@ -146,6 +147,7 @@ fun Application.module(
         chatGroupRoutes(ChatGroupRepository(dataSource), tokens)
         peopleRoutes(users, ContactGroupRepository(dataSource), tokens, chatHub)
         pushRoutes(pushTokens, tokens)
+        aiRoutes(assistant, tokens)
     }
 }
 

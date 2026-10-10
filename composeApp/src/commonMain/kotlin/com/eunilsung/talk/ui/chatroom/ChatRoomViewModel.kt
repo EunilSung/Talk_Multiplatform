@@ -7,6 +7,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -234,6 +235,16 @@ class ChatRoomViewModel(
 
     private val _firstUnreadChatId = MutableStateFlow<String?>(null)
 
+    private val _translations = MutableStateFlow<Map<String, ChatTranslationUiState>>(emptyMap())
+
+    /** 대화 id 별 번역. 이 화면에서만 들고 있는다. */
+    val translations: StateFlow<Map<String, ChatTranslationUiState>> = _translations.asStateFlow()
+
+    private val _translationFailed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** 번역을 받지 못했다 — 화면이 안내를 한 번 띄운다. */
+    val translationFailed: SharedFlow<Unit> = _translationFailed.asSharedFlow()
+
     private val _users = MutableStateFlow<List<User>>(emptyList())
     val users: StateFlow<List<User>> = _users.asStateFlow()
 
@@ -304,6 +315,8 @@ class ChatRoomViewModel(
             is ChatRoomActions.OnFocusChat -> focusOnChat(action.chatId)
             is ChatRoomActions.OnAddBookmark -> addBookmark(action.chat)
             is ChatRoomActions.OnDeleteBookmark -> deleteBookmark(action.chatId)
+            is ChatRoomActions.OnTranslateChat -> translateChat(action.chatId, action.languageCode)
+            is ChatRoomActions.OnHideTranslation -> _translations.update { it - action.chatId }
         }
     }
 
@@ -437,6 +450,7 @@ class ChatRoomViewModel(
         fetchingMore = false
         fetchingNewer = false
         _firstUnreadChatId.value = null
+        _translations.value = emptyMap()
         _users.value = emptyList()
         _sender.value = senderOverride.senderFor(chatRoomId)
         _searchState.value = ChatSearchState()
@@ -729,6 +743,23 @@ class ChatRoomViewModel(
         viewModelScope.launch {
             runCatching { chatRoomUseCases.deleteBookmark(roomId, chatId) }
                 .onFailure { Log.message("[ChatRoomVM] deleteBookmark failed: ${it.message}") }
+        }
+    }
+
+    /** 번역을 받는 동안에는 말풍선 아래에 진행 표시를 두고, 받지 못하면 걷어 낸 뒤 안내한다. */
+    private fun translateChat(chatId: String, languageCode: String) {
+        val roomId = currentChatRoomId
+        if (roomId.isBlank() || chatId.isBlank() || chatId in _translations.value) return
+        _translations.update { it + (chatId to ChatTranslationUiState.Loading) }
+        viewModelScope.launch {
+            val translation = chatRoomUseCases.translateChat(roomId, chatId, languageCode)
+            if (currentChatRoomId != roomId) return@launch
+            if (translation == null) {
+                _translations.update { it - chatId }
+                _translationFailed.tryEmit(Unit)
+            } else {
+                _translations.update { it + (chatId to ChatTranslationUiState.Ready(translation)) }
+            }
         }
     }
 

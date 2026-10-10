@@ -153,7 +153,7 @@ iosApp/        Xcode 프로젝트
 3. **Firebase 서비스 계정 키** — 서버가 푸시를 보낼 때만 필요하다. 저장소에 없으니 Firebase 콘솔
    (`multiplatformtalk` 프로젝트)에서 받아 `FIREBASE_CREDENTIALS=<파일 경로>` 로 넘긴다.
    없으면 푸시만 꺼지고 나머지는 그대로 동작한다.
-4. **Gemini API 키** — AI 참여자에만 필요하다. Google AI Studio 에서 받아 서버를 띄우는
+4. **Gemini API 키** — AI 참여자와 말풍선 번역에만 필요하다. Google AI Studio 에서 받아 서버를 띄우는
    환경에 `GEMINI_API_KEY` 로 넘긴다(모델은 `AI_MODEL`, 기본 `gemini-3.5-flash-lite`).
    없으면 AI 만 꺼지고 나머지는 그대로 동작한다.
 

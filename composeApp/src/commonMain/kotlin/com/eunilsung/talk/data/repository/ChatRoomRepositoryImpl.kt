@@ -178,6 +178,9 @@ class ChatRoomRepositoryImpl(
         if (extrasRoomId == chatRoomId) _currentNotice.value = mapper.toNotice(notice)
     }
 
+    override suspend fun translateChat(chatRoomId: String, chatId: String, languageCode: String): String? =
+        server.translate(chatRoomId, chatId, languageCode).valueOrNull()?.translation?.takeIf { it.isNotBlank() }
+
     override suspend fun addNotice(chatRoomId: String, content: String) {
         if (content.isBlank()) return
         applyNoticeChange(chatRoomId, server.setNotice(chatRoomId, content.stripMentionTags()).valueOrNull())
