@@ -62,6 +62,10 @@ sealed interface ChatRoomActions {
     data class OnAddBookmark(val chat: com.eunilsung.talk.domain.model.Chat.Item) : ChatRoomActions
 
     data class OnDeleteBookmark(val chatId: String) : ChatRoomActions
+
+    data object OnSummarizeUnread : ChatRoomActions
+
+    data object OnDismissUnreadSummary : ChatRoomActions
 }
 
 

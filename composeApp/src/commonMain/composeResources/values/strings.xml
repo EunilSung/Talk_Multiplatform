@@ -220,6 +220,10 @@
     <string name="msg_receiver_no">No Receiver</string>
 
     <string name="chat_read_check">Read Here</string>
+    <string name="chat_summary_button">AI summary</string>
+    <string name="chat_summary_loading">Summarizing…</string>
+    <string name="toast_summary_empty">There is nothing to summarize.</string>
+    <string name="toast_summary_unavailable">Summary is unavailable right now. Please try again later.</string>
 
     <string name="invite">Invite</string>
     <string name="share">Share</string>

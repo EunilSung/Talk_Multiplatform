@@ -13,6 +13,7 @@ import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
+import com.eunilsung.talk.domain.model.ChatSummary
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.repository.ChatRoomRepository
@@ -176,6 +177,12 @@ class ChatRoomRepositoryImpl(
         showRoomExtras(chatRoomId)
         val notice = server.notice(chatRoomId).valueOrNull() ?: return
         if (extrasRoomId == chatRoomId) _currentNotice.value = mapper.toNotice(notice)
+    }
+
+    override suspend fun summarizeUnread(chatRoomId: String, afterChatId: String?): ChatSummary {
+        val summary = server.summarize(chatRoomId, afterChatId).valueOrNull()?.summary
+            ?: return ChatSummary.Unavailable
+        return if (summary.isBlank()) ChatSummary.Empty else ChatSummary.Ready(summary)
     }
 
     override suspend fun addNotice(chatRoomId: String, content: String) {
