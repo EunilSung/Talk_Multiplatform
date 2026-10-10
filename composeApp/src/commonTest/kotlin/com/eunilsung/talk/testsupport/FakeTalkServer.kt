@@ -39,6 +39,10 @@ class FakeTalkServer : TalkServer {
 
     var isReachable = true
     var isTokenValid = true
+    /**
+     * 그룹 목록을 읽은 뒤, 응답이 돌아가기 전에 불린다. 응답이 오는 사이에 다른 일이 끼어드는 상황을 만든다.
+     */
+    var afterGroupsRead: (suspend () -> Unit)? = null
     /** 다듬기 요청에 돌려줄 글. null 이면 AI 가 꺼진 서버처럼 거절한다. */
     var polished: String? = null
     /** 번역 요청에 돌려줄 글. null 이면 AI 가 꺼진 서버처럼 거절한다. */
@@ -120,7 +124,9 @@ class FakeTalkServer : TalkServer {
     }
 
     override suspend fun contactGroups(): ServerResult<List<ContactGroupDto>> = answer("contactGroups") {
-        ServerResult.Success(contactGroups)
+        val snapshot = contactGroups
+        afterGroupsRead?.invoke()
+        ServerResult.Success(snapshot)
     }
 
     override suspend fun putContactGroups(groups: List<ContactGroupDto>): ServerResult<List<ContactGroupDto>> =
@@ -308,7 +314,9 @@ class FakeTalkServer : TalkServer {
     }
 
     override suspend fun chatGroups(): ServerResult<List<ChatGroupDto>> = answer("chatGroups") {
-        ServerResult.Success(chatGroups)
+        val snapshot = chatGroups
+        afterGroupsRead?.invoke()
+        ServerResult.Success(snapshot)
     }
 
     override suspend fun putChatGroups(groups: List<ChatGroupDto>): ServerResult<List<ChatGroupDto>> =

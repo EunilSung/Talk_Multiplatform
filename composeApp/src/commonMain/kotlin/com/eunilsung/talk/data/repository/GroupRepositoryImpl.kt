@@ -14,6 +14,8 @@ import com.eunilsung.talk.domain.repository.AddUserResult
 import com.eunilsung.talk.domain.repository.GroupRepository
 import com.eunilsung.talk.shared.api.ContactGroupDto
 import com.eunilsung.talk.shared.api.UserDto
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * 서버의 사용자와 내그룹을 로컬 DB 에 받아 두고 보여 주는 저장소.
@@ -28,8 +30,16 @@ class GroupRepositoryImpl(
     private val mapper: GroupMapper,
 ) : GroupRepository by local {
 
+    /**
+     * 그룹을 "받아서 바꾸기"와 "고쳐서 올리기"가 서로 끼어들지 못하게 한다. 목록을 받는 사이에 그룹을
+     * 고치면 늦게 도착한 옛 목록이 방금 고친 것을 지우기 때문이다.
+     */
+    private val groupMutex = Mutex()
+
     /** 서버에서 사용자와 그룹을 받아 로컬을 바꾼다. 둘 중 하나라도 못 받으면 가지고 있던 것을 그대로 둔다. */
-    override suspend fun fetchGroups() {
+    override suspend fun fetchGroups() = groupMutex.withLock { refreshGroups() }
+
+    private suspend fun refreshGroups() {
         val myId = Config.MyInfo.userId
         if (myId.isBlank()) return
         val users = server.users().valueOrNull()
@@ -81,18 +91,18 @@ class GroupRepositoryImpl(
      * 받아 주지 않으면 고치기 전으로 되돌린다. 반영된 뒤에는 서버 것으로 다시 그린다 — 그룹에서 뺀
      * 사람이 기본 그룹으로 돌아가는 것처럼, 서버 기준으로 다시 계산해야 맞는 것들이 있다.
      */
-    private suspend fun changeGroups(change: suspend () -> Unit): Boolean {
+    private suspend fun changeGroups(change: suspend () -> Unit): Boolean = groupMutex.withLock {
         val before = local.currentGroups()
         change()
         val after = local.currentGroups()
-        if (after == before) return true
+        if (after == before) return@withLock true
         val customGroups = after.filterNot { it.isMyProfileGroup || it.isDefaultGroup }
         if (server.putContactGroups(customGroups.mapIndexed(::toDto)) !is ServerResult.Success) {
             local.replaceGroups(before)
-            return false
+            return@withLock false
         }
-        fetchGroups()
-        return true
+        refreshGroups()
+        true
     }
 
     private fun buildGroups(myId: String, users: List<UserDto>, groups: List<ContactGroupDto>): List<Group.Item> {

@@ -3,7 +3,6 @@ package com.eunilsung.talk.functest
 import com.eunilsung.talk.data.remote.server.ServerResult
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.PolishStyle
-import com.eunilsung.talk.shared.api.ChatErrorCode
 import kotlin.test.Test
 
 /**
@@ -55,8 +54,9 @@ class AiScenarioTest {
 
                 step("받은 대화를 번역하면 글이 돌아오고 방에는 남지 않는다") {
                     val before = peer.messages(roomId).size
-                    val translation = harness.chats.translateChat(roomId, message.id, "ko")
-                    if (translation == null) skipIfAiUnavailable(harness.server.translate(roomId, message.id, "ko"))
+                    val translation = aiResult({ harness.server.translate(roomId, message.id, "ko") }) {
+                        harness.chats.translateChat(roomId, message.id, "ko")
+                    }
                     require(!translation.isNullOrBlank(), "번역이 비어 있다")
                     require(translation != message.content, "번역이 원문과 같다")
                     requireEquals(before, peer.messages(roomId).size, "번역 뒤 방의 대화 수")
@@ -70,8 +70,9 @@ class AiScenarioTest {
             scenario("다듬기") {
                 step("쓴 글을 다듬으면 고친 글이 돌아온다") {
                     val draft = "내일 회의 몇시에 하는지 알려주세여"
-                    val polished = harness.chats.polishText(draft, PolishStyle.CORRECT)
-                    if (polished == null) skipIfAiUnavailable(harness.server.polish(draft, "correct"))
+                    val polished = aiResult({ harness.server.polish(draft, "correct") }) {
+                        harness.chats.polishText(draft, PolishStyle.CORRECT)
+                    }
                     require(!polished.isNullOrBlank(), "다듬은 글이 비어 있다")
                 }
                 step("모르는 방식은 서버가 받지 않는다") {
@@ -80,14 +81,6 @@ class AiScenarioTest {
                 }
             },
         )
-    }
-
-    /** 저장소가 null 을 돌려준 까닭을 서버에 직접 물어, AI 가 꺼진 것이면 건너뛰고 아니면 깬다. */
-    private fun ScenarioScope.skipIfAiUnavailable(result: ServerResult<*>): Nothing {
-        if (result is ServerResult.Rejected && result.code == ChatErrorCode.AI_UNAVAILABLE) {
-            skip("서버의 AI 가 꺼져 있거나 한도에 걸렸다")
-        }
-        throw StepFailure("AI 가 켜져 있는데 저장소가 결과를 주지 않았다: $result")
     }
 
     private companion object {
