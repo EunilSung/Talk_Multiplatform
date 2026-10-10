@@ -223,11 +223,44 @@ dependencies {
 }
 
 /**
- * 기능 테스트(`TALK_FUNCTEST_URL`)는 진짜 서버의 상태를 본다. 코드가 그대로여도 서버가 달라졌을 수
- * 있으므로, 주소가 주어졌을 때는 지난 결과를 다시 쓰지 않고 매번 돌린다.
+ * 기능 테스트(진짜 서버에 붙는 시나리오) 스위치.
+ *
+ * 시나리오는 서버에 방을 만들고 대화를 보내므로 평소 테스트에서는 돌면 안 된다. 그래서 기본은 꺼짐이고,
+ * `-PfunctionalTest=true` 를 줄 때만 서버 주소가 테스트에 전달된다.
+ *
+ * ```
+ * ./gradlew :composeApp:testDebugUnitTest -PfunctionalTest=true --tests "*functest*"
+ * ```
+ *
+ * 주소를 따로 주지 않으면 로컬 서버(`http://localhost:8090`)에 붙고, 떠 있지 않으면 빌드가 띄웠다가 끝날 때
+ * 내린다. 다른 서버에 돌리려면 `-PfunctionalTestUrl=<주소>` 를 준다. Android Studio 에서는 `.run` 의
+ * 실행 구성을 고르면 된다. 환경변수 `TALK_FUNCTEST_URL` 을 직접 줘도 같다.
+ *
+ * 진짜 서버의 상태를 보는 테스트라, 주소가 있을 때는 지난 결과를 다시 쓰지 않고 매번 돌린다.
  */
+val localServerUrl = "http://localhost:8090"
+val functionalTestUrl: String = when {
+    providers.gradleProperty("functionalTest").orNull == "true" ->
+        providers.gradleProperty("functionalTestUrl").orNull ?: localServerUrl
+    else -> providers.environmentVariable("TALK_FUNCTEST_URL").orNull.orEmpty()
+}
+
 tasks.withType<Test>().configureEach {
-    val functestUrl = providers.environmentVariable("TALK_FUNCTEST_URL").orElse("")
-    inputs.property("functestUrl", functestUrl)
-    outputs.upToDateWhen { functestUrl.get().isBlank() }
+    inputs.property("functestUrl", functionalTestUrl)
+    if (functionalTestUrl.isNotBlank()) {
+        environment("TALK_FUNCTEST_URL", functionalTestUrl)
+        outputs.upToDateWhen { false }
+        if (functionalTestUrl == localServerUrl) dependsOn(":server:startLocalServer")
+    }
+}
+
+/**
+ * 시뮬레이터 테스트는 `simctl spawn` 으로 실행되므로 그냥 넣은 환경변수는 전달되지 않는다.
+ * `SIMCTL_CHILD_` 접두어를 붙여야 자식 프로세스에 들어간다.
+ */
+tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest>().configureEach {
+    if (functionalTestUrl.isNotBlank()) {
+        environment("SIMCTL_CHILD_TALK_FUNCTEST_URL", functionalTestUrl)
+        if (functionalTestUrl == localServerUrl) dependsOn(":server:startLocalServer")
+    }
 }

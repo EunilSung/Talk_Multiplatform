@@ -31,7 +31,6 @@ import com.eunilsung.talk.shared.api.SendMessageRequest
 import com.eunilsung.talk.testsupport.FakeFileMetadataResolver
 import com.eunilsung.talk.testsupport.TestLocalSecret
 import com.eunilsung.talk.testsupport.TestMyInfo
-import com.eunilsung.talk.testsupport.createTestDatabase
 import com.russhwolf.settings.MapSettings
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.flow.first
@@ -45,7 +44,7 @@ import kotlinx.coroutines.flow.first
  * 그리고 그 위의 저장소 구현들. 다른 테스트는 이 자리에 가짜 서버를 끼우기 때문에, 앱과 서버가
  * 계약을 다르게 알고 있어도 양쪽 테스트가 모두 통과할 수 있다. 여기서만 그 어긋남이 드러난다.
  *
- * 대역은 기기에 묶인 것뿐이다. 기기 DB 는 메모리 DB, 설정은 메모리 설정, 기기의 파일은 메모리 파일.
+ * 대역은 기기에 묶인 것뿐이다. 기기 DB 는 테스트용 DB, 설정은 메모리 설정, 기기의 파일은 메모리 파일.
  *
  * ### 기본은 꺼져 있다
  *
@@ -63,7 +62,7 @@ class RealServerHarness private constructor(private val baseUrl: String) {
     private val httpClient: HttpClient = functionalTestHttpClient()
     private val settings = MapSettings()
     private val tokenStore = AuthTokenStore(settings)
-    private val database = createTestDatabase()
+    private val database = createFunctionalTestDatabase()
     private val chatRoomMapper = ChatRoomMapper()
     private val groupMapper = GroupMapper()
     private val peers = mutableListOf<Peer>()
