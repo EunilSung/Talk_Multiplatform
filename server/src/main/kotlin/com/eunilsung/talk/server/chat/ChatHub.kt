@@ -2,10 +2,12 @@ package com.eunilsung.talk.server.chat
 
 import com.eunilsung.talk.server.ServerJson
 import com.eunilsung.talk.server.push.ChatPushService
+import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.ServerEvent
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
@@ -17,6 +19,13 @@ import java.util.concurrent.CopyOnWriteArraySet
 class ChatHub(private val push: ChatPushService? = null) {
 
     private val sessions = ConcurrentHashMap<String, MutableSet<WebSocketSession>>()
+
+    private val messageListeners = CopyOnWriteArrayList<(MessageDto) -> Unit>()
+
+    /** 새 대화가 나갈 때마다 불릴 것을 등록한다. 부르는 쪽을 막지 않게, 등록하는 쪽이 일을 따로 띄워야 한다. */
+    fun onNewMessage(listener: (MessageDto) -> Unit) {
+        messageListeners += listener
+    }
 
     fun join(userId: String, session: WebSocketSession) {
         sessions.computeIfAbsent(userId) { CopyOnWriteArraySet() }.add(session)
@@ -37,7 +46,12 @@ class ChatHub(private val push: ChatPushService? = null) {
      * 새 대화를 알리는 길이 여기 하나라, 여기서 함께 보내면 빠뜨리는 경로가 생기지 않는다.
      */
     suspend fun send(userIds: Collection<String>, event: ServerEvent) {
-        if (event.type == ServerEvent.TYPE_MESSAGE) event.message?.let { push?.notifyNewMessage(it) }
+        if (event.type == ServerEvent.TYPE_MESSAGE) {
+            event.message?.let { message ->
+                push?.notifyNewMessage(message)
+                messageListeners.forEach { it(message) }
+            }
+        }
         val frameText = ServerJson.encodeToString(ServerEvent.serializer(), event)
         userIds.distinct().forEach { userId ->
             sessions[userId]?.forEach { session ->

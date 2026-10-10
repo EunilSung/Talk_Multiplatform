@@ -1,6 +1,11 @@
 package com.eunilsung.talk.server
 
+import com.eunilsung.talk.server.ai.AiAssistant
+import com.eunilsung.talk.server.ai.AiClient
+import com.eunilsung.talk.server.ai.AiUsageLimiter
+import com.eunilsung.talk.server.ai.GeminiClient
 import com.eunilsung.talk.server.auth.LoginAttemptLimiter
+import com.eunilsung.talk.server.routes.aiRoutes
 import com.eunilsung.talk.server.config.ServerConfig
 import com.eunilsung.talk.server.db.Database
 import com.eunilsung.talk.server.chat.ChatHub
@@ -63,6 +68,7 @@ fun Application.module(config: ServerConfig) {
         dataSource = Database.connect(config.db),
         fileStorage = FileStorage(File(config.filesDirectory)),
         pushSender = fcmSenderOf(config.firebaseCredentialsJson),
+        aiClient = aiClientOf(config.aiApiKey, config.aiModel),
     )
 }
 
@@ -86,11 +92,27 @@ private fun fcmSenderOf(credentialsJson: String): PushSender? {
     return FcmSender(account.projectId, GoogleAccessTokenProvider(account, httpClient), httpClient)
 }
 
+/** API 키로 AI 호출 통로를 만든다. 키가 없으면 null — AI 만 꺼지고 서버는 뜬다. */
+private fun aiClientOf(apiKey: String, model: String): AiClient? {
+    val log = LoggerFactory.getLogger("Application")
+    if (apiKey.isBlank()) {
+        log.warn("GEMINI_API_KEY 없음 — AI 가 답하지 않는다")
+        return null
+    }
+    log.info("AI 사용 — model={}", model)
+    return GeminiClient(HttpClient(OkHttp), apiKey, model)
+}
+
 /**
  * 서버 본체. 이미 준비된 [dataSource] 와 [fileStorage] 를 받는다 — 테스트가 자기 DB 와 임시 폴더를 끼워 넣는 자리다.
- * [pushSender] 가 null 이면 푸시를 보내지 않는다.
+ * [pushSender] 가 null 이면 푸시를 보내지 않고, [aiClient] 가 null 이면 AI 가 "설정되지 않았다"고만 답한다.
  */
-fun Application.module(dataSource: DataSource, fileStorage: FileStorage, pushSender: PushSender? = null) {
+fun Application.module(
+    dataSource: DataSource,
+    fileStorage: FileStorage,
+    pushSender: PushSender? = null,
+    aiClient: AiClient? = null,
+) {
     val log = LoggerFactory.getLogger("Application")
 
     install(ContentNegotiation) { json(ServerJson) }
@@ -112,6 +134,9 @@ fun Application.module(dataSource: DataSource, fileStorage: FileStorage, pushSen
     val chatHub = ChatHub(ChatPushService(pushTokens, pushSender, this))
     val files = FileRepository(dataSource)
     SeedAccounts.ensure(users)
+    AiAssistant.ensureAccount(users)
+    val assistant = AiAssistant(chats, chatHub, aiClient, AiUsageLimiter(), this)
+    chatHub.onNewMessage(assistant::onNewMessage)
 
     routing {
         healthRoutes(dataSource)
@@ -122,6 +147,7 @@ fun Application.module(dataSource: DataSource, fileStorage: FileStorage, pushSen
         chatGroupRoutes(ChatGroupRepository(dataSource), tokens)
         peopleRoutes(users, ContactGroupRepository(dataSource), tokens, chatHub)
         pushRoutes(pushTokens, tokens)
+        aiRoutes(assistant, chats, tokens)
     }
 }
 

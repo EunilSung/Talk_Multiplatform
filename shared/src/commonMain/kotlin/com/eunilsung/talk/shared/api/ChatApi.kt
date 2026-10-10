@@ -190,6 +190,8 @@ object ChatErrorCode {
     const val FILE_TOO_LARGE = "file_too_large"
     /** 그런 투표가 없거나 그 투표에 할 수 없는 일이다. */
     const val VOTE_NOT_FOUND = "vote_not_found"
+    /** AI 가 지금 답할 수 없다 — 설정되지 않았거나, 사용량 한도에 걸렸거나, 응답을 받지 못했다. */
+    const val AI_UNAVAILABLE = "ai_unavailable"
 }
 
 /** 공감 한 칸 — 누가 어떤 반응을 눌렀는지. [kind] 는 `"0"`~`"5"` 다. */
@@ -338,3 +340,11 @@ data class ChatGroupDto(
 /** 내 대화그룹 전부. 바꿀 때도 이 모양으로 전체를 보낸다. */
 @Serializable
 data class ChatGroupsDto(val groups: List<ChatGroupDto> = emptyList())
+
+/** 대화 요약 요청. [afterMessageId] 뒤의 대화를 요약한다. 비우면 최근 대화를 요약한다. */
+@Serializable
+data class SummaryRequest(val afterMessageId: String? = null)
+
+/** 요약 결과. 요약할 대화가 없으면 [summary] 가 비어서 온다. 요청한 사람에게만 가고 방에는 남지 않는다. */
+@Serializable
+data class SummaryResponse(val summary: String)

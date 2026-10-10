@@ -17,9 +17,18 @@ data class ServerConfig(
      * 컨테이너용)로 받는다. 여러 줄짜리 private key 가 셸을 거치며 깨지지 않게 한 줄로 감싼 것이다.
      */
     val firebaseCredentialsJson: String = "",
+    /** Gemini API 키(`GEMINI_API_KEY`). 비면 AI 가 답하지 않고 나머지는 그대로 동작한다. */
+    val aiApiKey: String = "",
+    /** AI 가 쓸 모델(`AI_MODEL`). 무료 한도가 넉넉한 가벼운 모델을 기본으로 둔다. */
+    val aiModel: String = DEFAULT_AI_MODEL,
 ) {
     companion object {
         const val DEFAULT_PORT = 8080
+        const val DEFAULT_AI_MODEL = "gemini-3.5-flash-lite"
+
+        fun aiApiKeyFromEnv(): String = env("GEMINI_API_KEY").orEmpty()
+
+        fun aiModelFromEnv(): String = env("AI_MODEL") ?: DEFAULT_AI_MODEL
 
         fun fromEnv(): ServerConfig = ServerConfig(
             port = env("PORT")?.toIntOrNull() ?: DEFAULT_PORT,
@@ -31,6 +40,8 @@ data class ServerConfig(
             ),
             filesDirectory = env("FILES_DIR") ?: "files",
             firebaseCredentialsJson = firebaseCredentialsFromEnv(),
+            aiApiKey = aiApiKeyFromEnv(),
+            aiModel = aiModelFromEnv(),
         )
 
         private fun env(name: String): String? = System.getenv(name)?.takeIf { it.isNotBlank() }

@@ -47,7 +47,9 @@ class PeopleRoutesTest {
         val response = client.authGet(me, "/users")
         val users = response.decode(UsersResponse.serializer()).users
 
-        assertEquals(10, users.size)
+        /** 시연용 계정 10명과 AI 계정 하나. */
+        assertEquals(11, users.size)
+        assertEquals("ai", users.last().id)
         assertEquals("임채원", users.first().name)
         assertEquals("부장", users.first().positionName)
         assertFalse("password" in response.bodyAsText())
