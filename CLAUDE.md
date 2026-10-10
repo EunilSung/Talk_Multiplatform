@@ -200,7 +200,13 @@ open iosApp/iosApp.xcodeproj           # iOS 는 Xcode 에서 시뮬레이터 �
 ./gradlew :composeApp:testDebugUnitTest -PfunctionalTest=true --tests "*functest*"
 ```
 
-- **Android Studio 에서는 실행 구성 `기능테스트 (실 서버)` 를 고르고 실행 버튼을 누르면 된다**(`.run` 폴더).  서버 없이 도는 테스트만 돌리려면 `테스트 (서버 없이)` 를 고른다.- **로컬 서버는 알아서 뜬다.** 떠 있지 않으면 빌드가 띄웠다가 끝날 때 내리고(로그는  `server/build/local-server/server.log`), 이미 떠 있으면 그대로 쓰고 건드리지 않는다. 다른 서버에  돌리려면 `-PfunctionalTestUrl=<주소>` 를 준다.- **`-PfunctionalTest=true` 가 없으면 돌지 않는다.** 평소 `testDebugUnitTest` 에서는 서버로 아무것도 나가지  않고 통과한다. 서버를 건드렸거나 `:shared` 의 계약을 바꿨으면 켜고 돌린다.
+- **Android Studio 에서는 실행 구성 `기능테스트 (실 서버)` 를 고르고 실행 버튼을 누르면 된다**(`.run` 폴더).
+  서버 없이 도는 테스트만 돌리려면 `테스트 (서버 없이)` 를 고른다.
+- **로컬 서버는 알아서 뜬다.** 떠 있지 않으면 빌드가 띄웠다가 끝날 때 내리고(로그는
+  `server/build/local-server/server.log`), 이미 떠 있으면 그대로 쓰고 건드리지 않는다. 다른 서버에
+  돌리려면 `-PfunctionalTestUrl=<주소>` 를 준다.
+- **`-PfunctionalTest=true` 가 없으면 돌지 않는다.** 평소 `testDebugUnitTest` 에서는 서버로 아무것도 나가지
+  않고 통과한다. 서버를 건드렸거나 `:shared` 의 계약을 바꿨으면 켜고 돌린다.
 - **결과는 `[FT]` 로그로 본다.** `composeApp/build/test-results/testDebugUnitTest/*functest*.xml` 에서
   `STEP-FAIL` 을 찾으면 어느 시나리오의 어느 단계에서 무엇이 달랐는지 나온다. 콘솔은 한글이 깨져 보일 수 있다.
 - **묶음** — 로그인 · 대화방 목록 · 대화 · 읽음 · 공감/회수/공지/책갈피 · 파일 · 투표 · 대화그룹 · 사람 ·
