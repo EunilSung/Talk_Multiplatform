@@ -188,17 +188,10 @@ val appModule = module {
     singleOf(::AddNoticeUseCase)
     singleOf(::DeleteNoticeUseCase)
     singleOf(::RequestNoticeUseCase)
-    singleOf(::SummarizeUnreadUseCase)
     singleOf(::FetchBookmarksUseCase)
     singleOf(::AddBookmarkUseCase)
     singleOf(::DeleteBookmarkUseCase)
-    /** 인자가 22개를 넘어 `singleOf` 로는 등록할 수 없다. */
-    single {
-        ChatRoomUseCases(
-            get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
-            get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
-        )
-    }
+    singleOf(::ChatRoomUseCases)
 
     viewModelOf(::ChatRoomListViewModel)
     singleOf(::ChatRoomMapper)

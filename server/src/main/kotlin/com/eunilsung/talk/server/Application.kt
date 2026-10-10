@@ -4,9 +4,7 @@ import com.eunilsung.talk.server.ai.AiAssistant
 import com.eunilsung.talk.server.ai.AiClient
 import com.eunilsung.talk.server.ai.AiUsageLimiter
 import com.eunilsung.talk.server.ai.GeminiClient
-import com.eunilsung.talk.server.ai.OllamaClient
 import com.eunilsung.talk.server.auth.LoginAttemptLimiter
-import com.eunilsung.talk.server.routes.aiRoutes
 import com.eunilsung.talk.server.config.ServerConfig
 import com.eunilsung.talk.server.db.Database
 import com.eunilsung.talk.server.chat.ChatHub
@@ -53,7 +51,6 @@ import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import java.io.File
-import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 import kotlin.time.Duration.Companion.seconds
 
@@ -70,7 +67,7 @@ fun Application.module(config: ServerConfig) {
         dataSource = Database.connect(config.db),
         fileStorage = FileStorage(File(config.filesDirectory)),
         pushSender = fcmSenderOf(config.firebaseCredentialsJson),
-        aiClient = aiClientOf(config),
+        aiClient = aiClientOf(config.aiApiKey, config.aiModel),
     )
 }
 
@@ -94,27 +91,15 @@ private fun fcmSenderOf(credentialsJson: String): PushSender? {
     return FcmSender(account.projectId, GoogleAccessTokenProvider(account, httpClient), httpClient)
 }
 
-/**
- * AI 호출 통로를 만든다. 로컬 모델 주소가 있으면 그쪽을, 없으면 API 키로 Gemini 를 쓴다.
- * 둘 다 없으면 null — AI 만 꺼지고 서버는 뜬다.
- */
-private fun aiClientOf(config: ServerConfig): AiClient? {
+/** API 키로 AI 호출 통로를 만든다. 키가 없으면 null — AI 만 꺼지고 서버는 뜬다. */
+private fun aiClientOf(apiKey: String, model: String): AiClient? {
     val log = LoggerFactory.getLogger("Application")
-    if (config.ollamaUrl.isNotBlank()) {
-        val model = config.aiModel.ifBlank { ServerConfig.DEFAULT_OLLAMA_MODEL }
-        log.info("AI 사용 — 로컬 모델 url={} model={}", config.ollamaUrl, model)
-        val httpClient = HttpClient(OkHttp) {
-            engine { config { readTimeout(OllamaClient.TIMEOUT_MS, TimeUnit.MILLISECONDS) } }
-        }
-        return OllamaClient(httpClient, config.ollamaUrl, model)
-    }
-    if (config.aiApiKey.isBlank()) {
-        log.warn("OLLAMA_URL·GEMINI_API_KEY 없음 — AI 가 답하지 않는다")
+    if (apiKey.isBlank()) {
+        log.warn("GEMINI_API_KEY 없음 — AI 가 답하지 않는다")
         return null
     }
-    val model = config.aiModel.ifBlank { ServerConfig.DEFAULT_GEMINI_MODEL }
-    log.info("AI 사용 — Gemini model={}", model)
-    return GeminiClient(HttpClient(OkHttp), config.aiApiKey, model)
+    log.info("AI 사용 — model={}", model)
+    return GeminiClient(HttpClient(OkHttp), apiKey, model)
 }
 
 /**
@@ -161,7 +146,6 @@ fun Application.module(
         chatGroupRoutes(ChatGroupRepository(dataSource), tokens)
         peopleRoutes(users, ContactGroupRepository(dataSource), tokens, chatHub)
         pushRoutes(pushTokens, tokens)
-        aiRoutes(assistant, chats, tokens)
     }
 }
 

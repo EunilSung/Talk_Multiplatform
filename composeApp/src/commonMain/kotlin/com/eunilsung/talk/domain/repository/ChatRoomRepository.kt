@@ -57,12 +57,6 @@ interface ChatRoomRepository {
     /** 대화방 공지 조회 — 결과가 [currentNotice] 에 실린다. */
     suspend fun requestNotice(chatRoomId: String)
 
-    /**
-     * [afterChatId] 뒤에 쌓인 대화를 요약해 받는다. null 이면 방의 최근 대화를 요약한다.
-     * 결과는 요청한 사람만 보고 방에는 남지 않는다.
-     */
-    suspend fun summarizeUnread(chatRoomId: String, afterChatId: String?): com.eunilsung.talk.domain.model.ChatSummary
-
     /** 공지 등록 — [currentNotice] 갱신 + 시스템 대화 추가. */
     suspend fun addNotice(chatRoomId: String, content: String)
 

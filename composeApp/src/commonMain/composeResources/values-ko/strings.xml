@@ -220,10 +220,6 @@
     <string name="msg_receiver_no">받는사람이 없습니다</string>
 
     <string name="chat_read_check">여기까지 읽었습니다</string>
-    <string name="chat_summary_button">AI 요약</string>
-    <string name="chat_summary_loading">요약하는 중…</string>
-    <string name="toast_summary_empty">요약할 대화가 없습니다.</string>
-    <string name="toast_summary_unavailable">지금은 요약할 수 없습니다. 잠시 후 다시 시도해 주세요.</string>
 
     <string name="invite">초대하기</string>
     <string name="share">공유하기</string>

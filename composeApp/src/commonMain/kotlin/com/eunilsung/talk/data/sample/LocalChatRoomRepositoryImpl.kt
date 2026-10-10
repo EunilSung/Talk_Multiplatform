@@ -24,7 +24,6 @@ import com.eunilsung.talk.db.BookmarkEntity
 import com.eunilsung.talk.db.NoticeEntity
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
-import com.eunilsung.talk.domain.model.ChatSummary
 import com.eunilsung.talk.domain.model.Emoticon
 import com.eunilsung.talk.domain.model.EmpathyChat
 import com.eunilsung.talk.domain.model.Notice
@@ -334,10 +333,6 @@ class LocalChatRoomRepositoryImpl(
     override suspend fun requestNotice(chatRoomId: String) = withContext(Dispatchers.Default) {
         _currentNotice.value = loadNotice(Config.MyInfo.userId, chatRoomId)
     }
-
-    /** 서버가 없는 로컬 모드에는 요약할 모델이 없다. */
-    override suspend fun summarizeUnread(chatRoomId: String, afterChatId: String?): ChatSummary =
-        ChatSummary.Unavailable
 
     override suspend fun addNotice(chatRoomId: String, content: String) {
         if (content.isBlank()) return

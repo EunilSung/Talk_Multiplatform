@@ -158,7 +158,6 @@ class ChatRoomScreen(
         val replyTarget by viewModel.replyTarget.collectAsState()
         val currentNotice by viewModel.currentNotice.collectAsState()
         val noticeBar by viewModel.noticeBar.collectAsState()
-        val unreadSummary by viewModel.unreadSummary.collectAsState()
         val signals = remember(viewModel) {
             ChatRoomSignals(
                 newChat = viewModel.newChatPush,
@@ -253,7 +252,6 @@ class ChatRoomScreen(
             enterToSend = chatSettings.enterToSend,
             chatFontSize = chatSettings.fontSize.sp,
             noticeBindings = noticeBindings,
-            unreadSummary = unreadSummary,
             bookmarksFlow = viewModel.bookmarks,
             initialEmoticonTab = remember { viewModel.lastEmoticonTab() },
             onEmoticonTabSelected = { viewModel.saveEmoticonTab(it) },
@@ -287,7 +285,6 @@ fun ChatRoomContent(
     enterToSend: Boolean = false,
     chatFontSize: TextUnit = 13.sp,
     noticeBindings: NoticeBindings = NoticeBindings(),
-    unreadSummary: UnreadSummaryUiState = UnreadSummaryUiState.Idle,
     bookmarksFlow: StateFlow<List<Bookmark>> = MutableStateFlow(emptyList()),
     initialEmoticonTab: Int = 0,
     onEmoticonTabSelected: (Int) -> Unit = {},
@@ -528,7 +525,6 @@ fun ChatRoomContent(
                                 hideKeyboard = hideKeyboard,
                                 users = users,
                                 onLongPress = { longPressedChat = it },
-                                isSummarizingUnread = unreadSummary == UnreadSummaryUiState.Loading,
                                 // 지금 걸린 공지가 아니라 그 대화가 담고 있던 본문을 보여준다.
                                 onNoticeClick = { noticeDialogText = it.chatContent },
                                 onAction = onAction,
@@ -719,22 +715,6 @@ fun ChatRoomContent(
                 },
                 onUserClick = { showUserProfile(it) },
             )
-        }
-
-        when (unreadSummary) {
-            is UnreadSummaryUiState.Ready -> FullTextDialog(
-                text = unreadSummary.text,
-                linkColor = AppColors.SkyLine,
-                onDismiss = { onAction(ChatRoomActions.OnDismissUnreadSummary) },
-            )
-            UnreadSummaryUiState.Empty, UnreadSummaryUiState.Unavailable -> LaunchedEffect(unreadSummary) {
-                toastManager.show(
-                    if (unreadSummary == UnreadSummaryUiState.Empty) strings.summaryEmpty
-                    else strings.summaryUnavailable
-                )
-                onAction(ChatRoomActions.OnDismissUnreadSummary)
-            }
-            else -> Unit
         }
 
         noticeDialogText?.takeIf { it.isNotBlank() }?.let { content ->
