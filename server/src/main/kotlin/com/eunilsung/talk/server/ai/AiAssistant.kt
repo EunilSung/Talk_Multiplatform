@@ -112,7 +112,8 @@ class AiAssistant(
         /** AI 계정이 없으면 만든다. 서버가 뜰 때마다 불러도 된다. */
         fun ensureAccount(users: UserRepository) = users.insertIfAbsent(ACCOUNT, UNUSABLE_PASSWORD_HASH)
 
-        private const val CONTEXT_MESSAGES = 40
+        /** 모델에 참고로 보내는 최근 대화의 상한. 방의 대화가 이보다 적으면 있는 만큼만 간다. */
+        private const val CONTEXT_MESSAGES = 1000
         private const val MAX_ANSWER_LENGTH = 4000
         /** 나와 AI 둘뿐인 방. 여기서는 멘션 없이도 답한다. */
         private const val PRIVATE_ROOM_MEMBERS = 2
