@@ -30,8 +30,6 @@ import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.RoomsResponse
 import com.eunilsung.talk.shared.api.SendMessageRequest
 import com.eunilsung.talk.shared.api.SetNoticeRequest
-import com.eunilsung.talk.shared.api.SummaryRequest
-import com.eunilsung.talk.shared.api.SummaryResponse
 import com.eunilsung.talk.shared.api.ToggleReactionRequest
 import com.eunilsung.talk.shared.api.UnreadCountDto
 import com.eunilsung.talk.shared.api.UnreadCountsResponse
@@ -153,9 +151,6 @@ interface TalkServer {
 
     /** 방의 공지. 공지가 없으면 내용이 빈 값이 온다. */
     suspend fun notice(roomId: String): ServerResult<NoticeDto>
-
-    /** [afterMessageId] 뒤의 대화를 요약해 받는다. 방에는 남지 않는다. */
-    suspend fun summarize(roomId: String, afterMessageId: String?): ServerResult<SummaryResponse>
 
     suspend fun setNotice(roomId: String, content: String): ServerResult<NoticeChangeResponse>
 
@@ -362,14 +357,6 @@ class TalkServerClient(
             httpClient.get("${roomUrl(roomId)}/notice") { auth() }
         }
 
-    override suspend fun summarize(roomId: String, afterMessageId: String?): ServerResult<SummaryResponse> =
-        request("대화 요약", SummaryResponse.serializer(), SUMMARY_TIMEOUT_MS) {
-            httpClient.post("${roomUrl(roomId)}/summary") {
-                auth()
-                jsonBody(SummaryRequest.serializer(), SummaryRequest(afterMessageId))
-            }
-        }
-
     override suspend fun setNotice(roomId: String, content: String): ServerResult<NoticeChangeResponse> =
         request("공지 등록", NoticeChangeResponse.serializer()) {
             httpClient.put("${roomUrl(roomId)}/notice") {
@@ -559,7 +546,5 @@ class TalkServerClient(
         const val REQUEST_TIMEOUT_MS = 10_000L
         /** 파일은 크기만큼 오래 걸린다. 일반 요청과 같은 제한을 걸면 큰 파일이 늘 끊긴다. */
         const val FILE_TIMEOUT_MS = 120_000L
-        /** 모델이 답을 만드는 시간까지 기다린다. */
-        const val SUMMARY_TIMEOUT_MS = 40_000L
     }
 }

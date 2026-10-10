@@ -26,7 +26,6 @@ import com.eunilsung.talk.data.local.RecentPhotosProvider
 import com.eunilsung.talk.data.local.RecentPhotosResult
 import com.eunilsung.talk.data.remote.push.CurrentChatRoomTracker
 import com.eunilsung.talk.domain.model.Chat
-import com.eunilsung.talk.domain.model.ChatSummary
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.repository.ChatRoomRepository
 import com.eunilsung.talk.domain.repository.ChatSettingsRepository
@@ -235,11 +234,6 @@ class ChatRoomViewModel(
 
     private val _firstUnreadChatId = MutableStateFlow<String?>(null)
 
-    private val _unreadSummary = MutableStateFlow<UnreadSummaryUiState>(UnreadSummaryUiState.Idle)
-
-    /** 안읽은 대화 요약의 진행 상태. */
-    val unreadSummary: StateFlow<UnreadSummaryUiState> = _unreadSummary.asStateFlow()
-
     private val _users = MutableStateFlow<List<User>>(emptyList())
     val users: StateFlow<List<User>> = _users.asStateFlow()
 
@@ -310,8 +304,6 @@ class ChatRoomViewModel(
             is ChatRoomActions.OnFocusChat -> focusOnChat(action.chatId)
             is ChatRoomActions.OnAddBookmark -> addBookmark(action.chat)
             is ChatRoomActions.OnDeleteBookmark -> deleteBookmark(action.chatId)
-            is ChatRoomActions.OnSummarizeUnread -> summarizeUnread()
-            is ChatRoomActions.OnDismissUnreadSummary -> _unreadSummary.value = UnreadSummaryUiState.Idle
         }
     }
 
@@ -445,7 +437,6 @@ class ChatRoomViewModel(
         fetchingMore = false
         fetchingNewer = false
         _firstUnreadChatId.value = null
-        _unreadSummary.value = UnreadSummaryUiState.Idle
         _users.value = emptyList()
         _sender.value = senderOverride.senderFor(chatRoomId)
         _searchState.value = ChatSearchState()
@@ -738,30 +729,6 @@ class ChatRoomViewModel(
         viewModelScope.launch {
             runCatching { chatRoomUseCases.deleteBookmark(roomId, chatId) }
                 .onFailure { Log.message("[ChatRoomVM] deleteBookmark failed: ${it.message}") }
-        }
-    }
-
-    /**
-     * 안읽음 표시 뒤에 쌓인 대화를 요약해 달라고 한다.
-     *
-     * 서버에는 "이 대화 뒤부터"로 묻는다. 표시 바로 앞의 대화가 아직 서버에 닿지 않은 것일 수 있어,
-     * 서버가 아는(전송이 끝난) 대화 중 가장 가까운 것을 기준으로 삼는다.
-     */
-    private fun summarizeUnread() {
-        val roomId = currentChatRoomId
-        val firstUnreadId = _firstUnreadChatId.value ?: return
-        if (roomId.isBlank() || _unreadSummary.value == UnreadSummaryUiState.Loading) return
-        val readChats = latestChats.takeWhile { it.chatID != firstUnreadId }
-        val afterChatId = readChats.lastOrNull { it.chatStatue == Chat.Statue.COMPLETE }?.chatID
-        _unreadSummary.value = UnreadSummaryUiState.Loading
-        viewModelScope.launch {
-            val summary = chatRoomUseCases.summarizeUnread(roomId, afterChatId)
-            if (currentChatRoomId != roomId) return@launch
-            _unreadSummary.value = when (summary) {
-                is ChatSummary.Ready -> UnreadSummaryUiState.Ready(summary.text)
-                ChatSummary.Empty -> UnreadSummaryUiState.Empty
-                ChatSummary.Unavailable -> UnreadSummaryUiState.Unavailable
-            }
         }
     }
 

@@ -25,7 +25,6 @@ data class ChatRoomUseCases(
     val addNotice: AddNoticeUseCase,
     val deleteNotice: DeleteNoticeUseCase,
     val requestNotice: RequestNoticeUseCase,
-    val summarizeUnread: SummarizeUnreadUseCase,
     val fetchBookmarks: FetchBookmarksUseCase,
     val addBookmark: AddBookmarkUseCase,
     val deleteBookmark: DeleteBookmarkUseCase,
@@ -40,12 +39,6 @@ class AddNoticeUseCase(private val repository: ChatRoomRepository) {
 /** 현재 공지 해제. */
 class DeleteNoticeUseCase(private val repository: ChatRoomRepository) {
     suspend operator fun invoke(chatRoomId: String) = repository.deleteNotice(chatRoomId)
-}
-
-/** 안읽은 대화 요약. */
-class SummarizeUnreadUseCase(private val repository: ChatRoomRepository) {
-    suspend operator fun invoke(chatRoomId: String, afterChatId: String?) =
-        repository.summarizeUnread(chatRoomId, afterChatId)
 }
 
 /** 방 진입 시 공지 조회. */

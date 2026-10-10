@@ -62,7 +62,6 @@ fun ChatMessageList(
     hideKeyboard: () -> Unit,
     users: List<com.eunilsung.talk.domain.model.User>,
     onLongPress: (Chat.Item) -> Unit,
-    isSummarizingUnread: Boolean,
     onNoticeClick: (Chat.Item) -> Unit,
     onAction: (ChatRoomActions) -> Unit,
 ) {
@@ -112,12 +111,7 @@ fun ChatMessageList(
                     )
                 }
                 if (grouped.showUnreadMarker) {
-                    UnreadMarker(
-                        isSummarizing = isSummarizingUnread,
-                        onSummarize = if (Config.Server.IS_ENABLED) {
-                            { onAction(ChatRoomActions.OnSummarizeUnread) }
-                        } else null,
-                    )
+                    UnreadMarker()
                 }
 
                 ChatItem(

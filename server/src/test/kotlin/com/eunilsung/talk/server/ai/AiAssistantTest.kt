@@ -4,8 +4,6 @@ import com.eunilsung.talk.server.ServerJson
 import com.eunilsung.talk.server.module
 import com.eunilsung.talk.server.seed.SeedAccounts
 import com.eunilsung.talk.server.testsupport.TestDatabase
-import com.eunilsung.talk.shared.api.ApiError
-import com.eunilsung.talk.shared.api.ChatErrorCode
 import com.eunilsung.talk.shared.api.CreateRoomRequest
 import com.eunilsung.talk.shared.api.InviteRequest
 import com.eunilsung.talk.shared.api.LoginRequest
@@ -15,8 +13,6 @@ import com.eunilsung.talk.shared.api.MessagesResponse
 import com.eunilsung.talk.shared.api.RecallRequest
 import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.SendMessageRequest
-import com.eunilsung.talk.shared.api.SummaryRequest
-import com.eunilsung.talk.shared.api.SummaryResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -178,45 +174,6 @@ class AiAssistantTest {
             }
             assertTrue(response.status == HttpStatusCode.Unauthorized || response.status == HttpStatusCode.BadRequest)
         }
-    }
-
-    @Test
-    fun `요약은 지정한 대화 뒤만 다루고 방에 남지 않으며 요청한 사람에게만 간다`() = serverTest {
-        val me = client.loginToken("test1")
-        val peer = client.loginToken("test2")
-        val room = client.createRoom(me, "test2")
-        client.say(peer, room.id, "p1", "이미 읽은 옛 대화")
-        client.say(peer, room.id, "p2", "점심은 12시 반에 먹어요")
-        client.say(peer, room.id, "p3", "장소는 1층 식당입니다")
-        ai.reply = AiReply.Answer("- 점심 12시 반\n- 1층 식당")
-
-        val response = client.authPost(me, "/rooms/${room.id}/summary", SummaryRequest.serializer(), SummaryRequest("p1"))
-
-        assertEquals(HttpStatusCode.OK, response.status)
-        assertEquals("- 점심 12시 반\n- 1층 식당", response.decode(SummaryResponse.serializer()).summary)
-        val input = ai.asked.single().second
-        assertTrue("12시 반" in input && "1층 식당" in input)
-        assertFalse("옛 대화" in input)
-        assertEquals(3, client.messages(me, room.id).size)
-    }
-
-    @Test
-    fun `요약할 것이 없으면 모델을 부르지 않고 방 밖의 사람과 미설정 서버는 거절한다`() = serverTest {
-        val me = client.loginToken("test1")
-        val outsider = client.loginToken("test3")
-        val room = client.createRoom(me, "test2")
-        client.say(me, room.id, "m1", "마지막 말")
-
-        val empty = client.authPost(me, "/rooms/${room.id}/summary", SummaryRequest.serializer(), SummaryRequest("m1"))
-        val denied = client.authPost(outsider, "/rooms/${room.id}/summary", SummaryRequest.serializer(), SummaryRequest())
-        ai.reply = AiReply.Failed
-        val failed = client.authPost(me, "/rooms/${room.id}/summary", SummaryRequest.serializer(), SummaryRequest())
-
-        assertEquals("", empty.decode(SummaryResponse.serializer()).summary)
-        assertEquals(HttpStatusCode.NotFound, denied.status)
-        assertEquals(HttpStatusCode.ServiceUnavailable, failed.status)
-        assertEquals(ChatErrorCode.AI_UNAVAILABLE, failed.decode(ApiError.serializer()).code)
-        assertEquals(1, ai.asked.size)
     }
 
     private suspend fun ApplicationTestBuilder.awaitMessages(

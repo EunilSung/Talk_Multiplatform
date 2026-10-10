@@ -24,8 +24,6 @@ import multiplatformtalk.composeapp.generated.resources.delete
 import multiplatformtalk.composeapp.generated.resources.notice_delete_message
 import multiplatformtalk.composeapp.generated.resources.notice_delete_title
 import multiplatformtalk.composeapp.generated.resources.toast_no_notice
-import multiplatformtalk.composeapp.generated.resources.toast_summary_empty
-import multiplatformtalk.composeapp.generated.resources.toast_summary_unavailable
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -50,8 +48,6 @@ data class ChatRoomStrings(
     val noticeDeleteTitle: String,
     val noticeDeleteMessage: String,
     val noNotice: String,
-    val summaryEmpty: String,
-    val summaryUnavailable: String,
     val menuCopy: String,
     val menuReply: String,
     val menuNotice: String,
@@ -76,8 +72,6 @@ fun rememberChatRoomStrings(): ChatRoomStrings {
     val noticeDeleteTitle = stringResource(Res.string.notice_delete_title)
     val noticeDeleteMessage = stringResource(Res.string.notice_delete_message)
     val noNotice = stringResource(Res.string.toast_no_notice)
-    val summaryEmpty = stringResource(Res.string.toast_summary_empty)
-    val summaryUnavailable = stringResource(Res.string.toast_summary_unavailable)
     val menuCopy = stringResource(Res.string.chat_menu_copy)
     val menuReply = stringResource(Res.string.chat_menu_reply)
     val menuNotice = stringResource(Res.string.chat_menu_notice)
@@ -100,8 +94,6 @@ fun rememberChatRoomStrings(): ChatRoomStrings {
             noticeDeleteTitle = noticeDeleteTitle,
             noticeDeleteMessage = noticeDeleteMessage,
             noNotice = noNotice,
-            summaryEmpty = summaryEmpty,
-            summaryUnavailable = summaryUnavailable,
             menuCopy = menuCopy,
             menuReply = menuReply,
             menuNotice = menuNotice,
