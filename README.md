@@ -177,8 +177,9 @@ server/                   29 files — Ktor 서버 (+ 테스트 15 files, 마이
 ./gradlew :composeApp:allTests            # 앱 양 플랫폼
 ./gradlew :server:test                    # 서버 (내장 PostgreSQL)
 
-# 기능 테스트 — 로컬 서버를 띄운 뒤, 앱의 실제 통신 코드로 서버에 붙어 돈다
-TALK_FUNCTEST_URL=http://localhost:8090 ./gradlew :composeApp:testDebugUnitTest --tests "*functest*"
+# 기능 테스트 — 앱의 실제 통신 코드로 서버에 붙어 돈다. 로컬 서버는 알아서 뜨고 끝나면 내려간다
+# Android Studio 에서는 실행 구성 "기능테스트 (실 서버)" 를 고르고 실행 버튼을 누른다
+./gradlew :composeApp:testDebugUnitTest -PfunctionalTest=true --tests "*functest*"
 ```
 
 | 대상 | 내용 |
