@@ -14,7 +14,12 @@ import com.eunilsung.talk.testsupport.TestMyInfo
 import com.eunilsung.talk.testsupport.awaitUntil
 import com.eunilsung.talk.testsupport.createTestDatabase
 import com.russhwolf.settings.MapSettings
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -216,5 +221,32 @@ class ChatRoomListRepositoryImplTest {
 
         assertEquals(listOf("업무"), repo.getChatGroups().first().map { it.name })
         assertEquals(listOf("업무"), server.chatGroups.map { it.name })
+    }
+
+    @Test
+    fun 목록을_받는_사이에_만든_그룹은_늦게_도착한_옛_목록에_지워지지_않는다() = runTest {
+        val listRead = CompletableDeferred<Unit>()
+        val releaseList = CompletableDeferred<Unit>()
+        server.afterGroupsRead = {
+            server.afterGroupsRead = null
+            listRead.complete(Unit)
+            releaseList.await()
+        }
+
+        val fetching = launch(Dispatchers.Default) { repo.fetchChatRooms() }
+        listRead.await()
+        val creating = launch(Dispatchers.Default) { repo.createChatGroup("새 그룹") }
+        withContext(Dispatchers.Default) { delay(INTERLEAVE_WAIT_MS) }
+        releaseList.complete(Unit)
+        fetching.join()
+        creating.join()
+
+        assertEquals(listOf("새 그룹"), repo.getChatGroups().first().map { it.name })
+        assertEquals(listOf("새 그룹"), server.chatGroups.map { it.name })
+    }
+
+    private companion object {
+        /** 끼어든 일이 (막히지 않는다면) 끝나기에 충분한 시간. */
+        const val INTERLEAVE_WAIT_MS = 300L
     }
 }

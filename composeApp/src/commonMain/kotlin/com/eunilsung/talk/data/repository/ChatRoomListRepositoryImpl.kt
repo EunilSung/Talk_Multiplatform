@@ -51,6 +51,14 @@ class ChatRoomListRepositoryImpl(
     /** 목록 반영을 한 번에 하나씩만 한다. 겹치면 늦게 끝난 옛 응답이 새 목록을 덮는다. */
     private val fetchMutex = Mutex()
 
+    /**
+     * 그룹 목록을 "받아서 바꾸기"와 "고쳐서 올리기"가 서로 끼어들지 못하게 한다.
+     *
+     * 목록을 받는 요청이 떠 있는 사이에 그룹을 고치면, 늦게 도착한 옛 목록이 방금 고친 것을 지운다.
+     * 그 상태에서 한 번 더 고치면 지워진 목록이 서버에 올라가 영영 사라진다.
+     */
+    private val groupMutex = Mutex()
+
     private val _isFetching = MutableStateFlow(false)
     override val isFetching: StateFlow<Boolean> = _isFetching.asStateFlow()
 
@@ -77,8 +85,10 @@ class ChatRoomListRepositoryImpl(
                 /** 응답을 기다리는 사이 다른 계정으로 바뀌었으면 버린다. 남의 방이 내 목록에 들어가면 안 된다. */
                 if (Config.MyInfo.userId != myId) return
                 local.replaceRooms(rooms.map { toItem(it, myId) })
-                server.chatGroups().valueOrNull()?.let { groups ->
-                    if (Config.MyInfo.userId == myId) local.replaceChatGroups(groups.map(::toChatGroup))
+                groupMutex.withLock {
+                    server.chatGroups().valueOrNull()?.let { groups ->
+                        if (Config.MyInfo.userId == myId) local.replaceChatGroups(groups.map(::toChatGroup))
+                    }
                 }
             } finally {
                 _isFetching.value = false
@@ -130,11 +140,11 @@ class ChatRoomListRepositoryImpl(
      * 서버에 보낸다. 서버가 받아 주지 않으면 고치기 전으로 되돌린다 — 이 기기에서만 바뀐 채로 두면
      * 다음에 목록을 받을 때 조용히 사라진다.
      */
-    private suspend fun changeChatGroups(change: suspend () -> Unit) {
+    private suspend fun changeChatGroups(change: suspend () -> Unit) = groupMutex.withLock {
         val before = local.currentChatGroups()
         change()
         val after = local.currentChatGroups()
-        if (after == before) return
+        if (after == before) return@withLock
         if (server.putChatGroups(after.map(::toChatGroupDto)) !is ServerResult.Success) {
             local.replaceChatGroups(before)
         }
