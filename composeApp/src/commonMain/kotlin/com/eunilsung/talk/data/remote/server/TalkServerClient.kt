@@ -23,6 +23,8 @@ import com.eunilsung.talk.shared.api.MuteRoomRequest
 import com.eunilsung.talk.shared.api.NoticeChangeResponse
 import com.eunilsung.talk.shared.api.NoticeDto
 import com.eunilsung.talk.shared.api.PinRoomRequest
+import com.eunilsung.talk.shared.api.PolishRequest
+import com.eunilsung.talk.shared.api.PolishResponse
 import com.eunilsung.talk.shared.api.RecallRequest
 import com.eunilsung.talk.shared.api.RegisterPushTokenRequest
 import com.eunilsung.talk.shared.api.RenameRoomRequest
@@ -156,6 +158,9 @@ interface TalkServer {
 
     /** 대화 하나를 [targetLanguage] 의 언어로 번역해 받는다. 방에는 남지 않는다. */
     suspend fun translate(roomId: String, messageId: String, targetLanguage: String): ServerResult<TranslationResponse>
+
+    /** 보내려고 쓴 글을 [style] 대로 다듬어 받는다. 어디에도 남지 않는다. */
+    suspend fun polish(text: String, style: String): ServerResult<PolishResponse>
 
     suspend fun setNotice(roomId: String, content: String): ServerResult<NoticeChangeResponse>
 
@@ -367,10 +372,18 @@ class TalkServerClient(
         messageId: String,
         targetLanguage: String,
     ): ServerResult<TranslationResponse> =
-        request("번역", TranslationResponse.serializer(), TRANSLATE_TIMEOUT_MS) {
+        request("번역", TranslationResponse.serializer(), AI_TIMEOUT_MS) {
             httpClient.post("${roomUrl(roomId)}/translate") {
                 auth()
                 jsonBody(TranslateRequest.serializer(), TranslateRequest(messageId, targetLanguage))
+            }
+        }
+
+    override suspend fun polish(text: String, style: String): ServerResult<PolishResponse> =
+        request("글 다듬기", PolishResponse.serializer(), AI_TIMEOUT_MS) {
+            httpClient.post("$baseUrl/ai/polish") {
+                auth()
+                jsonBody(PolishRequest.serializer(), PolishRequest(text, style))
             }
         }
 
@@ -564,6 +577,6 @@ class TalkServerClient(
         /** 파일은 크기만큼 오래 걸린다. 일반 요청과 같은 제한을 걸면 큰 파일이 늘 끊긴다. */
         const val FILE_TIMEOUT_MS = 120_000L
         /** 모델이 답을 만드는 시간까지 기다린다. */
-        const val TRANSLATE_TIMEOUT_MS = 30_000L
+        const val AI_TIMEOUT_MS = 30_000L
     }
 }

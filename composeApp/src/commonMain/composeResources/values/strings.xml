@@ -220,6 +220,12 @@
     <string name="msg_receiver_no">No Receiver</string>
 
     <string name="chat_read_check">Read Here</string>
+    <string name="chat_polish">Polish</string>
+    <string name="chat_polish_undo">Undo</string>
+    <string name="chat_polish_correct">Fix spelling</string>
+    <string name="chat_polish_polite">Make it polite</string>
+    <string name="chat_polish_concise">Make it concise</string>
+    <string name="toast_polish_unavailable">Polishing is unavailable right now. Please try again later.</string>
     <string name="chat_menu_translate">Translate</string>
     <string name="chat_menu_translate_hide">Hide translation</string>
     <string name="chat_translating">Translating…</string>

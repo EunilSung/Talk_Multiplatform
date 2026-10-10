@@ -13,6 +13,7 @@ import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
+import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.repository.ChatRoomRepository
@@ -20,6 +21,7 @@ import com.eunilsung.talk.shared.api.ChatErrorCode
 import com.eunilsung.talk.shared.api.MAX_FILE_BYTES
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.NoticeChangeResponse
+import com.eunilsung.talk.shared.api.PolishStyle as PolishStyleCode
 import com.eunilsung.talk.shared.api.ServerEvent
 import com.eunilsung.talk.util.ChatIdUtils
 import com.eunilsung.talk.util.stripMentionTags
@@ -180,6 +182,15 @@ class ChatRoomRepositoryImpl(
 
     override suspend fun translateChat(chatRoomId: String, chatId: String, languageCode: String): String? =
         server.translate(chatRoomId, chatId, languageCode).valueOrNull()?.translation?.takeIf { it.isNotBlank() }
+
+    override suspend fun polishText(text: String, style: PolishStyle): String? {
+        val styleCode = when (style) {
+            PolishStyle.CORRECT -> PolishStyleCode.CORRECT
+            PolishStyle.POLITE -> PolishStyleCode.POLITE
+            PolishStyle.CONCISE -> PolishStyleCode.CONCISE
+        }
+        return server.polish(text, styleCode).valueOrNull()?.text?.takeIf { it.isNotBlank() }
+    }
 
     override suspend fun addNotice(chatRoomId: String, content: String) {
         if (content.isBlank()) return

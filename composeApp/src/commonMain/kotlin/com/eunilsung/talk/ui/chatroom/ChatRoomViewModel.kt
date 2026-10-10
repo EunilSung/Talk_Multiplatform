@@ -27,6 +27,7 @@ import com.eunilsung.talk.data.local.RecentPhotosProvider
 import com.eunilsung.talk.data.local.RecentPhotosResult
 import com.eunilsung.talk.data.remote.push.CurrentChatRoomTracker
 import com.eunilsung.talk.domain.model.Chat
+import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.repository.ChatRoomRepository
 import com.eunilsung.talk.domain.repository.ChatSettingsRepository
@@ -240,6 +241,11 @@ class ChatRoomViewModel(
     /** 대화 id 별 번역. 이 화면에서만 들고 있는다. */
     val translations: StateFlow<Map<String, ChatTranslationUiState>> = _translations.asStateFlow()
 
+    private val _polish = MutableStateFlow<PolishUiState>(PolishUiState.Idle)
+
+    /** 보내기 전의 글 다듬기 상태. */
+    val polish: StateFlow<PolishUiState> = _polish.asStateFlow()
+
     private val _translationFailed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     /** 번역을 받지 못했다 — 화면이 안내를 한 번 띄운다. */
@@ -317,6 +323,8 @@ class ChatRoomViewModel(
             is ChatRoomActions.OnDeleteBookmark -> deleteBookmark(action.chatId)
             is ChatRoomActions.OnTranslateChat -> translateChat(action.chatId, action.languageCode)
             is ChatRoomActions.OnHideTranslation -> _translations.update { it - action.chatId }
+            is ChatRoomActions.OnPolishText -> polishText(action.text, action.style)
+            is ChatRoomActions.OnPolishHandled -> _polish.value = PolishUiState.Idle
         }
     }
 
@@ -451,6 +459,7 @@ class ChatRoomViewModel(
         fetchingNewer = false
         _firstUnreadChatId.value = null
         _translations.value = emptyMap()
+        _polish.value = PolishUiState.Idle
         _users.value = emptyList()
         _sender.value = senderOverride.senderFor(chatRoomId)
         _searchState.value = ChatSearchState()
@@ -760,6 +769,17 @@ class ChatRoomViewModel(
             } else {
                 _translations.update { it + (chatId to ChatTranslationUiState.Ready(translation)) }
             }
+        }
+    }
+
+    private fun polishText(text: String, style: PolishStyle) {
+        val roomId = currentChatRoomId
+        if (text.isBlank() || _polish.value == PolishUiState.Loading) return
+        _polish.value = PolishUiState.Loading
+        viewModelScope.launch {
+            val polished = chatRoomUseCases.polishText(text, style)
+            if (currentChatRoomId != roomId) return@launch
+            _polish.value = polished?.let { PolishUiState.Ready(text, it) } ?: PolishUiState.Failed
         }
     }
 

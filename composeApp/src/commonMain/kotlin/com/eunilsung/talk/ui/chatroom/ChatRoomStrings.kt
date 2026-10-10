@@ -15,6 +15,9 @@ import multiplatformtalk.composeapp.generated.resources.chat_menu_recall
 import multiplatformtalk.composeapp.generated.resources.chat_menu_reply
 import multiplatformtalk.composeapp.generated.resources.chat_menu_translate
 import multiplatformtalk.composeapp.generated.resources.chat_menu_translate_hide
+import multiplatformtalk.composeapp.generated.resources.chat_polish_concise
+import multiplatformtalk.composeapp.generated.resources.chat_polish_correct
+import multiplatformtalk.composeapp.generated.resources.chat_polish_polite
 import multiplatformtalk.composeapp.generated.resources.chat_recall_message
 import multiplatformtalk.composeapp.generated.resources.chat_recall_title
 import multiplatformtalk.composeapp.generated.resources.chat_resend
@@ -26,6 +29,7 @@ import multiplatformtalk.composeapp.generated.resources.delete
 import multiplatformtalk.composeapp.generated.resources.notice_delete_message
 import multiplatformtalk.composeapp.generated.resources.notice_delete_title
 import multiplatformtalk.composeapp.generated.resources.toast_no_notice
+import multiplatformtalk.composeapp.generated.resources.toast_polish_unavailable
 import multiplatformtalk.composeapp.generated.resources.toast_translate_unavailable
 import org.jetbrains.compose.resources.stringResource
 
@@ -58,6 +62,10 @@ data class ChatRoomStrings(
     val menuTranslate: String,
     val menuTranslateHide: String,
     val translateUnavailable: String,
+    val polishCorrect: String,
+    val polishPolite: String,
+    val polishConcise: String,
+    val polishUnavailable: String,
     val bookmarkSet: String,
     val bookmarkUnset: String,
 )
@@ -85,6 +93,10 @@ fun rememberChatRoomStrings(): ChatRoomStrings {
     val menuTranslate = stringResource(Res.string.chat_menu_translate)
     val menuTranslateHide = stringResource(Res.string.chat_menu_translate_hide)
     val translateUnavailable = stringResource(Res.string.toast_translate_unavailable)
+    val polishCorrect = stringResource(Res.string.chat_polish_correct)
+    val polishPolite = stringResource(Res.string.chat_polish_polite)
+    val polishConcise = stringResource(Res.string.chat_polish_concise)
+    val polishUnavailable = stringResource(Res.string.toast_polish_unavailable)
     val bookmarkSet = stringResource(Res.string.chat_bookmark_set)
     val bookmarkUnset = stringResource(Res.string.chat_bookmark_unset)
     return remember(cancel, delete, am, pm, menuCopy, bookmarkSet) {
@@ -110,6 +122,10 @@ fun rememberChatRoomStrings(): ChatRoomStrings {
             menuTranslate = menuTranslate,
             menuTranslateHide = menuTranslateHide,
             translateUnavailable = translateUnavailable,
+            polishCorrect = polishCorrect,
+            polishPolite = polishPolite,
+            polishConcise = polishConcise,
+            polishUnavailable = polishUnavailable,
             bookmarkSet = bookmarkSet,
             bookmarkUnset = bookmarkUnset,
         )

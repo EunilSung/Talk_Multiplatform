@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -40,6 +41,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.chat_hint
+import multiplatformtalk.composeapp.generated.resources.chat_polish
+import multiplatformtalk.composeapp.generated.resources.chat_polish_undo
 import multiplatformtalk.composeapp.generated.resources.emoticon_icon
 import multiplatformtalk.composeapp.generated.resources.multimedia_dark_icon
 import multiplatformtalk.composeapp.generated.resources.multimedia_light_icon
@@ -47,6 +50,7 @@ import multiplatformtalk.composeapp.generated.resources.send_dark_icon
 import multiplatformtalk.composeapp.generated.resources.send_light_icon
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.ui.theme.AppColors
+import com.eunilsung.talk.ui.uikit.click.clickable
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -65,6 +69,8 @@ fun ChatInputBar(
     focusRequester: FocusRequester? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     fontSize: TextUnit = 13.sp,
+    polishButton: PolishButtonState = PolishButtonState.HIDDEN,
+    onPolishClick: () -> Unit = {},
 ) {
     val text = value.text
     val canSend = text.isNotBlank() || hasEmoticon
@@ -157,6 +163,21 @@ fun ChatInputBar(
                 )
             }
 
+            if (polishButton != PolishButtonState.HIDDEN) {
+                val isBusy = polishButton == PolishButtonState.LOADING
+                Text(
+                    text = stringResource(
+                        if (polishButton == PolishButtonState.UNDO) Res.string.chat_polish_undo else Res.string.chat_polish
+                    ),
+                    modifier = Modifier
+                        .alpha(if (isBusy) 0.4f else 1f)
+                        .then(if (isBusy) Modifier else Modifier.clickable(cornerRadius = 12.dp, onClick = onPolishClick))
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    color = AppColors.Main,
+                    fontSize = 12.sp,
+                )
+            }
+
             if (showEmoticon) {
                 IconButton(
                     modifier = Modifier.size(28.dp),
@@ -197,4 +218,14 @@ fun ChatInputBarPreview() {
         onValueChange = {},
         onSendClick = {}
     )
+}
+
+/** 입력창 안의 다듬기 버튼이 지금 무엇인지. */
+enum class PolishButtonState {
+    HIDDEN,
+    POLISH,
+    LOADING,
+
+    /** 방금 다듬은 글이 그대로 있어 원문으로 되돌릴 수 있다. */
+    UNDO,
 }

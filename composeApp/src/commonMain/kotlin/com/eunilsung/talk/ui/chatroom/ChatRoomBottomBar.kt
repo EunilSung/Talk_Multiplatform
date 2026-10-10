@@ -37,6 +37,8 @@ fun ChatRoomBottomBar(
     searchState: ChatSearchState,
     replyTarget: com.eunilsung.talk.domain.model.Chat.Item?,
     mentionState: com.eunilsung.talk.ui.chatroom.input.MentionFieldState,
+    polishButton: com.eunilsung.talk.ui.chatroom.input.PolishButtonState,
+    onPolishClick: () -> Unit,
     emoticon: com.eunilsung.talk.ui.uikit.emoticon.EmoticonPanelController,
     selectedEmoticon: com.eunilsung.talk.ui.uikit.emoticon.EmoticonItem?,
     onSelectedEmoticonChange: (com.eunilsung.talk.ui.uikit.emoticon.EmoticonItem?) -> Unit,
@@ -118,6 +120,8 @@ fun ChatRoomBottomBar(
                             hasEmoticon = selectedEmoticon != null,
                             focusRequester = chatInputFocusRequester,
                             fontSize = chatFontSize,
+                            polishButton = polishButton,
+                            onPolishClick = onPolishClick,
                         )
                     }else{
                         ChatSearchNav(

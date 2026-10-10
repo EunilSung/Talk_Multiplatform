@@ -17,6 +17,9 @@ internal val MENTION_INPUT_REGEX = Regex("""(^|\s)@([^\s]*)$""")
 
 data class MentionSpan(val userId: String, val name: String, val start: Int, val end: Int)
 
+/** 입력창의 한 시점 — 글과 멘션. */
+data class MentionFieldSnapshot(val value: TextFieldValue, val mentions: List<MentionSpan>)
+
 class MentionFieldState {
     var value by mutableStateOf(TextFieldValue(""))
         private set
@@ -28,6 +31,30 @@ class MentionFieldState {
     fun clear() {
         value = TextFieldValue("")
         mentions = emptyList()
+    }
+
+    /** 지금의 글과 멘션을 그대로 떠 둔다. [restore] 로 되돌린다. */
+    fun snapshot(): MentionFieldSnapshot = MentionFieldSnapshot(value, mentions)
+
+    fun restore(snapshot: MentionFieldSnapshot) {
+        value = snapshot.value
+        mentions = snapshot.mentions
+    }
+
+    /**
+     * 글을 통째로 바꾼다. 멘션은 자리가 달라지므로, 새 글에 `@이름` 이 그대로 남아 있는 것만 찾아 다시 건다.
+     * 이름이 바뀌었거나 사라진 멘션은 보통 글자로 남는다.
+     */
+    fun replaceText(newText: String) {
+        var searchFrom = 0
+        val kept = mentions.sortedBy { it.start }.mapNotNull { mention ->
+            val chip = "@${mention.name}"
+            val start = newText.indexOf(chip, searchFrom).takeIf { it >= 0 } ?: return@mapNotNull null
+            searchFrom = start + chip.length
+            mention.copy(start = start, end = searchFrom)
+        }
+        mentions = kept
+        value = TextFieldValue(newText, TextRange(newText.length))
     }
 
     fun currentMentionQuery(): String? {

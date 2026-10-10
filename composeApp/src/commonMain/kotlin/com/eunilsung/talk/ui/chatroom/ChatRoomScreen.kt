@@ -63,11 +63,14 @@ import com.eunilsung.talk.data.local.RecentPhotosResult
 import com.eunilsung.talk.data.remote.push.CurrentChatRoomTracker
 import com.eunilsung.talk.data.remote.push.PushNotifier
 import com.eunilsung.talk.domain.model.Chat
+import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.ui.chatroom.item.ChatRoomDrawerContent
 import com.eunilsung.talk.ui.chatroom.item.ChatUserSelectPopup
 import com.eunilsung.talk.ui.chatroom.item.FullTextDialog
 import com.eunilsung.talk.ui.chatroom.input.MentionFieldState
+import com.eunilsung.talk.ui.chatroom.input.MentionFieldSnapshot
+import com.eunilsung.talk.ui.chatroom.input.PolishButtonState
 import com.eunilsung.talk.ui.invite.InviteMode
 import com.eunilsung.talk.ui.invite.InviteScreen
 import com.eunilsung.talk.ui.main.LocalFullScreenOverlay
@@ -80,6 +83,7 @@ import com.eunilsung.talk.ui.main.rememberImeHeight
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.BackHandler
 import com.eunilsung.talk.ui.uikit.datepicker.DatePicker
+import com.eunilsung.talk.ui.uikit.dialog.ChatListDialog
 import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
 import com.eunilsung.talk.ui.uikit.sheet.LocalBottomSheetManager
 import com.eunilsung.talk.ui.uikit.toast.LocalToastManager
@@ -160,6 +164,7 @@ class ChatRoomScreen(
         val currentNotice by viewModel.currentNotice.collectAsState()
         val noticeBar by viewModel.noticeBar.collectAsState()
         val translations by viewModel.translations.collectAsState()
+        val polish by viewModel.polish.collectAsState()
         val signals = remember(viewModel) {
             ChatRoomSignals(
                 newChat = viewModel.newChatPush,
@@ -256,6 +261,7 @@ class ChatRoomScreen(
             noticeBindings = noticeBindings,
             translations = translations,
             translationFailed = viewModel.translationFailed,
+            polish = polish,
             bookmarksFlow = viewModel.bookmarks,
             initialEmoticonTab = remember { viewModel.lastEmoticonTab() },
             onEmoticonTabSelected = { viewModel.saveEmoticonTab(it) },
@@ -291,6 +297,7 @@ fun ChatRoomContent(
     noticeBindings: NoticeBindings = NoticeBindings(),
     translations: Map<String, ChatTranslationUiState> = emptyMap(),
     translationFailed: SharedFlow<Unit>? = null,
+    polish: PolishUiState = PolishUiState.Idle,
     bookmarksFlow: StateFlow<List<Bookmark>> = MutableStateFlow(emptyList()),
     initialEmoticonTab: Int = 0,
     onEmoticonTabSelected: (Int) -> Unit = {},
@@ -364,6 +371,33 @@ fun ChatRoomContent(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val isSearchMode = searchState.isActive
 
+    var isPolishMenuOpen by remember { mutableStateOf(false) }
+    var polishUndo by remember { mutableStateOf<PolishUndo?>(null) }
+    LaunchedEffect(polish) {
+        when (polish) {
+            is PolishUiState.Ready -> {
+                if (mentionState.text == polish.sourceText) {
+                    val original = mentionState.snapshot()
+                    mentionState.replaceText(polish.text)
+                    polishUndo = PolishUndo(original, mentionState.text)
+                }
+                onAction(ChatRoomActions.OnPolishHandled)
+            }
+            PolishUiState.Failed -> {
+                toastManager.show(strings.polishUnavailable)
+                onAction(ChatRoomActions.OnPolishHandled)
+            }
+            else -> Unit
+        }
+    }
+    val canUndoPolish = polishUndo?.polishedText == mentionState.text
+    val polishButton = when {
+        !Config.Server.IS_ENABLED -> PolishButtonState.HIDDEN
+        polish == PolishUiState.Loading -> PolishButtonState.LOADING
+        canUndoPolish -> PolishButtonState.UNDO
+        mentionState.text.trim().length >= MIN_POLISH_LENGTH -> PolishButtonState.POLISH
+        else -> PolishButtonState.HIDDEN
+    }
     LaunchedEffect(translationFailed) {
         translationFailed?.collect { toastManager.show(strings.translateUnavailable) }
     }
@@ -464,6 +498,16 @@ fun ChatRoomContent(
                     searchState = searchState,
                     replyTarget = replyTarget,
                     mentionState = mentionState,
+                    polishButton = polishButton,
+                    onPolishClick = {
+                        val undo = polishUndo
+                        if (canUndoPolish && undo != null) {
+                            mentionState.restore(undo.original)
+                            polishUndo = null
+                        } else {
+                            isPolishMenuOpen = true
+                        }
+                    },
                     emoticon = emoticon,
                     selectedEmoticon = selectedEmoticon,
                     onSelectedEmoticonChange = { selectedEmoticon = it },
@@ -746,6 +790,23 @@ fun ChatRoomContent(
             bindings = mediaPickerBindings,
         )
 
+        if (isPolishMenuOpen) {
+            ChatListDialog(
+                list = listOf(strings.polishCorrect, strings.polishPolite, strings.polishConcise),
+                showEmpathy = false,
+                onDismiss = { isPolishMenuOpen = false },
+                onOptionSelected = { picked ->
+                    isPolishMenuOpen = false
+                    val style = when (picked) {
+                        strings.polishPolite -> PolishStyle.POLITE
+                        strings.polishConcise -> PolishStyle.CONCISE
+                        else -> PolishStyle.CORRECT
+                    }
+                    onAction(ChatRoomActions.OnPolishText(mentionState.text, style))
+                },
+            )
+        }
+
         ChatActionMenu(
             target = longPressedChat,
             isBookmarked = longPressedChat?.let { bookmarkedChatIds.contains(it.chatID) } == true,
@@ -933,3 +994,9 @@ private fun ChatRoomDrawerPreview() {
     }
 }
 
+
+/** 다듬기 전의 입력창과 다듬은 글. 입력창이 [polishedText] 그대로일 때만 되돌릴 수 있다. */
+private data class PolishUndo(val original: MentionFieldSnapshot, val polishedText: String)
+
+/** 이보다 짧은 글("넵", "ㅇㅇ")에는 다듬기 버튼을 내놓지 않는다. */
+private const val MIN_POLISH_LENGTH = 5

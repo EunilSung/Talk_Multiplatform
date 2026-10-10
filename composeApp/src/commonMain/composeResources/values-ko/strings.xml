@@ -220,6 +220,12 @@
     <string name="msg_receiver_no">받는사람이 없습니다</string>
 
     <string name="chat_read_check">여기까지 읽었습니다</string>
+    <string name="chat_polish">다듬기</string>
+    <string name="chat_polish_undo">되돌리기</string>
+    <string name="chat_polish_correct">교정</string>
+    <string name="chat_polish_polite">정중하게</string>
+    <string name="chat_polish_concise">간결하게</string>
+    <string name="toast_polish_unavailable">지금은 다듬을 수 없습니다. 잠시 후 다시 시도해 주세요.</string>
     <string name="chat_menu_translate">번역</string>
     <string name="chat_menu_translate_hide">번역 숨기기</string>
     <string name="chat_translating">번역하는 중…</string>

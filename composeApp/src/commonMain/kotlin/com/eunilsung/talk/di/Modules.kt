@@ -188,6 +188,7 @@ val appModule = module {
     singleOf(::AddNoticeUseCase)
     singleOf(::DeleteNoticeUseCase)
     singleOf(::RequestNoticeUseCase)
+    singleOf(::PolishTextUseCase)
     singleOf(::TranslateChatUseCase)
     singleOf(::FetchBookmarksUseCase)
     singleOf(::AddBookmarkUseCase)
@@ -196,7 +197,7 @@ val appModule = module {
     single {
         ChatRoomUseCases(
             get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
-            get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
+            get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
         )
     }
 

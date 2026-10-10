@@ -348,3 +348,26 @@ data class TranslateRequest(val messageId: String, val targetLanguage: String)
 /** 번역 결과. 요청한 사람에게만 가고 방에는 남지 않는다. */
 @Serializable
 data class TranslationResponse(val translation: String)
+
+/** 보내기 전의 글을 어떻게 다듬을지. */
+object PolishStyle {
+    /** 맞춤법·띄어쓰기·오타만 고친다. */
+    const val CORRECT = "correct"
+    /** 같은 내용을 공손한 말투로 바꾼다. */
+    const val POLITE = "polite"
+    /** 같은 내용을 짧게 줄인다. */
+    const val CONCISE = "concise"
+
+    val ALL = setOf(CORRECT, POLITE, CONCISE)
+}
+
+/** 보내려고 쓴 글을 다듬어 달라는 요청. [style] 은 [PolishStyle] 중 하나다. */
+@Serializable
+data class PolishRequest(val text: String, val style: String)
+
+/** 다듬은 글. 요청한 사람에게만 가고 어디에도 남지 않는다. */
+@Serializable
+data class PolishResponse(val text: String)
+
+/** 다듬어 달라고 보낼 수 있는 글의 최대 길이. */
+const val MAX_POLISH_LENGTH = 2000
