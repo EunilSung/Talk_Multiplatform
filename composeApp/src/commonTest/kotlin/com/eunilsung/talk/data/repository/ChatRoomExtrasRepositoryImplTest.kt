@@ -10,6 +10,7 @@ import com.eunilsung.talk.data.sample.LocalChatRoomListRepositoryImpl
 import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.Chat
+import com.eunilsung.talk.domain.model.ChatSummary
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.shared.api.ServerEvent
 import com.eunilsung.talk.testsupport.FakeFileMetadataResolver
@@ -264,5 +265,44 @@ class ChatRoomExtrasRepositoryImplTest {
         repo.fetchChats(roomId)
 
         assertEquals(listOf(message.id), repo.bookmarks.value.map { it.chatId })
+    }
+
+    @Test
+    fun 요약을_청하면_읽은_자리_뒤부터_서버에_묻고_받은_글을_돌려준다() = runTest {
+        val read = peerSays("읽은 말")
+        peerSays("안읽은 말")
+        server.summary = "- 회의는 3시"
+
+        val summary = repo.summarizeUnread(roomId, read.id)
+
+        assertEquals(ChatSummary.Ready("- 회의는 3시"), summary)
+        assertTrue("summarize:$roomId:${read.id}" in server.calls)
+    }
+
+    @Test
+    fun 요약할_대화가_없으면_없다고_알린다() = runTest {
+        server.summary = ""
+
+        assertEquals(ChatSummary.Empty, repo.summarizeUnread(roomId, null))
+    }
+
+    @Test
+    fun AI가_꺼져_있거나_서버에_닿지_못하면_요약할_수_없다고_알린다() = runTest {
+        assertEquals(ChatSummary.Unavailable, repo.summarizeUnread(roomId, null))
+
+        server.summary = "- 요약"
+        server.isReachable = false
+        assertEquals(ChatSummary.Unavailable, repo.summarizeUnread(roomId, null))
+    }
+
+    @Test
+    fun 요약은_대화_목록에_남지_않는다() = runTest {
+        peerSays("안읽은 말")
+        repo.fetchChats(roomId)
+        server.summary = "- 요약"
+
+        repo.summarizeUnread(roomId, null)
+
+        assertEquals(listOf("안읽은 말"), chats().map { it.chatContent })
     }
 }

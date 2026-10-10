@@ -10,3 +10,12 @@ sealed interface ChatRoomUiState {
     data class Success(val groupedChats: List<GroupedChat>) : ChatRoomUiState
     data class Error(val message: String) : ChatRoomUiState
 }
+
+/** 안읽은 대화 요약의 진행 상태. 결과는 요청한 사람의 화면에만 뜬다. */
+sealed interface UnreadSummaryUiState {
+    data object Idle : UnreadSummaryUiState
+    data object Loading : UnreadSummaryUiState
+    data class Ready(val text: String) : UnreadSummaryUiState
+    data object Empty : UnreadSummaryUiState
+    data object Unavailable : UnreadSummaryUiState
+}

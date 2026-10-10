@@ -20,6 +20,7 @@ import com.eunilsung.talk.shared.api.ReactionDto
 import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.RoomMemberDto
 import com.eunilsung.talk.shared.api.SendMessageRequest
+import com.eunilsung.talk.shared.api.SummaryResponse
 import com.eunilsung.talk.shared.api.UnreadCountDto
 import com.eunilsung.talk.shared.api.UserDto
 import com.eunilsung.talk.shared.api.VoteChangeResponse
@@ -37,6 +38,8 @@ class FakeTalkServer : TalkServer {
 
     var isReachable = true
     var isTokenValid = true
+    /** 요약 요청에 돌려줄 글. null 이면 AI 가 꺼진 서버처럼 거절한다. */
+    var summary: String? = null
     val revoked = mutableListOf<String>()
     val calls = mutableListOf<String>()
     val readMarks = mutableListOf<Pair<String, String>>()
@@ -215,6 +218,15 @@ class FakeTalkServer : TalkServer {
     override suspend fun notice(roomId: String): ServerResult<NoticeDto> = answer("notice:$roomId") {
         if (roomId !in rooms) roomNotFound() else ServerResult.Success(notices[roomId] ?: NoticeDto(roomId = roomId))
     }
+
+    override suspend fun summarize(roomId: String, afterMessageId: String?): ServerResult<SummaryResponse> =
+        answer("summarize:$roomId:$afterMessageId") {
+            when {
+                roomId !in rooms -> roomNotFound()
+                else -> summary?.let { ServerResult.Success(SummaryResponse(it)) }
+                    ?: ServerResult.Rejected(503, ChatErrorCode.AI_UNAVAILABLE)
+            }
+        }
 
     override suspend fun setNotice(roomId: String, content: String): ServerResult<NoticeChangeResponse> =
         answer("setNotice:$roomId:$content") {
