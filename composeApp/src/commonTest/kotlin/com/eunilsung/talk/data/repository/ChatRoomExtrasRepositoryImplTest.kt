@@ -265,4 +265,37 @@ class ChatRoomExtrasRepositoryImplTest {
 
         assertEquals(listOf(message.id), repo.bookmarks.value.map { it.chatId })
     }
+
+    @Test
+    fun 번역을_청하면_그_대화와_언어를_서버에_묻고_받은_글을_돌려준다() = runTest {
+        val message = peerSays("See you at 3pm")
+        server.translation = "3시에 봐요"
+
+        val translation = repo.translateChat(roomId, message.id, "ko")
+
+        assertEquals("3시에 봐요", translation)
+        assertTrue("translate:$roomId:${message.id}:ko" in server.calls)
+    }
+
+    @Test
+    fun AI가_꺼져_있거나_서버에_닿지_못하거나_없는_대화면_번역이_없다() = runTest {
+        val message = peerSays("See you at 3pm")
+        assertNull(repo.translateChat(roomId, message.id, "ko"))
+
+        server.translation = "3시에 봐요"
+        assertNull(repo.translateChat(roomId, "없는-대화", "ko"))
+        server.isReachable = false
+        assertNull(repo.translateChat(roomId, message.id, "ko"))
+    }
+
+    @Test
+    fun 번역은_대화_목록을_바꾸지_않는다() = runTest {
+        val message = peerSays("See you at 3pm")
+        repo.fetchChats(roomId)
+        server.translation = "3시에 봐요"
+
+        repo.translateChat(roomId, message.id, "ko")
+
+        assertEquals(listOf("See you at 3pm"), chats().map { it.chatContent })
+    }
 }

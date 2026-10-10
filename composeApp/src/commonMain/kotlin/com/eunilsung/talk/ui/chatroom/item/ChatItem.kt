@@ -55,6 +55,7 @@ import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.Emoticon
 import com.eunilsung.talk.domain.model.GroupedChat
 import com.eunilsung.talk.domain.model.User
+import com.eunilsung.talk.ui.chatroom.ChatTranslationUiState
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.image.NotificationAvatar
 import com.eunilsung.talk.ui.uikit.image.ProfileImages
@@ -87,6 +88,7 @@ fun ChatItem(
     searchedUserName: String = "",
     chatFontSize: TextUnit = 13.sp,
     isBookmarked: Boolean = false,
+    translation: ChatTranslationUiState? = null,
     onSwipeReply: (Chat.Item) -> Unit = {},
     onImageClick: (Chat.Item) -> Unit = {},
     onResendFailedChat: (Chat.Item) -> Unit = {},
@@ -258,6 +260,15 @@ fun ChatItem(
                             ChatRow(itemProps)
                         }
                     }
+                }
+            }
+
+            if (translation != null && !chat.isRecalled) {
+                BoxWithConstraints(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = if (isMe) Alignment.TopEnd else Alignment.TopStart,
+                ) {
+                    TranslationItem(translation = translation, maxWidth = maxWidth * 0.75f, fontSize = chatFontSize)
                 }
             }
 

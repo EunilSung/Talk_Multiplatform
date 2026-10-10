@@ -13,6 +13,8 @@ import multiplatformtalk.composeapp.generated.resources.chat_menu_copy
 import multiplatformtalk.composeapp.generated.resources.chat_menu_notice
 import multiplatformtalk.composeapp.generated.resources.chat_menu_recall
 import multiplatformtalk.composeapp.generated.resources.chat_menu_reply
+import multiplatformtalk.composeapp.generated.resources.chat_menu_translate
+import multiplatformtalk.composeapp.generated.resources.chat_menu_translate_hide
 import multiplatformtalk.composeapp.generated.resources.chat_recall_message
 import multiplatformtalk.composeapp.generated.resources.chat_recall_title
 import multiplatformtalk.composeapp.generated.resources.chat_resend
@@ -24,6 +26,7 @@ import multiplatformtalk.composeapp.generated.resources.delete
 import multiplatformtalk.composeapp.generated.resources.notice_delete_message
 import multiplatformtalk.composeapp.generated.resources.notice_delete_title
 import multiplatformtalk.composeapp.generated.resources.toast_no_notice
+import multiplatformtalk.composeapp.generated.resources.toast_translate_unavailable
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -52,6 +55,9 @@ data class ChatRoomStrings(
     val menuReply: String,
     val menuNotice: String,
     val menuRecall: String,
+    val menuTranslate: String,
+    val menuTranslateHide: String,
+    val translateUnavailable: String,
     val bookmarkSet: String,
     val bookmarkUnset: String,
 )
@@ -76,6 +82,9 @@ fun rememberChatRoomStrings(): ChatRoomStrings {
     val menuReply = stringResource(Res.string.chat_menu_reply)
     val menuNotice = stringResource(Res.string.chat_menu_notice)
     val menuRecall = stringResource(Res.string.chat_menu_recall)
+    val menuTranslate = stringResource(Res.string.chat_menu_translate)
+    val menuTranslateHide = stringResource(Res.string.chat_menu_translate_hide)
+    val translateUnavailable = stringResource(Res.string.toast_translate_unavailable)
     val bookmarkSet = stringResource(Res.string.chat_bookmark_set)
     val bookmarkUnset = stringResource(Res.string.chat_bookmark_unset)
     return remember(cancel, delete, am, pm, menuCopy, bookmarkSet) {
@@ -98,6 +107,9 @@ fun rememberChatRoomStrings(): ChatRoomStrings {
             menuReply = menuReply,
             menuNotice = menuNotice,
             menuRecall = menuRecall,
+            menuTranslate = menuTranslate,
+            menuTranslateHide = menuTranslateHide,
+            translateUnavailable = translateUnavailable,
             bookmarkSet = bookmarkSet,
             bookmarkUnset = bookmarkUnset,
         )

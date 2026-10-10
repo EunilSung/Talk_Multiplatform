@@ -62,6 +62,7 @@ fun ChatMessageList(
     hideKeyboard: () -> Unit,
     users: List<com.eunilsung.talk.domain.model.User>,
     onLongPress: (Chat.Item) -> Unit,
+    translations: Map<String, ChatTranslationUiState>,
     onNoticeClick: (Chat.Item) -> Unit,
     onAction: (ChatRoomActions) -> Unit,
 ) {
@@ -120,6 +121,7 @@ fun ChatMessageList(
                     searchedUserName = searchState.searchedUser?.name.orEmpty(),
                     chatFontSize = chatFontSize,
                     isBookmarked = bookmarkedChatIds.contains(grouped.chat.chatID),
+                    translation = translations[grouped.chat.chatID],
                     onSwipeReply = {
                         if (Config.ChatRoom.IS_REPLY_ENABLED) {
                             onAction(ChatRoomActions.OnSwipeReply(it))

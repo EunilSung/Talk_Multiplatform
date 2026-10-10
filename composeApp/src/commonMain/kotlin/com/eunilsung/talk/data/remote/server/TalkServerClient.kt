@@ -31,6 +31,8 @@ import com.eunilsung.talk.shared.api.RoomsResponse
 import com.eunilsung.talk.shared.api.SendMessageRequest
 import com.eunilsung.talk.shared.api.SetNoticeRequest
 import com.eunilsung.talk.shared.api.ToggleReactionRequest
+import com.eunilsung.talk.shared.api.TranslateRequest
+import com.eunilsung.talk.shared.api.TranslationResponse
 import com.eunilsung.talk.shared.api.UnreadCountDto
 import com.eunilsung.talk.shared.api.UnreadCountsResponse
 import com.eunilsung.talk.shared.api.UserDto
@@ -151,6 +153,9 @@ interface TalkServer {
 
     /** 방의 공지. 공지가 없으면 내용이 빈 값이 온다. */
     suspend fun notice(roomId: String): ServerResult<NoticeDto>
+
+    /** 대화 하나를 [targetLanguage] 의 언어로 번역해 받는다. 방에는 남지 않는다. */
+    suspend fun translate(roomId: String, messageId: String, targetLanguage: String): ServerResult<TranslationResponse>
 
     suspend fun setNotice(roomId: String, content: String): ServerResult<NoticeChangeResponse>
 
@@ -357,6 +362,18 @@ class TalkServerClient(
             httpClient.get("${roomUrl(roomId)}/notice") { auth() }
         }
 
+    override suspend fun translate(
+        roomId: String,
+        messageId: String,
+        targetLanguage: String,
+    ): ServerResult<TranslationResponse> =
+        request("번역", TranslationResponse.serializer(), TRANSLATE_TIMEOUT_MS) {
+            httpClient.post("${roomUrl(roomId)}/translate") {
+                auth()
+                jsonBody(TranslateRequest.serializer(), TranslateRequest(messageId, targetLanguage))
+            }
+        }
+
     override suspend fun setNotice(roomId: String, content: String): ServerResult<NoticeChangeResponse> =
         request("공지 등록", NoticeChangeResponse.serializer()) {
             httpClient.put("${roomUrl(roomId)}/notice") {
@@ -546,5 +563,7 @@ class TalkServerClient(
         const val REQUEST_TIMEOUT_MS = 10_000L
         /** 파일은 크기만큼 오래 걸린다. 일반 요청과 같은 제한을 걸면 큰 파일이 늘 끊긴다. */
         const val FILE_TIMEOUT_MS = 120_000L
+        /** 모델이 답을 만드는 시간까지 기다린다. */
+        const val TRANSLATE_TIMEOUT_MS = 30_000L
     }
 }

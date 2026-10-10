@@ -57,6 +57,12 @@ interface ChatRoomRepository {
     /** 대화방 공지 조회 — 결과가 [currentNotice] 에 실린다. */
     suspend fun requestNotice(chatRoomId: String)
 
+    /**
+     * 대화 하나를 [languageCode] 의 언어로 번역해 받는다. 지금 번역할 수 없으면 null.
+     * 결과는 요청한 사람만 보고 방에는 남지 않는다.
+     */
+    suspend fun translateChat(chatRoomId: String, chatId: String, languageCode: String): String?
+
     /** 공지 등록 — [currentNotice] 갱신 + 시스템 대화 추가. */
     suspend fun addNotice(chatRoomId: String, content: String)
 

@@ -325,6 +325,12 @@ class ChatRepository(private val dataSource: DataSource) {
         selectMessage(conn, roomId, seq)
     }
 
+    /** 이 사람이 볼 수 있는 대화 하나. 방에 없거나, 들어오기 전의 대화이거나, 없는 대화면 null. */
+    fun message(roomId: String, userId: String, messageId: String): MessageDto? =
+        dataSource.connection.use { conn ->
+            visibleSeq(conn, roomId, userId, messageId)?.let { selectMessage(conn, roomId, it) }
+        }
+
     /** 이 대화에 딸린 파일의 id. 파일 대화가 아니면 null. */
     fun fileIdOf(roomId: String, messageId: String): String? =
         dataSource.connection.use { conn ->

@@ -25,6 +25,7 @@ data class ChatRoomUseCases(
     val addNotice: AddNoticeUseCase,
     val deleteNotice: DeleteNoticeUseCase,
     val requestNotice: RequestNoticeUseCase,
+    val translateChat: TranslateChatUseCase,
     val fetchBookmarks: FetchBookmarksUseCase,
     val addBookmark: AddBookmarkUseCase,
     val deleteBookmark: DeleteBookmarkUseCase,
@@ -39,6 +40,12 @@ class AddNoticeUseCase(private val repository: ChatRoomRepository) {
 /** 현재 공지 해제. */
 class DeleteNoticeUseCase(private val repository: ChatRoomRepository) {
     suspend operator fun invoke(chatRoomId: String) = repository.deleteNotice(chatRoomId)
+}
+
+/** 대화 하나 번역. */
+class TranslateChatUseCase(private val repository: ChatRoomRepository) {
+    suspend operator fun invoke(chatRoomId: String, chatId: String, languageCode: String) =
+        repository.translateChat(chatRoomId, chatId, languageCode)
 }
 
 /** 방 진입 시 공지 조회. */

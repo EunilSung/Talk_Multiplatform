@@ -62,6 +62,11 @@ sealed interface ChatRoomActions {
     data class OnAddBookmark(val chat: com.eunilsung.talk.domain.model.Chat.Item) : ChatRoomActions
 
     data class OnDeleteBookmark(val chatId: String) : ChatRoomActions
+
+    /** [languageCode] 는 기기 언어(`ko`·`en` …) — 그 언어로 번역해 달라고 한다. */
+    data class OnTranslateChat(val chatId: String, val languageCode: String) : ChatRoomActions
+
+    data class OnHideTranslation(val chatId: String) : ChatRoomActions
 }
 
 

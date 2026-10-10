@@ -220,6 +220,10 @@
     <string name="msg_receiver_no">No Receiver</string>
 
     <string name="chat_read_check">Read Here</string>
+    <string name="chat_menu_translate">Translate</string>
+    <string name="chat_menu_translate_hide">Hide translation</string>
+    <string name="chat_translating">Translating…</string>
+    <string name="toast_translate_unavailable">Translation is unavailable right now. Please try again later.</string>
 
     <string name="invite">Invite</string>
     <string name="share">Share</string>
