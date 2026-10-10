@@ -67,6 +67,11 @@ sealed interface ChatRoomActions {
     data class OnTranslateChat(val chatId: String, val languageCode: String) : ChatRoomActions
 
     data class OnHideTranslation(val chatId: String) : ChatRoomActions
+
+    data class OnPolishText(val text: String, val style: com.eunilsung.talk.domain.model.PolishStyle) : ChatRoomActions
+
+    /** 화면이 다듬기 결과를 입력창에 반영했거나 실패 안내를 띄웠다. */
+    data object OnPolishHandled : ChatRoomActions
 }
 
 

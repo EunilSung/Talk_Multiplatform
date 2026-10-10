@@ -63,6 +63,9 @@ interface ChatRoomRepository {
      */
     suspend fun translateChat(chatRoomId: String, chatId: String, languageCode: String): String?
 
+    /** 보내려고 쓴 글을 [style] 대로 다듬어 받는다. 지금 다듬을 수 없으면 null. 어디에도 남지 않는다. */
+    suspend fun polishText(text: String, style: com.eunilsung.talk.domain.model.PolishStyle): String?
+
     /** 공지 등록 — [currentNotice] 갱신 + 시스템 대화 추가. */
     suspend fun addNotice(chatRoomId: String, content: String)
 

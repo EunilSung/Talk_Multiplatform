@@ -25,6 +25,7 @@ data class ChatRoomUseCases(
     val addNotice: AddNoticeUseCase,
     val deleteNotice: DeleteNoticeUseCase,
     val requestNotice: RequestNoticeUseCase,
+    val polishText: PolishTextUseCase,
     val translateChat: TranslateChatUseCase,
     val fetchBookmarks: FetchBookmarksUseCase,
     val addBookmark: AddBookmarkUseCase,
@@ -46,6 +47,12 @@ class DeleteNoticeUseCase(private val repository: ChatRoomRepository) {
 class TranslateChatUseCase(private val repository: ChatRoomRepository) {
     suspend operator fun invoke(chatRoomId: String, chatId: String, languageCode: String) =
         repository.translateChat(chatRoomId, chatId, languageCode)
+}
+
+/** 보내기 전의 글 다듬기. */
+class PolishTextUseCase(private val repository: ChatRoomRepository) {
+    suspend operator fun invoke(text: String, style: com.eunilsung.talk.domain.model.PolishStyle) =
+        repository.polishText(text, style)
 }
 
 /** 방 진입 시 공지 조회. */

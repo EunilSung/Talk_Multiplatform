@@ -11,6 +11,7 @@ import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.Notice
+import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.shared.api.ServerEvent
 import com.eunilsung.talk.testsupport.FakeFileMetadataResolver
 import com.eunilsung.talk.testsupport.FakeLoginRepository
@@ -297,5 +298,24 @@ class ChatRoomExtrasRepositoryImplTest {
         repo.translateChat(roomId, message.id, "ko")
 
         assertEquals(listOf("See you at 3pm"), chats().map { it.chatContent })
+    }
+
+    @Test
+    fun 다듬기를_청하면_쓴_글과_방식을_서버에_묻고_받은_글을_돌려준다() = runTest {
+        server.polished = "자료를 오늘까지 보내주실 수 있을까요?"
+
+        val polished = repo.polishText("자료 오늘까지 줘", PolishStyle.POLITE)
+
+        assertEquals("자료를 오늘까지 보내주실 수 있을까요?", polished)
+        assertTrue("polish:polite:자료 오늘까지 줘" in server.calls)
+    }
+
+    @Test
+    fun AI가_꺼져_있거나_서버에_닿지_못하면_다듬은_글이_없다() = runTest {
+        assertNull(repo.polishText("자료 오늘까지 줘", PolishStyle.CORRECT))
+
+        server.polished = "자료 오늘까지 줘."
+        server.isReachable = false
+        assertNull(repo.polishText("자료 오늘까지 줘", PolishStyle.CORRECT))
     }
 }

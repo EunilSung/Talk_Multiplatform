@@ -19,6 +19,7 @@ import com.eunilsung.talk.shared.api.NoticeDto
 import com.eunilsung.talk.shared.api.ReactionDto
 import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.RoomMemberDto
+import com.eunilsung.talk.shared.api.PolishResponse
 import com.eunilsung.talk.shared.api.SendMessageRequest
 import com.eunilsung.talk.shared.api.TranslationResponse
 import com.eunilsung.talk.shared.api.UnreadCountDto
@@ -38,6 +39,8 @@ class FakeTalkServer : TalkServer {
 
     var isReachable = true
     var isTokenValid = true
+    /** 다듬기 요청에 돌려줄 글. null 이면 AI 가 꺼진 서버처럼 거절한다. */
+    var polished: String? = null
     /** 번역 요청에 돌려줄 글. null 이면 AI 가 꺼진 서버처럼 거절한다. */
     var translation: String? = null
     val revoked = mutableListOf<String>()
@@ -230,6 +233,12 @@ class FakeTalkServer : TalkServer {
                 ?: ServerResult.Rejected(503, ChatErrorCode.AI_UNAVAILABLE)
         }
     }
+
+    override suspend fun polish(text: String, style: String): ServerResult<PolishResponse> =
+        answer("polish:$style:$text") {
+            polished?.let { ServerResult.Success(PolishResponse(it)) }
+                ?: ServerResult.Rejected(503, ChatErrorCode.AI_UNAVAILABLE)
+        }
 
     override suspend fun setNotice(roomId: String, content: String): ServerResult<NoticeChangeResponse> =
         answer("setNotice:$roomId:$content") {

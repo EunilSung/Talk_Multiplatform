@@ -24,6 +24,7 @@ import com.eunilsung.talk.db.BookmarkEntity
 import com.eunilsung.talk.db.NoticeEntity
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
+import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.model.Emoticon
 import com.eunilsung.talk.domain.model.EmpathyChat
 import com.eunilsung.talk.domain.model.Notice
@@ -336,6 +337,9 @@ class LocalChatRoomRepositoryImpl(
 
     /** 서버가 없는 로컬 모드에는 번역할 모델이 없다. */
     override suspend fun translateChat(chatRoomId: String, chatId: String, languageCode: String): String? = null
+
+    /** 서버가 없는 로컬 모드에는 다듬을 모델이 없다. */
+    override suspend fun polishText(text: String, style: PolishStyle): String? = null
 
     override suspend fun addNotice(chatRoomId: String, content: String) {
         if (content.isBlank()) return

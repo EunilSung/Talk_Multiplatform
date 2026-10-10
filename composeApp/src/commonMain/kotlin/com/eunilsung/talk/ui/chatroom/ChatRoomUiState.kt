@@ -16,3 +16,13 @@ sealed interface ChatTranslationUiState {
     data object Loading : ChatTranslationUiState
     data class Ready(val text: String) : ChatTranslationUiState
 }
+
+/** 보내기 전의 글 다듬기 상태. */
+sealed interface PolishUiState {
+    data object Idle : PolishUiState
+    data object Loading : PolishUiState
+
+    /** [sourceText] 를 다듬은 결과. 그 사이 입력창이 바뀌었으면 화면이 덮어쓰지 않는다. */
+    data class Ready(val sourceText: String, val text: String) : PolishUiState
+    data object Failed : PolishUiState
+}
