@@ -19,16 +19,26 @@ data class ServerConfig(
     val firebaseCredentialsJson: String = "",
     /** Gemini API 키(`GEMINI_API_KEY`). 비면 AI 가 답하지 않고 나머지는 그대로 동작한다. */
     val aiApiKey: String = "",
-    /** AI 가 쓸 모델(`AI_MODEL`). 무료 한도가 넉넉한 가벼운 모델을 기본으로 둔다. */
-    val aiModel: String = DEFAULT_AI_MODEL,
+    /**
+     * 로컬 모델 서버(Ollama)의 주소(`OLLAMA_URL`). 값이 있으면 Gemini 대신 이쪽에 묻는다 —
+     * 대화가 서버 밖으로 나가지 않는다.
+     */
+    val ollamaUrl: String = "",
+    /** AI 가 쓸 모델(`AI_MODEL`). 비우면 고른 쪽의 기본 모델을 쓴다. */
+    val aiModel: String = "",
 ) {
     companion object {
         const val DEFAULT_PORT = 8080
-        const val DEFAULT_AI_MODEL = "gemini-3.5-flash-lite"
+        /** 무료 한도가 넉넉한 가벼운 모델. */
+        const val DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
+        /** 8GB 그래픽 카드에서 무리 없이 도는 크기. */
+        const val DEFAULT_OLLAMA_MODEL = "gemma3:4b"
 
         fun aiApiKeyFromEnv(): String = env("GEMINI_API_KEY").orEmpty()
 
-        fun aiModelFromEnv(): String = env("AI_MODEL") ?: DEFAULT_AI_MODEL
+        fun ollamaUrlFromEnv(): String = env("OLLAMA_URL").orEmpty()
+
+        fun aiModelFromEnv(): String = env("AI_MODEL").orEmpty()
 
         fun fromEnv(): ServerConfig = ServerConfig(
             port = env("PORT")?.toIntOrNull() ?: DEFAULT_PORT,
@@ -41,6 +51,7 @@ data class ServerConfig(
             filesDirectory = env("FILES_DIR") ?: "files",
             firebaseCredentialsJson = firebaseCredentialsFromEnv(),
             aiApiKey = aiApiKeyFromEnv(),
+            ollamaUrl = ollamaUrlFromEnv(),
             aiModel = aiModelFromEnv(),
         )
 

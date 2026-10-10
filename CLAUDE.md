@@ -153,9 +153,13 @@ iosApp/        Xcode 프로젝트
 3. **Firebase 서비스 계정 키** — 서버가 푸시를 보낼 때만 필요하다. 저장소에 없으니 Firebase 콘솔
    (`multiplatformtalk` 프로젝트)에서 받아 `FIREBASE_CREDENTIALS=<파일 경로>` 로 넘긴다.
    없으면 푸시만 꺼지고 나머지는 그대로 동작한다.
-4. **Gemini API 키** — AI 참여자와 대화 요약에만 필요하다. Google AI Studio 에서 받아 서버를 띄우는
-   환경에 `GEMINI_API_KEY` 로 넘긴다(모델은 `AI_MODEL`, 기본 `gemini-3.5-flash-lite`).
-   없으면 AI 만 꺼지고 나머지는 그대로 동작한다.
+4. **AI 모델** — AI 참여자와 대화 요약에만 필요하다. 둘 중 하나를 서버를 띄우는 환경에 넘긴다.
+   - 로컬 모델: [Ollama](https://ollama.com) 를 설치하고 `ollama pull gemma3:4b` 로 모델을 받은 뒤
+     `OLLAMA_URL=http://localhost:11434`. 대화가 서버 밖으로 나가지 않는다.
+   - Gemini: Google AI Studio 에서 키를 받아 `GEMINI_API_KEY`.
+
+   둘 다 있으면 로컬 모델을 쓴다. 모델은 `AI_MODEL` 로 바꾼다(기본 `gemma3:4b` / `gemini-3.5-flash-lite`).
+   둘 다 없으면 AI 만 꺼지고 나머지는 그대로 동작한다.
 
 ## 실행
 

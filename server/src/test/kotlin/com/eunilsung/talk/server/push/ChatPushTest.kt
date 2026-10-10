@@ -85,6 +85,8 @@ class ChatPushTest {
         val group = client.createRoom(me, "test2", "test3")
 
         client.send(me, direct.id, SendMessageRequest("d1", "하나"))
+        /** 푸시는 대화 저장과 따로 나간다. 첫 푸시의 배지가 계산되기 전에 다음 대화가 들어가면 수가 달라진다. */
+        awaitPushes(1)
         client.send(me, group.id, SendMessageRequest("g1", "둘"))
 
         val counts = awaitPushes(2).map { it.second[PushKeys.UNREAD_COUNT] }
