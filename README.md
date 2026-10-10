@@ -164,13 +164,13 @@ server/                   29 files — Ktor 서버 (+ 테스트 15 files, 마이
 | AI | 방에 초대해 `@AI` 로 부르는 참여자, 안읽은 대화 요약. 부른 사람이 볼 수 있는 대화만 모델에 보냄 |
 | 로그인 | 틀린 비밀번호가 연달아 5번이면 5분 잠금 |
 
-배포 구성(Docker · HTTPS 프록시)은 아직 없습니다. 푸시는 Firebase 서비스 계정 키를 넣어야 실제로 나갑니다. AI 는 Google Gemini 키(`GEMINI_API_KEY`)를 넣어야 답합니다.
+배포 구성(Docker · HTTPS 프록시)은 아직 없습니다. 푸시는 Firebase 서비스 계정 키를 넣어야 실제로 나갑니다. AI 는 로컬 모델(Ollama, `OLLAMA_URL`)이나 Google Gemini 키(`GEMINI_API_KEY`)를 넣어야 답합니다.
 
 ---
 
 ## 테스트
 
-**앱 181개 + 서버 108개.**
+**앱 181개 + 서버 110개.**
 
 ```bash
 ./gradlew :composeApp:testDebugUnitTest   # 앱 (Android JVM)
@@ -272,4 +272,4 @@ OS 키보드와 이모티콘 패널이 번갈아 뜰 때 하단바가 흔들리�
 | ViewModel / Actions | 10 / 9 |
 | 기기 DB 테이블 / 서버 DB 테이블 | 11개 / 18개 |
 | 문자열 리소스 | 369개 (ko · en) |
-| 테스트 | 289개 (앱 181 · 서버 108) |
+| 테스트 | 291개 (앱 181 · 서버 110) |
