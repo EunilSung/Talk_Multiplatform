@@ -763,10 +763,14 @@ class ChatRepository(private val dataSource: DataSource) {
         /** 앱이 멘션을 감싸는 태그. 안쪽이 `@이름` 이다. */
         val MENTION_TAG = Regex("""<mention>([\s\S]*?)</mention>""", RegexOption.IGNORE_CASE)
 
-        /** 이 대화를 아직 읽지 않은 참여자 수. 나간 사람은 세지 않는다. */
+        /** 대화를 읽지 않는 참여자(AI). 안읽음 수에 넣으면 AI 가 있는 방의 모든 대화가 영원히 "1" 로 남는다. */
+        const val NON_READER_ID = "ai"
+
+        /** 이 대화를 아직 읽지 않은 참여자 수. 나간 사람과 AI 는 세지 않는다. */
         const val UNREAD_COUNT =
             "(SELECT count(*) FROM chat_room_member mm " +
-                "WHERE mm.room_id = g.room_id AND mm.left_at IS NULL AND mm.last_read_seq < g.seq)"
+                "WHERE mm.room_id = g.room_id AND mm.left_at IS NULL AND mm.last_read_seq < g.seq " +
+                "AND mm.user_id <> '$NON_READER_ID')"
 
         /** 이 대화에 눌린 공감들을 JSON 배열로. 대화마다 따로 조회하지 않게 한 쿼리에 싣는다. */
         const val REACTIONS =
