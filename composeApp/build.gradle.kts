@@ -221,3 +221,13 @@ android {
 dependencies {
     debugImplementation(libs.compose.uiTooling)
 }
+
+/**
+ * 기능 테스트(`TALK_FUNCTEST_URL`)는 진짜 서버의 상태를 본다. 코드가 그대로여도 서버가 달라졌을 수
+ * 있으므로, 주소가 주어졌을 때는 지난 결과를 다시 쓰지 않고 매번 돌린다.
+ */
+tasks.withType<Test>().configureEach {
+    val functestUrl = providers.environmentVariable("TALK_FUNCTEST_URL").orElse("")
+    inputs.property("functestUrl", functestUrl)
+    outputs.upToDateWhen { functestUrl.get().isBlank() }
+}
