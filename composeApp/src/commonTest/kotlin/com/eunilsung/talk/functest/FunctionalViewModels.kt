@@ -66,17 +66,36 @@ fun RealServerHarness.chatRoomViewModel(): ChatRoomViewModel {
         deleteChatGroup = DeleteChatGroupUseCase(rooms),
         reorderChatGroups = ReorderChatGroupsUseCase(rooms),
     )
+    val chatSettings = ChatSettingsRepositoryImpl(MapSettings())
+    val senders = ChatSenderOverride()
+    val noticeBar = NoticeUiStateStore(MapSettings())
+    val stateUseCases = ChatRoomStateUseCases(
+        observeNewChat = ObserveNewChatUseCase(chats),
+        observeMySend = ObserveMySendUseCase(chats),
+        observeLatestLoaded = ObserveLatestLoadedUseCase(chats),
+        observeSelfLeft = ObserveSelfLeftUseCase(chats),
+        observeRoomUsersChanged = ObserveRoomUsersChangedUseCase(chats),
+        observeCurrentNotice = ObserveCurrentNoticeUseCase(chats),
+        observeBookmarks = ObserveBookmarksUseCase(chats),
+        clearCurrentRoom = ClearCurrentRoomUseCase(chats),
+        isCurrentChatRoom = IsCurrentChatRoomUseCase(CurrentChatRoomTracker),
+        observeChatSettings = ObserveChatSettingsUseCase(chatSettings),
+        getLastEmoticonTab = GetLastEmoticonTabUseCase(chatSettings),
+        setLastEmoticonTab = SetLastEmoticonTabUseCase(chatSettings),
+        getSender = GetSenderUseCase(senders),
+        selectSender = SelectSenderUseCase(senders),
+        getNoticeBarState = GetNoticeBarStateUseCase(noticeBar),
+        setNoticeCollapsed = SetNoticeCollapsedUseCase(noticeBar),
+        setNoticeDetailsShown = SetNoticeDetailsShownUseCase(noticeBar),
+        hideNotice = HideNoticeUseCase(noticeBar),
+    )
     return ChatRoomViewModel(
         chatRoomUseCases = chatUseCases,
-        chatRoomRepository = chats,
+        stateUseCases = stateUseCases,
         recentPhotosProvider = NoPhotos,
         filePickerProvider = NoFilePicker,
-        chatSettingsRepository = ChatSettingsRepositoryImpl(MapSettings()),
         chatRoomListUseCases = roomUseCases,
         inviteUseCases = InviteUseCases(InviteUsersUseCase(invite)),
-        senderOverride = ChatSenderOverride(),
-        noticeUiStateStore = NoticeUiStateStore(MapSettings()),
-        currentChatRoom = CurrentChatRoomTracker,
     )
 }
 

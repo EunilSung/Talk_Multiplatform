@@ -7,9 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.repository.UserProfileRepository
+import com.eunilsung.talk.domain.usecase.UserProfileUseCases
 
 class UserProfileViewModel(
-    private val repository: UserProfileRepository
+    private val useCases: UserProfileUseCases
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UserProfileUiState>(UserProfileUiState.Idle)
@@ -30,14 +31,14 @@ class UserProfileViewModel(
         currentUserId = userId
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            val cached = runCatching { repository.getCachedProfile(userId) }.getOrNull()
+            val cached = runCatching { useCases.getCachedProfile(userId) }.getOrNull()
             _uiState.value = if (cached != null) {
                 UserProfileUiState.Success(profile = cached, isStale = true)
             } else {
                 UserProfileUiState.Loading
             }
 
-            repository.fetchProfile(userId)
+            useCases.fetchProfile(userId)
                 .onSuccess { fresh ->
                     _uiState.value = UserProfileUiState.Success(profile = fresh, isStale = false)
                 }

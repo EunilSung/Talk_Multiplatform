@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.eunilsung.talk.Platform
-import com.eunilsung.talk.data.local.BiometricResult
+import com.eunilsung.talk.domain.repository.BiometricResult
 import com.eunilsung.talk.domain.model.LockType
 import com.eunilsung.talk.domain.repository.LoginRepository
 import com.eunilsung.talk.domain.repository.ScreenLockRepository

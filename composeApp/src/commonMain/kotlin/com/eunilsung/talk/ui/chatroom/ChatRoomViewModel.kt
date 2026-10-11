@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.eunilsung.talk.domain.repository.SenderOverrideRepository
 import com.eunilsung.talk.data.local.FilePickerProvider
 import com.eunilsung.talk.data.local.PhotoAlbum
 import com.eunilsung.talk.data.local.RecentPhoto
@@ -27,8 +26,6 @@ import com.eunilsung.talk.data.local.RecentPhotosResult
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.model.User
-import com.eunilsung.talk.domain.repository.ChatRoomRepository
-import com.eunilsung.talk.domain.repository.ChatSettingsRepository
 import com.eunilsung.talk.domain.repository.ChatSettingsState
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 import com.eunilsung.talk.domain.usecase.ChatRoomUseCases
@@ -38,26 +35,21 @@ import com.eunilsung.talk.data.local.FilePickerRequestId
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.usecase.InviteUseCases
-import com.eunilsung.talk.domain.repository.NoticeUiStateRepository
-import com.eunilsung.talk.domain.repository.CurrentChatRoomRepository
+import com.eunilsung.talk.domain.usecase.ChatRoomStateUseCases
 
 class ChatRoomViewModel(
     private val chatRoomUseCases: ChatRoomUseCases,
-    private val chatRoomRepository: ChatRoomRepository,
+    private val stateUseCases: ChatRoomStateUseCases,
     private val recentPhotosProvider: RecentPhotosProvider,
     private val filePickerProvider: FilePickerProvider,
-    private val chatSettingsRepository: ChatSettingsRepository,
     private val chatRoomListUseCases: ChatRoomListUseCases,
     private val inviteUseCases: InviteUseCases,
-    private val senderOverride: SenderOverrideRepository,
-    private val noticeUiStateStore: NoticeUiStateRepository,
-    private val currentChatRoom: CurrentChatRoomRepository,
 ) : ViewModel() {
 
-    fun lastEmoticonTab(): Int = chatSettingsRepository.getLastEmoticonTab()
-    fun saveEmoticonTab(index: Int) = chatSettingsRepository.setLastEmoticonTab(index)
+    fun lastEmoticonTab(): Int = stateUseCases.getLastEmoticonTab()
+    fun saveEmoticonTab(index: Int) = stateUseCases.setLastEmoticonTab(index)
 
-    val chatSettings: StateFlow<ChatSettingsState> = chatSettingsRepository.state
+    val chatSettings: StateFlow<ChatSettingsState> = stateUseCases.observeChatSettings()
 
     /** picker 결과가 싱글톤 provider 로 broadcast 되므로, 이 VM 이 띄운 요청만 소비하기 위한 태그. */
     private val filePickerRequestId =
@@ -153,19 +145,19 @@ class ChatRoomViewModel(
         }
     }
 
-    val newChatPush: SharedFlow<String> = chatRoomRepository.newChatPush
+    val newChatPush: SharedFlow<String> = stateUseCases.observeNewChat()
 
-    val mySendPush: SharedFlow<String> = chatRoomRepository.mySendPush
+    val mySendPush: SharedFlow<String> = stateUseCases.observeMySend()
 
-    val latestLoadedPush: SharedFlow<String> = chatRoomRepository.latestLoadedPush
+    val latestLoadedPush: SharedFlow<String> = stateUseCases.observeLatestLoaded()
 
-    val selfLeftPush: SharedFlow<String> = chatRoomRepository.selfLeftPush
+    val selfLeftPush: SharedFlow<String> = stateUseCases.observeSelfLeft()
 
     private val _entryScroll = MutableSharedFlow<String?>(replay = 1, extraBufferCapacity = 1)
     val entryScroll: SharedFlow<String?> = _entryScroll
 
     val currentNotice: StateFlow<Notice?> =
-        chatRoomRepository.currentNotice
+        stateUseCases.observeCurrentNotice()
 
     private val _noticeBar = MutableStateFlow(NoticeBarUiState())
 
@@ -174,30 +166,31 @@ class ChatRoomViewModel(
 
     /** 공지가 바뀔 때 저장된 표시 상태를 읽어 온다. */
     fun loadNoticeBarState(identityKey: String) {
+        val saved = stateUseCases.getNoticeBarState(identityKey)
         _noticeBar.value = NoticeBarUiState(
-            hidden = noticeUiStateStore.isHidden(identityKey),
-            expanded = !noticeUiStateStore.isCollapsed(identityKey),
-            showDetails = noticeUiStateStore.isDetailsShown(identityKey),
+            hidden = saved.hidden,
+            expanded = !saved.collapsed,
+            showDetails = saved.detailsShown,
         )
     }
 
     fun setNoticeExpanded(identityKey: String, expanded: Boolean) {
-        noticeUiStateStore.setCollapsed(identityKey, !expanded)
+        stateUseCases.setNoticeCollapsed(identityKey, !expanded)
         _noticeBar.update { it.copy(expanded = expanded) }
     }
 
     fun setNoticeDetailsShown(identityKey: String, shown: Boolean) {
-        noticeUiStateStore.setDetailsShown(identityKey, shown)
+        stateUseCases.setNoticeDetailsShown(identityKey, shown)
         _noticeBar.update { it.copy(showDetails = shown) }
     }
 
     fun hideNoticePermanently(identityKey: String) {
-        noticeUiStateStore.setHidden(identityKey, true)
+        stateUseCases.hideNotice(identityKey)
         _noticeBar.update { it.copy(hidden = true) }
     }
 
     val bookmarks: StateFlow<List<Bookmark>> =
-        chatRoomRepository.bookmarks
+        stateUseCases.observeBookmarks()
 
     private val _recentPhotos = MutableStateFlow<RecentPhotosResult>(
         RecentPhotosResult.Granted(emptyList())
@@ -218,7 +211,7 @@ class ChatRoomViewModel(
     fun hasPhotoAccess(): Boolean = recentPhotosProvider.hasPhotoAccess()
 
     override fun onCleared() {
-        chatRoomRepository.clearCurrentRoom(currentChatRoomId)
+        stateUseCases.clearCurrentRoom(currentChatRoomId)
         super.onCleared()
     }
 
@@ -296,8 +289,8 @@ class ChatRoomViewModel(
                 executeSearch()
             }
             is ChatRoomActions.OnSelectSender -> {
-                senderOverride.select(currentChatRoomId, action.user)
-                _sender.value = senderOverride.senderFor(currentChatRoomId)
+                stateUseCases.selectSender(currentChatRoomId, action.user)
+                _sender.value = stateUseCases.getSender(currentChatRoomId)
             }
             is ChatRoomActions.OnSearchUserRemove -> {
                 _searchState.update { it.copy(searchedUser = null) }
@@ -466,7 +459,7 @@ class ChatRoomViewModel(
         _translations.value = emptyMap()
         _polish.value = PolishUiState.Idle
         _users.value = emptyList()
-        _sender.value = senderOverride.senderFor(chatRoomId)
+        _sender.value = stateUseCases.getSender(chatRoomId)
         _searchState.value = ChatSearchState()
         _replyTarget.value = null
         latestChats = emptyList()
@@ -519,7 +512,7 @@ class ChatRoomViewModel(
 
         usersChangeJob?.cancel()
         usersChangeJob = viewModelScope.launch {
-            chatRoomRepository.roomUsersChanged
+            stateUseCases.observeRoomUsersChanged()
                 .filter { it == chatRoomId }
                 .collect {
                     val result = runCatching { chatRoomUseCases.fetchChatRoomUsers(chatRoomId) }
@@ -589,7 +582,7 @@ class ChatRoomViewModel(
                 }
 
                 if (currentChatRoomId == chatRoomId &&
-                    currentChatRoom.currentChatRoomId == chatRoomId
+                    stateUseCases.isCurrentChatRoom(chatRoomId)
                 ) {
                     val lastChatId = chatRoomUseCases.getChats(chatRoomId)
                         .first()
@@ -609,10 +602,10 @@ class ChatRoomViewModel(
         }
 
         viewModelScope.launch {
-            chatRoomRepository.newChatPush
+            stateUseCases.observeNewChat()
                 .filter { it == chatRoomId && currentChatRoomId == chatRoomId }
                 .collect {
-                    if (currentChatRoom.currentChatRoomId != chatRoomId) return@collect
+                    if (!stateUseCases.isCurrentChatRoom(chatRoomId)) return@collect
 
                     val lastChatId = chatRoomUseCases.getChats(chatRoomId)
                         .first()

@@ -10,6 +10,8 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import com.eunilsung.talk.util.Log
 import kotlin.coroutines.resume
+import com.eunilsung.talk.domain.repository.BiometricAuthenticator
+import com.eunilsung.talk.domain.repository.BiometricResult
 
 /** Android 생체인증 — [BiometricPrompt] (BIOMETRIC_WEAK). [FragmentActivity] 필요. */
 class AndroidBiometricAuthenticator(

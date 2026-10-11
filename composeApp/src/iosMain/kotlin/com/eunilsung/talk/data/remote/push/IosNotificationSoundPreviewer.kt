@@ -6,6 +6,8 @@ import platform.AVFAudio.AVAudioPlayer
 import platform.AVFAudio.AVAudioSession
 import platform.AVFAudio.AVAudioSessionCategoryPlayback
 import platform.Foundation.NSBundle
+import com.eunilsung.talk.domain.repository.NotificationSoundPreviewer
+import com.eunilsung.talk.domain.model.NotificationSoundCatalog
 
 /** iOS [NotificationSoundPreviewer] — `AVAudioPlayer` 로 앱 bundle 의 wav 파일 재생. */
 @OptIn(ExperimentalForeignApi::class)

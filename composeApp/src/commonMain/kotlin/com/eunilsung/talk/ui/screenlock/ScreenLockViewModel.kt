@@ -6,50 +6,48 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.eunilsung.talk.data.local.BiometricAuthenticator
-import com.eunilsung.talk.data.local.BiometricResult
+import com.eunilsung.talk.domain.repository.BiometricResult
 import com.eunilsung.talk.domain.model.ScreenLockConfig
-import com.eunilsung.talk.domain.repository.ScreenLockRepository
+import com.eunilsung.talk.domain.usecase.ScreenLockUseCases
 
 /** 화면 잠금 설정/검증 ViewModel — 설정 화면과 잠금 화면에서 공용. */
 class ScreenLockViewModel(
-    private val repository: ScreenLockRepository,
-    private val biometric: BiometricAuthenticator,
+    private val useCases: ScreenLockUseCases,
 ) : ViewModel() {
 
-    val config: StateFlow<ScreenLockConfig> = repository.config
+    val config: StateFlow<ScreenLockConfig> = useCases.observeConfig()
 
     /** 기기 생체 사용 가능 여부(등록됨). */
-    private val _biometricAvailable = MutableStateFlow(biometric.isAvailable())
+    private val _biometricAvailable = MutableStateFlow(useCases.isBiometricAvailable())
     val biometricAvailable: StateFlow<Boolean> = _biometricAvailable.asStateFlow()
 
     /** 생체 가용성 재확인 + 불가한데 켜져 있으면 자동 해제. */
     fun reconcileBiometric() {
-        val available = biometric.isAvailable()
+        val available = useCases.isBiometricAvailable()
         _biometricAvailable.value = available
-        if (!available && repository.config.value.biometricEnabled) {
-            repository.clearBiometric()
+        if (!available && useCases.observeConfig().value.biometricEnabled) {
+            useCases.clearBiometric()
         }
     }
 
     fun disableLock() {
-        repository.disable()
+        useCases.disable()
         ScreenLockController.reset()
     }
 
-    fun setPassword(pin: String) = repository.setPassword(pin)
-    fun setPattern(dots: List<Int>) = repository.setPattern(dots)
-    fun verifyPassword(pin: String): Boolean = repository.verifyPassword(pin)
-    fun verifyPattern(dots: List<Int>): Boolean = repository.verifyPattern(dots)
-    fun setPatternVisible(visible: Boolean) = repository.setPatternVisible(visible)
+    fun setPassword(pin: String) = useCases.setPassword(pin)
+    fun setPattern(dots: List<Int>) = useCases.setPattern(dots)
+    fun verifyPassword(pin: String): Boolean = useCases.verifyPassword(pin)
+    fun verifyPattern(dots: List<Int>): Boolean = useCases.verifyPattern(dots)
+    fun setPatternVisible(visible: Boolean) = useCases.setPatternVisible(visible)
 
     /** 생체 토글 — 켤 때는 실제 사용 가능한 경우에만 적용. */
     fun setBiometricEnabled(enabled: Boolean) {
-        if (enabled && !biometric.isAvailable()) {
+        if (enabled && !useCases.isBiometricAvailable()) {
             reconcileBiometric()
             return
         }
-        repository.setBiometricEnabled(enabled)
+        useCases.setBiometricEnabled(enabled)
     }
 
     /** 생체 프롬프트. 결과를 콜백으로 전달. */
@@ -60,12 +58,12 @@ class ScreenLockViewModel(
         onResult: (BiometricResult) -> Unit,
     ) {
         viewModelScope.launch {
-            val result = biometric.authenticate(title, subtitle, negativeText)
+            val result = useCases.authenticateBiometric(title, subtitle, negativeText)
             if (result == BiometricResult.UNAVAILABLE &&
-                repository.config.value.biometricEnabled &&
-                !biometric.isAvailable()
+                useCases.observeConfig().value.biometricEnabled &&
+                !useCases.isBiometricAvailable()
             ) {
-                repository.clearBiometric()
+                useCases.clearBiometric()
                 _biometricAvailable.value = false
             }
             onResult(result)

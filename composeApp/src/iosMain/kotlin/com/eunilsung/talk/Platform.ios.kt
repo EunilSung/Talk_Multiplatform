@@ -27,12 +27,12 @@ import com.eunilsung.talk.data.local.VideoThumbnailLoader
 import com.eunilsung.talk.data.remote.push.IosNotificationSoundPreviewer
 import com.eunilsung.talk.data.remote.push.IosPushNotifier
 import com.eunilsung.talk.data.remote.push.IosSystemNotificationGate
-import com.eunilsung.talk.data.remote.push.NotificationSoundPreviewer
+import com.eunilsung.talk.domain.repository.NotificationSoundPreviewer
 import com.eunilsung.talk.domain.repository.PushNotifier
 import com.eunilsung.talk.domain.repository.SystemNotificationGate
 import org.koin.dsl.module
 import platform.UIKit.UIDevice
-import com.eunilsung.talk.data.local.BiometricAuthenticator
+import com.eunilsung.talk.domain.repository.BiometricAuthenticator
 import com.eunilsung.talk.data.local.IosBiometricAuthenticator
 
 class IOSPlatform : Platform {
