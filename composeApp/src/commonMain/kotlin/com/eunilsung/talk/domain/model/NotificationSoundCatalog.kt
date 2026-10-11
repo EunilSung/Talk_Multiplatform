@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.remote.push
+package com.eunilsung.talk.domain.model
 
 /**
  * 알림 사운드 카탈로그 — soundId(인덱스) 가 곧 등록 위치.

@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.local
+package com.eunilsung.talk.domain.repository
 
 /** 생체인증 결과. */
 enum class BiometricResult {

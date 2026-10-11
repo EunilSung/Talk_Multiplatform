@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
-import com.eunilsung.talk.data.remote.push.NotificationSoundCatalog
+import com.eunilsung.talk.domain.model.NotificationSoundCatalog
 import com.eunilsung.talk.ui.setting.component.SettingItemRadio
 import com.eunilsung.talk.ui.setting.SettingActions
 import com.eunilsung.talk.ui.setting.SettingViewModel

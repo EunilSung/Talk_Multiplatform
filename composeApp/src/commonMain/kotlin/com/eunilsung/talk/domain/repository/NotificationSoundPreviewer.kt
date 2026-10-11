@@ -1,4 +1,5 @@
-package com.eunilsung.talk.data.remote.push
+package com.eunilsung.talk.domain.repository
+import com.eunilsung.talk.domain.model.NotificationSoundCatalog
 
 /** 알림 사운드 미리듣기 — 설정 화면에서 사운드 행을 누르면 즉시 재생. */
 interface NotificationSoundPreviewer {

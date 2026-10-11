@@ -7,30 +7,23 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import com.eunilsung.talk.Config
 import com.eunilsung.talk.Platform
-import com.eunilsung.talk.data.remote.push.NotificationSoundPreviewer
-import com.eunilsung.talk.domain.repository.ChatSettingsRepository
 import com.eunilsung.talk.domain.repository.ChatSettingsState
-import com.eunilsung.talk.domain.repository.LoginRepository
-import com.eunilsung.talk.domain.repository.NotificationSettingsRepository
 import com.eunilsung.talk.domain.repository.NotificationSettingsState
-import com.eunilsung.talk.domain.repository.SystemNotificationGate
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.domain.usecase.SettingUseCases
+import com.eunilsung.talk.domain.usecase.LoginUseCases
 
 class SettingViewModel(
-    private val loginRepository: LoginRepository,
-    private val notificationSettingsRepository: NotificationSettingsRepository,
-    private val chatSettingsRepository: ChatSettingsRepository,
-    private val systemNotificationGate: SystemNotificationGate,
+    private val settingUseCases: SettingUseCases,
+    private val loginUseCases: LoginUseCases,
     private val platform: Platform,
-    private val soundPreviewer: NotificationSoundPreviewer,
 ) : ViewModel() {
 
     val notificationSettings: StateFlow<NotificationSettingsState> =
-        notificationSettingsRepository.state
+        settingUseCases.observeNotificationSettings()
     val chatSettings: StateFlow<ChatSettingsState> =
-        chatSettingsRepository.state
+        settingUseCases.observeChatSettings()
 
     val isAndroid: Boolean = platform.name != "IPHONE"
 
@@ -38,55 +31,55 @@ class SettingViewModel(
     val toastEvents: Flow<String> = _toastEvents.receiveAsFlow()
 
     fun playSoundPreview(soundId: Int) {
-        soundPreviewer.play(soundId)
+        settingUseCases.playSoundPreview(soundId)
     }
 
     fun stopSoundPreview() {
-        soundPreviewer.stop()
+        settingUseCases.stopSoundPreview()
     }
 
     override fun onCleared() {
         super.onCleared()
-        soundPreviewer.stop()
+        settingUseCases.stopSoundPreview()
     }
 
     fun onAction(action: SettingActions) {
         when (action) {
-            is SettingActions.Logout -> loginRepository.logout()
+            is SettingActions.Logout -> loginUseCases.logout()
 
             is SettingActions.OpenSystemNotificationSettings ->
-                systemNotificationGate.openSettings()
+                settingUseCases.openSystemNotificationSettings()
             is SettingActions.SyncSystemNotificationState ->
                 viewModelScope.launch {
-                    runCatching { notificationSettingsRepository.syncEnabledFromSystem() }
+                    runCatching { settingUseCases.syncNotificationFromSystem() }
                         .onFailure { Log.message("[Setting] syncEnabledFromSystem failed: ${it.message}") }
                 }
             is SettingActions.SetNotificationPreview ->
-                notificationSettingsRepository.setPreview(action.enabled)
+                settingUseCases.setNotificationPreview(action.enabled)
             is SettingActions.SetNotificationTimeLimit ->
                 viewModelScope.launch {
                     val confirmed = runCatching {
-                        notificationSettingsRepository.setTimeLimit(action.enabled, action.value)
+                        settingUseCases.setNotificationTimeLimit(action.enabled, action.value)
                     }.getOrDefault(false)
                     if (!confirmed) _toastEvents.trySend("설정 변경에 실패했습니다.")
                 }
             is SettingActions.SetNotificationPcOff ->
                 viewModelScope.launch {
-                    val confirmed = runCatching { notificationSettingsRepository.setPcOff(action.enabled) }
+                    val confirmed = runCatching { settingUseCases.setNotificationPcOff(action.enabled) }
                         .getOrDefault(false)
                     if (!confirmed) _toastEvents.trySend("설정 변경에 실패했습니다.")
                 }
             is SettingActions.SetNotificationSound ->
-                notificationSettingsRepository.setSound(action.enabled)
+                settingUseCases.setNotificationSound(action.enabled)
             is SettingActions.SetNotificationVibrate ->
-                notificationSettingsRepository.setVibrate(action.enabled)
+                settingUseCases.setNotificationVibrate(action.enabled)
             is SettingActions.SetNotificationSoundId ->
-                notificationSettingsRepository.setSoundId(action.id)
+                settingUseCases.setNotificationSoundId(action.id)
 
             is SettingActions.SetChatEnterSend ->
-                chatSettingsRepository.setEnterToSend(action.enabled)
+                settingUseCases.setChatEnterToSend(action.enabled)
             is SettingActions.SetChatFontSize ->
-                chatSettingsRepository.setFontSize(action.size)
+                settingUseCases.setChatFontSize(action.size)
         }
     }
 

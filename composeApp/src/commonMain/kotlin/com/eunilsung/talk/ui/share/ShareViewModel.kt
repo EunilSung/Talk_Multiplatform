@@ -13,17 +13,18 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.model.SharedContent
-import com.eunilsung.talk.data.remote.share.cleanupSharedFile
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 import com.eunilsung.talk.domain.usecase.ChatRoomUseCases
 import com.eunilsung.talk.domain.usecase.InviteUseCases
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.domain.usecase.CleanupSharedFileUseCase
 
 class ShareViewModel(
     chatRoomListUseCases: ChatRoomListUseCases,
     private val inviteUseCases: InviteUseCases,
     private val chatRoomUseCases: ChatRoomUseCases,
+    private val cleanupSharedFile: CleanupSharedFileUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ShareUiState())

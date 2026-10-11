@@ -82,6 +82,8 @@ import com.eunilsung.talk.data.repository.AppMaintenanceRepositoryImpl
 import com.eunilsung.talk.data.remote.push.CurrentChatRoomTracker
 import com.eunilsung.talk.data.remote.push.PendingPushNavigation
 import com.eunilsung.talk.data.remote.share.PendingShareNavigation
+import com.eunilsung.talk.domain.repository.SharedFileCleaner
+import com.eunilsung.talk.data.remote.share.PlatformSharedFileCleaner
 
 val appModule = module {
     single { Settings() }
@@ -115,6 +117,9 @@ val appModule = module {
     singleOf(::LoginUseCase)
     singleOf(::DuplicateLoginUseCase)
     singleOf(::LogoutUseCase)
+    singleOf(::ObserveLoginStateUseCase)
+    singleOf(::GetSavedLoginUseCase)
+    singleOf(::SetSavePasswordUseCase)
     singleOf(::LoginUseCases)
 
     viewModelOf(::MainViewModel)
@@ -159,6 +164,8 @@ val appModule = module {
     singleOf(::InviteUsersUseCase)
     singleOf(::InviteUseCases)
 
+    single<SharedFileCleaner> { PlatformSharedFileCleaner() }
+    singleOf(::CleanupSharedFileUseCase)
     viewModelOf(::ShareViewModel)
 
     viewModelOf(::UserProfileViewModel)
@@ -167,6 +174,24 @@ val appModule = module {
         if (Config.Server.IS_ENABLED) UserProfileRepositoryImpl(get(), get(), get()) else LocalUserProfileRepositoryImpl()
     }
 
+    singleOf(::ObserveNewChatUseCase)
+    singleOf(::ObserveMySendUseCase)
+    singleOf(::ObserveLatestLoadedUseCase)
+    singleOf(::ObserveSelfLeftUseCase)
+    singleOf(::ObserveRoomUsersChangedUseCase)
+    singleOf(::ObserveCurrentNoticeUseCase)
+    singleOf(::ObserveBookmarksUseCase)
+    singleOf(::ClearCurrentRoomUseCase)
+    singleOf(::IsCurrentChatRoomUseCase)
+    singleOf(::GetLastEmoticonTabUseCase)
+    singleOf(::SetLastEmoticonTabUseCase)
+    singleOf(::GetSenderUseCase)
+    singleOf(::SelectSenderUseCase)
+    singleOf(::GetNoticeBarStateUseCase)
+    singleOf(::SetNoticeCollapsedUseCase)
+    singleOf(::SetNoticeDetailsShownUseCase)
+    singleOf(::HideNoticeUseCase)
+    singleOf(::ChatRoomStateUseCases)
     viewModelOf(::ChatRoomViewModel)
     single<NoticeUiStateRepository> { NoticeUiStateStore(get()) }
     single<CurrentChatRoomRepository> { CurrentChatRoomTracker }
@@ -256,6 +281,36 @@ val appModule = module {
     single<ScreenLockRepository> {
         ScreenLockRepositoryImpl(get())
     }
+    singleOf(::ObserveNotificationSettingsUseCase)
+    singleOf(::SyncNotificationFromSystemUseCase)
+    singleOf(::OpenSystemNotificationSettingsUseCase)
+    singleOf(::SetNotificationPreviewUseCase)
+    singleOf(::SetNotificationTimeLimitUseCase)
+    singleOf(::SetNotificationPcOffUseCase)
+    singleOf(::SetNotificationSoundUseCase)
+    singleOf(::SetNotificationVibrateUseCase)
+    singleOf(::SetNotificationSoundIdUseCase)
+    singleOf(::PlaySoundPreviewUseCase)
+    singleOf(::StopSoundPreviewUseCase)
+    singleOf(::ObserveChatSettingsUseCase)
+    singleOf(::SetChatEnterToSendUseCase)
+    singleOf(::SetChatFontSizeUseCase)
+    singleOf(::SettingUseCases)
+    singleOf(::ObserveScreenLockConfigUseCase)
+    singleOf(::DisableScreenLockUseCase)
+    singleOf(::SetScreenLockPasswordUseCase)
+    singleOf(::SetScreenLockPatternUseCase)
+    singleOf(::VerifyScreenLockPasswordUseCase)
+    singleOf(::VerifyScreenLockPatternUseCase)
+    singleOf(::SetScreenLockPatternVisibleUseCase)
+    singleOf(::SetScreenLockBiometricUseCase)
+    singleOf(::ClearScreenLockBiometricUseCase)
+    singleOf(::IsBiometricAvailableUseCase)
+    singleOf(::AuthenticateBiometricUseCase)
+    singleOf(::ScreenLockUseCases)
+    singleOf(::GetCachedProfileUseCase)
+    singleOf(::FetchProfileUseCase)
+    singleOf(::UserProfileUseCases)
     viewModelOf(::ScreenLockViewModel)
     viewModelOf(::SettingViewModel)
 

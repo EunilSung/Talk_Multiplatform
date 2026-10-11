@@ -6,6 +6,8 @@ import com.eunilsung.talk.util.Log
 import platform.LocalAuthentication.LAContext
 import platform.LocalAuthentication.LAPolicyDeviceOwnerAuthenticationWithBiometrics
 import kotlin.coroutines.resume
+import com.eunilsung.talk.domain.repository.BiometricAuthenticator
+import com.eunilsung.talk.domain.repository.BiometricResult
 
 /** iOS 생체인증 — LocalAuthentication ([LAContext]) Face ID / Touch ID. */
 @OptIn(ExperimentalForeignApi::class)

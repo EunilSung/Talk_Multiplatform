@@ -10,33 +10,25 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.model.Login
-import com.eunilsung.talk.domain.repository.LoginRepository
 import com.eunilsung.talk.domain.usecase.LoginUseCases
 
 class LoginViewModel(
-    private val loginUseCases: LoginUseCases,
-    private val loginRepository: LoginRepository
+    private val loginUseCases: LoginUseCases
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Loading)
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
-    private val _inputState = MutableStateFlow(
-        Login.LoginRequest(
-            id = loginRepository.getSavedId() ?: "",
-            pw = loginRepository.getSavedPw() ?: "",
-            isSavePw = loginRepository.isSavePw()
-        )
-    )
+    private val _inputState = MutableStateFlow(loginUseCases.getSavedLogin())
     val inputState: StateFlow<Login.LoginRequest> = _inputState.asStateFlow()
 
 
     init {
         viewModelScope.launch {
-            loginRepository.isLoggedIn
+            loginUseCases.observeLoginState()
                 .drop(1)
                 .filter { !it }
                 .collect {
-                    _inputState.update { it.copy(pw = loginRepository.getSavedPw() ?: "") }
+                    _inputState.update { it.copy(pw = loginUseCases.getSavedLogin().pw) }
                     _uiState.value = LoginUiState.Idle
                 }
         }
@@ -61,7 +53,7 @@ class LoginViewModel(
     }
 
     private fun toggleSavePw(isSave: Boolean) {
-        loginRepository.setSavePw(isSave)
+        loginUseCases.setSavePassword(isSave)
         _inputState.update { it.copy(isSavePw = isSave) }
     }
 
