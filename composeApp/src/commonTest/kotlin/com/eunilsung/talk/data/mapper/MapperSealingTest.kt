@@ -82,7 +82,7 @@ class MapperSealingTest {
         listOf(entity.title, entity.lastChatContent, entity.totalUserList, entity.exitUserList, entity.clsUsr).forEach {
             assertTrue(LocalSecret.isSealed(it.orEmpty()), "잠기지 않은 칸이 있다: $it")
         }
-        assertEquals(room.copy(), ChatRoomMapper().toModel(entity))
+        assertEquals(room.copy(myId = "test1"), ChatRoomMapper().toModel(entity))
     }
 
     @Test

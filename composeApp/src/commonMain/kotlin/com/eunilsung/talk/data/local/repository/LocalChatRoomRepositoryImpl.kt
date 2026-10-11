@@ -182,13 +182,13 @@ class LocalChatRoomRepositoryImpl(
         Log.message("[Chat/Local] sent ${chat.chatID} in $chatRoomId")
     }
 
-    /** 내가 쓴 텍스트·답장·이모티콘 대화를 [statue] 상태로 만든다. 저장하지는 않는다. */
+    /** 내가 쓴 텍스트·답장·이모티콘 대화를 [status] 상태로 만든다. 저장하지는 않는다. */
     internal fun buildTextChat(
         chatRoomId: String,
         text: String,
         replyTarget: Chat.Item?,
         emoticonId: String?,
-        statue: String,
+        status: String,
     ): Chat.Item {
         val sender = senderOf(chatRoomId)
         val hasEmoticon = !emoticonId.isNullOrBlank()
@@ -201,10 +201,11 @@ class LocalChatRoomRepositoryImpl(
                 else -> Chat.Type.TEXT
             },
             chatContent = text,
-            chatStatus = statue,
+            chatStatus = status,
             date = nowChatDate(),
             unReadCount = "0",
             user = sender,
+            isMe = sender.id == Config.MyInfo.userId,
             replyChat = replyTarget?.let {
                 ReplyChat(
                     chatID = it.chatID,
@@ -238,8 +239,8 @@ class LocalChatRoomRepositoryImpl(
         Log.message("[Chat/Local] sent file '${chat.originalFileName}' (${chat.chatType}) in $chatRoomId")
     }
 
-    /** 내가 고른 파일로 대화를 [statue] 상태로 만든다. 저장하지는 않는다. 파일 정보를 읽지 못하면 null. */
-    internal suspend fun buildFileChat(chatRoomId: String, path: String, statue: String): Chat.Item? =
+    /** 내가 고른 파일로 대화를 [status] 상태로 만든다. 저장하지는 않는다. 파일 정보를 읽지 못하면 null. */
+    internal suspend fun buildFileChat(chatRoomId: String, path: String, status: String): Chat.Item? =
         withContext(Dispatchers.Default) {
             val myId = Config.MyInfo.userId
             if (myId.isBlank() || path.isBlank()) return@withContext null
@@ -274,10 +275,11 @@ class LocalChatRoomRepositoryImpl(
                 },
                 // 파일 말풍선 부제 — 이미지는 "(사진)", 그 외는 파일 크기.
                 chatContent = if (chatType == Chat.Type.IMAGE) "(사진)" else formatFileSize(meta.sizeBytes),
-                chatStatus = statue,
+                chatStatus = status,
                 date = nowChatDate(),
                 unReadCount = "0",
                 user = sender,
+                isMe = sender.id == Config.MyInfo.userId,
                 originalFileName = name,
                 imageSize = meta.widthHeight,
                 localPath = storedPath,
@@ -409,6 +411,7 @@ class LocalChatRoomRepositoryImpl(
                 date = nowChatDate(),
                 unReadCount = "0",
                 user = sender,
+                isMe = sender.id == Config.MyInfo.userId,
             )
             appendMyChat(chatRoomId, chat)
         }

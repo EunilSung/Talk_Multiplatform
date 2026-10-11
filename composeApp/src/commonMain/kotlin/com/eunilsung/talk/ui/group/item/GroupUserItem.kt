@@ -21,6 +21,7 @@ fun GroupUserItem(
     group: Group.Item,
     isToggleable: Boolean,
     userOf: (Group.User) -> User,
+    isUserSelected: (Group.User) -> Boolean,
     onUserClick: (Group.User) -> Unit,
     onUserLongClick: ((Group.User) -> Unit)? = null,
 ) {
@@ -40,6 +41,7 @@ fun GroupUserItem(
                 UserItemV1(
                     user = userOf(member),
                     isToggleable = isToggleable,
+                    isSelected = isUserSelected(member),
                     onClick = { onUserClick(member) },
                     onLongClick = onUserLongClick?.let { cb -> { cb(member) } }
                 )

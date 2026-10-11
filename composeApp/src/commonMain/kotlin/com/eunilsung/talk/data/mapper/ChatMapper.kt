@@ -65,7 +65,7 @@ class ChatMapper {
         imageSize = entity.imageSize.orEmpty(),
         originalFileName = entity.originalFileName.orEmpty(),
         isRecalled = (entity.isRecalled ?: "0") == "1"
-    )
+    ).let { it.copy(isMe = it.user.id == entity.myId) }
 
     private fun encodeUser(u: User): String =
         runCatching { json.encodeToString(UserDto.serializer(), UserDto.from(u)) }

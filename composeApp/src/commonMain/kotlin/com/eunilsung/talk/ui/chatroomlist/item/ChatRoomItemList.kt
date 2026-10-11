@@ -23,6 +23,7 @@ fun ChatRoomItemList(
     nonPinnedRooms: List<ChatRoom.Item>,
     listState: LazyListState,
     isEditMode: Boolean,
+    selectedRoomIds: Set<String>,
     onItemClick: (ChatRoom.Item) -> Unit,
     onItemLongClick: (ChatRoom.Item) -> Unit,
     onSelectRoom: (ChatRoom.Item) -> Unit,
@@ -32,10 +33,10 @@ fun ChatRoomItemList(
     val leaveLabel = stringResource(Res.string.chat_room_leave)
     LazyColumn(state = listState, modifier = modifier) {
         items(pinnedRooms, key = { "pin_${it.id}" }, contentType = { "ChatRoomItem" }) { item ->
-            ChatRoomRow(item, isEditMode, onItemClick, onItemLongClick, onSelectRoom, onLeave, leaveLabel)
+            ChatRoomRow(item, isEditMode, item.id in selectedRoomIds, onItemClick, onItemLongClick, onSelectRoom, onLeave, leaveLabel)
         }
         items(nonPinnedRooms, key = { "np_${it.id}" }, contentType = { "ChatRoomItem" }) { item ->
-            ChatRoomRow(item, isEditMode, onItemClick, onItemLongClick, onSelectRoom, onLeave, leaveLabel)
+            ChatRoomRow(item, isEditMode, item.id in selectedRoomIds, onItemClick, onItemLongClick, onSelectRoom, onLeave, leaveLabel)
         }
     }
 }
@@ -44,6 +45,7 @@ fun ChatRoomItemList(
 private fun LazyItemScope.ChatRoomRow(
     item: ChatRoom.Item,
     isEditMode: Boolean,
+    isSelected: Boolean,
     onItemClick: (ChatRoom.Item) -> Unit,
     onItemLongClick: (ChatRoom.Item) -> Unit,
     onSelectRoom: (ChatRoom.Item) -> Unit,
@@ -55,6 +57,7 @@ private fun LazyItemScope.ChatRoomRow(
             item = item,
             modifier = Modifier.heightIn(min = 70.dp, max = 100.dp),
             isToggleable = isEditMode,
+            isSelected = isSelected,
             onClick = { if (isEditMode) onSelectRoom(item) else onItemClick(item) },
             onLongClick = { onItemLongClick(item) }
         )

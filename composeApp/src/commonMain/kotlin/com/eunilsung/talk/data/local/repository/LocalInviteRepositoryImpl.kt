@@ -65,6 +65,7 @@ class LocalInviteRepositoryImpl(
 
         val room = ChatRoom.Item(
             id = roomId,
+            myId = myId,
             // 단체방 제목 — 참여자 이름을 이어붙인다.
             title = invited.joinToString(", ") { it.second.ifBlank { it.first } },
             unReadCount = "0",

@@ -1,5 +1,6 @@
 package com.eunilsung.talk.data.mapper
 
+import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.shared.api.UserDto
@@ -61,6 +62,7 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
         val payload = message.payload
         return Chat.Item(
             chatID = message.id,
+            isMe = message.senderId == Config.MyInfo.userId,
             chatType = chatTypeOf(message.kind),
             title = when (message.kind) {
                 MessageKind.NOTICE -> noticeActionOf(payload?.noticeAction)
@@ -146,6 +148,7 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
         val last = room.lastMessage?.let { toChat(it) }
         return ChatRoom.Item(
             id = room.id,
+            myId = myId,
             title = room.title.ifBlank {
                 active.filterNot { it.id == myId }.ifEmpty { active }.joinToString(TITLE_SEPARATOR) { it.name }
             },

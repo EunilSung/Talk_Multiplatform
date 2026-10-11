@@ -1,5 +1,10 @@
 package com.eunilsung.talk.ui.chatroomlist.item
 
+import multiplatformtalk.composeapp.generated.resources.noti_chat
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.Image
 import com.eunilsung.talk.ui.util.chatRoomDateText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,16 +28,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import multiplatformtalk.composeapp.generated.resources.no_chat_partner
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.alarm_off_icon
 import multiplatformtalk.composeapp.generated.resources.pin_icon
-import multiplatformtalk.composeapp.generated.resources.noti_chat
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.emoticon.StaticEmoticonImage
@@ -53,13 +53,14 @@ fun ChatRoomItem(
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier.heightIn(min = 70.dp, max = 100.dp),
-    isToggleable: Boolean = false
+    isToggleable: Boolean = false,
+    isSelected: Boolean = false,
 ){
     Column(modifier = Modifier) {
         Row(
             modifier = modifier
                 .fillMaxWidth()
-                .background(if (isToggleable && item.isSelect) AppColors.UserSelectBg else AppColors.Transparent)
+                .background(if (isToggleable && isSelected) AppColors.UserSelectBg else AppColors.Transparent)
                 .itemClickable(
                     cornerRadius = 12.dp,
                     onClick = { onClick() },
@@ -71,7 +72,7 @@ fun ChatRoomItem(
 
             if (isToggleable){
                 ToggleV1(
-                    checked = item.isSelect,
+                    checked = isSelected,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
             }
@@ -198,7 +199,7 @@ fun ChatRoomItem(
             }
         }
         LineDot(modifier = Modifier
-            .background(if (isToggleable && item.isSelect) AppColors.UserSelectBg else AppColors.Transparent)
+            .background(if (isToggleable && isSelected) AppColors.UserSelectBg else AppColors.Transparent)
             .padding(horizontal = 16.dp))
     }
 }

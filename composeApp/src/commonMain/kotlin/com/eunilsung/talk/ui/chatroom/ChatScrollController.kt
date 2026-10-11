@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.chatroom
 
+import kotlinx.coroutines.flow.SharedFlow
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -9,7 +10,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -17,7 +17,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.lazy.LazyListState
-import com.eunilsung.talk.domain.model.GroupedChat
 import androidx.compose.runtime.rememberUpdatedState
 
 

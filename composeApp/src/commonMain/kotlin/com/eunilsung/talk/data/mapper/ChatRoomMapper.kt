@@ -38,6 +38,7 @@ class ChatRoomMapper {
     fun toModel(entity: ChatRoomEntity): ChatRoom.Item {
         return ChatRoom.Item(
             id = entity.roomId,
+            myId = entity.myId,
             title = LocalSecret.decrypt(entity.title ?: ""),
             unReadCount = entity.unReadCount ?: "",
             isAlarm = entity.isAlarm ?: "0",

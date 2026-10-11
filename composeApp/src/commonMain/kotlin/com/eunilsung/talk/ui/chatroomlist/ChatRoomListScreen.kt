@@ -309,6 +309,7 @@ fun ChatRoomListContent(
                     nonPinnedRooms = nonPinnedRooms,
                     listState = listState,
                     isEditMode = uiState.isEditMode,
+                    selectedRoomIds = selectedRoomIds,
                     onItemClick = onChatRoomClick,
                     onItemLongClick = {
                         chatRoomItemMenu.onLongClick(

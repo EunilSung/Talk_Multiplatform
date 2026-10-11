@@ -2,7 +2,7 @@ package com.eunilsung.talk.functest
 
 import com.eunilsung.talk.data.remote.push.CurrentChatRoomTracker
 import com.eunilsung.talk.domain.model.Chat
-import com.eunilsung.talk.domain.model.GroupedChat
+import com.eunilsung.talk.ui.chatroom.GroupedChat
 import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.ui.chatroom.ChatRoomActions
 import com.eunilsung.talk.ui.chatroom.ChatRoomUiState

@@ -1,11 +1,8 @@
 package com.eunilsung.talk.domain.model
 
-import androidx.compose.runtime.Immutable
-import com.eunilsung.talk.Config
 
 /** 대화방 내부의 대화(메시지) 도메인. */
 sealed class Chat {
-    @Immutable
     data class Item(
         val chatID: String = "",
         val chatType: String = "0",
@@ -26,13 +23,10 @@ sealed class Chat {
         val localPath: String = "",
         val isRecalled: Boolean = false,
         /** 파일 송신 중 업로드 진행률(0..100). -1 = 업로드 아님. 메모리 전용(DB 미저장). */
-        val uploadProgress: Int = -1
-    ) {
-
-        /** 내가 보낸 대화인지 여부. */
-        val isMe: Boolean
-            get() = user.id.equals(Config.MyInfo.userId, ignoreCase = false)
-    }
+        val uploadProgress: Int = -1,
+        /** 내가 보낸 대화인지. 로그인한 계정을 아는 쪽(매퍼·저장소)이 채운다. */
+        val isMe: Boolean = false,
+    )
 
     /** 대화 타입 비트마스크 (십진 문자열). */
     object Type {
@@ -67,14 +61,14 @@ sealed class Chat {
         const val FILE_DOWNLOADING  = "3"
 
         /** 화면 표시 정렬 우선순위 — 작을수록 위. COMPLETE → SENDING → FAIL. */
-        fun displayPriority(statue: String): Int = when (statue) {
+        fun displayPriority(status: String): Int = when (status) {
             SENDING -> 1
             FAIL    -> 2
             else    -> 0
         }
 
         /** 리스트 하단 고정 그룹 키 — SENDING/FAIL 을 완료 대화 아래로 모은다. */
-        fun bottomPinRank(statue: String): Int = when (statue) {
+        fun bottomPinRank(status: String): Int = when (status) {
             SENDING, FAIL -> 1
             else          -> 0
         }
@@ -116,7 +110,6 @@ sealed class Chat {
 }
 
 /** 공감 — chatID 별로 이모지(0..5)를 누른 사용자. */
-@Immutable
 data class EmpathyChat(
     val chatID: String = "",
     val empathy0: List<User> = emptyList(),
@@ -128,7 +121,6 @@ data class EmpathyChat(
 )
 
 /** 답장 원문 — 인용 대상. */
-@Immutable
 data class ReplyChat(
     val chatID: String = "",
     val chatType: String = "0",
@@ -136,17 +128,4 @@ data class ReplyChat(
     val user: User = User(),
     val emoticon: Emoticon = Emoticon(),
     val imagePath: String = ""
-)
-
-/** 화면 렌더링 단위 — 시간 그룹핑 결과. */
-@Immutable
-data class GroupedChat(
-    val chat: Chat.Item,
-    val showProfileAndName: Boolean,
-    val showDate: Boolean,
-    val showTime: Boolean,
-    val showUnreadMarker: Boolean = false,
-    val isSearchMatch: Boolean = false,
-    val isCurrentSearchMatch: Boolean = false,
-    val isFocused: Boolean = false
 )

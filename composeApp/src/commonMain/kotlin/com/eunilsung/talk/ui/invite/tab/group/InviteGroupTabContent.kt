@@ -1,9 +1,9 @@
 package com.eunilsung.talk.ui.invite.tab.group
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
@@ -16,7 +16,6 @@ import com.eunilsung.talk.domain.model.Group
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.ui.group.GroupSearchScaffold
 import com.eunilsung.talk.ui.group.item.GroupItemList
-import com.eunilsung.talk.ui.invite.InviteController
 import com.eunilsung.talk.ui.invite.LocalInviteController
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -41,12 +40,16 @@ fun InviteGroupTabContent() {
             groups = uiState.items,
             listState = listState,
             isToggleable = true,
-            userOf = { member -> inviteUserOf(member, controller) },
+            userOf = ::inviteUserOf,
+            isUserSelected = { member ->
+                val userId = member.userId.orEmpty()
+                controller.existingUserIds.contains(userId) || controller.isSelected(userId)
+            },
             onExpand = { viewModel.onAction(InviteGroupActions.ToggleGroup(it)) },
             onUserClick = { _, member ->
                 val userId = member.userId ?: ""
                 if (!controller.existingUserIds.contains(userId)) {
-                    controller.onUserToggle(inviteUserOf(member, controller))
+                    controller.onUserToggle(inviteUserOf(member))
                 }
             },
             modifier = Modifier.fillMaxSize().padding(padding).padding(top = 5.dp),
@@ -54,16 +57,14 @@ fun InviteGroupTabContent() {
     }
 }
 
-private fun inviteUserOf(member: Group.User, controller: InviteController): User {
+private fun inviteUserOf(member: Group.User): User {
     val userId = member.userId ?: ""
-    val isPreSelected = controller.existingUserIds.contains(userId)
     return User(
         id = userId,
         name = member.userName ?: "",
         departmentName = member.departmentName,
         positionName = member.positionName,
         nickname = member.statusMessage,
-        isSelect = isPreSelected || controller.isSelected(userId),
     )
 }
 

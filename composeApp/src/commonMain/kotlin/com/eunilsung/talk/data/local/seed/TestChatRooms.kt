@@ -14,6 +14,7 @@ object TestChatRooms {
     fun seed(myId: String): List<ChatRoom.Item> =
         buildRooms(myId).map { room ->
             room.copy(
+                myId = myId,
                 unReadCount = TestChats.unreadCountFor(room, myId).toString(),
                 mentionCount = TestChats.mentionCountFor(room, myId).toString(),
             )

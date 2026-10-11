@@ -6,7 +6,6 @@ data class User(
     val departmentName: String? = null,
     val positionName: String? = null,
     val nickname: String? = null,
-    val isSelect: Boolean = false,
     val presencePc: String? = null,
     val presenceMobile: String? = null
 )

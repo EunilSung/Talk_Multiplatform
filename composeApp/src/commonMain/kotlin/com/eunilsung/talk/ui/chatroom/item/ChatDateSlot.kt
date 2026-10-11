@@ -50,7 +50,7 @@ fun ChatDateSlot(
                 }
                 if (itemProps.showTime || itemProps.chat.chatStatus != Chat.Status.COMPLETE) {
                     ChatSendStatueSlot(
-                        statue = itemProps.chat.chatStatus,
+                        status = itemProps.chat.chatStatus,
                         displayDate = chatTimeText(itemProps.chat.date),
                         onResend = itemProps.onResend,
                         onDelete = itemProps.onDelete,
@@ -105,13 +105,13 @@ private fun ChatDateText(modifier: Modifier, date: String) {
 
 @Composable
 private fun ChatSendStatueSlot(
-    statue: String,
+    status: String,
     displayDate: String,
     onResend: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier,
 ) {
-    when (statue) {
+    when (status) {
         Chat.Status.SENDING -> {
             CircularProgressIndicator(
                 modifier = modifier.size(12.dp),
