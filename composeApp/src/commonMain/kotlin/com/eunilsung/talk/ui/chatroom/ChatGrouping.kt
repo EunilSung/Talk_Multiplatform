@@ -1,7 +1,6 @@
 package com.eunilsung.talk.ui.chatroom
 
 import com.eunilsung.talk.domain.model.Chat
-import com.eunilsung.talk.domain.model.GroupedChat
 
 fun groupChatsForUi(
     chats: List<Chat.Item>,

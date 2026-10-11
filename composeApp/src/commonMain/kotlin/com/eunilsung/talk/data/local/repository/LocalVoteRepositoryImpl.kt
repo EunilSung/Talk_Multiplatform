@@ -192,6 +192,7 @@ class LocalVoteRepositoryImpl(
         date = nowChatDate(),
         unReadCount = "0",
         user = User(id = myId, name = TestAccounts.find(myId)?.userName ?: myId),
+        isMe = true,
     )
 
     /** 대화 저장소의 공통 경로로 넘긴다 — 저장·목록갱신·미리보기·하단 스크롤 신호 처리. */

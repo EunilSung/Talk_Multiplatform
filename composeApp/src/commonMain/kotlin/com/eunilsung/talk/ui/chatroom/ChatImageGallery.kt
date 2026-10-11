@@ -1,7 +1,6 @@
 package com.eunilsung.talk.ui.chatroom
 
 import com.eunilsung.talk.domain.model.Chat
-import com.eunilsung.talk.domain.model.GroupedChat
 import com.eunilsung.talk.ui.uikit.mediapicker.MultimediaRecentPhoto
 
 /** 사진 상세보기에서 좌우로 넘길 사진 목록과 처음 보여 줄 위치. */

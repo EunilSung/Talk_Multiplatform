@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.chatroom
 
+import com.eunilsung.talk.ui.uikit.mediapicker.MultimediaRecentPhoto
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -32,7 +33,6 @@ import com.eunilsung.talk.ui.main.LocalFullScreenOverlay
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
 import com.eunilsung.talk.ui.uikit.mediapicker.LocalShowFileDetail
-import com.eunilsung.talk.ui.uikit.mediapicker.MultimediaRecentPhoto
 import com.eunilsung.talk.ui.uikit.sheet.LocalBottomSheetManager
 import com.eunilsung.talk.ui.userprofile.LocalShowUserProfile
 import com.eunilsung.talk.ui.util.chatDateHeaderText
@@ -40,7 +40,6 @@ import com.eunilsung.talk.ui.util.formatChatTime
 import multiplatformtalk.composeapp.generated.resources.cancel
 import multiplatformtalk.composeapp.generated.resources.delete
 import androidx.compose.foundation.lazy.LazyListState
-import com.eunilsung.talk.domain.model.GroupedChat
 import com.eunilsung.talk.ui.uikit.mediapicker.MediaPickerState
 
 

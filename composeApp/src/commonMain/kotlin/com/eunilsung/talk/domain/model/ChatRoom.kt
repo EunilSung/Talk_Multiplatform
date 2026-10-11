@@ -1,11 +1,8 @@
 package com.eunilsung.talk.domain.model
 
-import androidx.compose.runtime.Immutable
 import com.eunilsung.talk.util.UserListCodec
-import com.eunilsung.talk.Config
 
 sealed class ChatRoom{
-    @Immutable
     data class Item(
         val id: String = "",
         val title: String = "",
@@ -21,10 +18,11 @@ sealed class ChatRoom{
         val exitUserCount: String = "",
         val pinDate: String = "",
         val mentionCount: String = "" ,
-        val isSelect: Boolean = false,
         val orgMessageId: String = "",
         val clsUsr: String = "",
         val enableMode: String = "",
+        /** 이 목록을 보는 사람(로그인한 계정)의 id. 상대 이름·프로필을 고를 때 나를 빼는 데 쓴다. 매퍼가 채운다. */
+        val myId: String = "",
     ) {
         val displayUserCount: Int
             get() {
@@ -49,7 +47,7 @@ sealed class ChatRoom{
         private val directPartner: Pair<String, String>?
             get() {
                 if (!isDirectRoom) return null
-                val me = Config.MyInfo.userId
+                val me = myId
                 return UserListCodec.decode(totalUserList).firstOrNull { it.first != me }
                     ?: UserListCodec.decode(exitUserList).firstOrNull { it.first != me }
             }
@@ -69,7 +67,7 @@ sealed class ChatRoom{
             get() {
                 if (isAbandonedRoom && !isDirectRoom) return emptyList()
 
-                val me = Config.MyInfo.userId
+                val me = myId
                 val activeIds = UserListCodec.decode(totalUserList).map { it.first }
                 val others = activeIds.filter { it != me }.take(4)
                 if (others.isNotEmpty()) return others

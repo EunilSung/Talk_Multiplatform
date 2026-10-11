@@ -15,6 +15,7 @@ fun GroupItemList(
     listState: LazyListState,
     isToggleable: Boolean,
     userOf: (Group.User) -> User,
+    isUserSelected: (Group.User) -> Boolean,
     onExpand: (String) -> Unit,
     onUserClick: (Group.Item, Group.User) -> Unit,
     onUserLongClick: ((Group.Item, Group.User) -> Unit)? = null,
@@ -36,6 +37,7 @@ fun GroupItemList(
                     group = group,
                     isToggleable = isToggleable,
                     userOf = userOf,
+                    isUserSelected = isUserSelected,
                     onUserClick = { member -> onUserClick(group, member) },
                     onUserLongClick = onUserLongClick?.let { cb -> { member -> cb(group, member) } }
                 )

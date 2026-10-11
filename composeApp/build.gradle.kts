@@ -264,3 +264,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimu
         if (functionalTestUrl == localServerUrl) dependsOn(":server:startLocalServer")
     }
 }
+
+/** 도메인 모델에서 뗀 `@Immutable` 을 대신한다 — 안정적인 값이라는 사실을 설정 파일로 알려 화면 건너뛰기를 유지한다. */
+composeCompiler {
+    stabilityConfigurationFiles.add(layout.projectDirectory.file("compose-stability.conf"))
+}

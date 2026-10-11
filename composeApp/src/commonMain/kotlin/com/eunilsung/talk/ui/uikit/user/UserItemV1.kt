@@ -34,12 +34,13 @@ fun UserItemV1(
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier.heightIn(min = 70.dp, max = 100.dp),
-    isToggleable: Boolean = false
+    isToggleable: Boolean = false,
+    isSelected: Boolean = false,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(if (isToggleable && user.isSelect) AppColors.UserSelectBg else AppColors.Transparent)
+            .background(if (isToggleable && isSelected) AppColors.UserSelectBg else AppColors.Transparent)
             .itemClickable(
                 cornerRadius = 12.dp,
                 onClick = { onClick() },
@@ -51,7 +52,7 @@ fun UserItemV1(
 
         if (isToggleable){
             ToggleV1(
-                checked = user.isSelect,
+                checked = isSelected,
             )
             Spacer(modifier = Modifier.width(12.dp))
         }
@@ -153,11 +154,11 @@ fun UserItemV1Preview() {
                 departmentName = "Department",
                 positionName = "Position",
                 nickname = "Nickname",
-                isSelect = true,
                 presencePc = "0",
                 presenceMobile = "0"
             ),
-            isToggleable = true
+            isToggleable = true,
+            isSelected = true,
         )
     }
 }

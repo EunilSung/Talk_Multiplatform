@@ -1,7 +1,6 @@
 package com.eunilsung.talk.ui.chatroom
 
 import androidx.compose.runtime.Immutable
-import com.eunilsung.talk.domain.model.GroupedChat
 
 sealed interface ChatRoomUiState {
     data object Loading : ChatRoomUiState

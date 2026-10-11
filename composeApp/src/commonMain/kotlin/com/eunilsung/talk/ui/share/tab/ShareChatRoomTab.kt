@@ -152,9 +152,9 @@ private fun ShareRoomRow(
     selectedId: String?,
     onSelect: (ChatRoom.Item) -> Unit,
 ) {
-    val display: ChatRoom.Item = room.copy(isSelect = room.id == selectedId)
     ChatRoomItem(
-        item = display,
+        item = room,
+        isSelected = room.id == selectedId,
         onClick = { onSelect(room) },
         isToggleable = true
     )

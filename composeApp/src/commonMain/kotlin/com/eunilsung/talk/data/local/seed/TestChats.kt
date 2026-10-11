@@ -43,6 +43,7 @@ object TestChats {
                 date = formatChatDate(millis),
                 unReadCount = "0",
                 user = User(id = speaker.first, name = speaker.second),
+                isMe = speaker.first == myId,
             )
         }
     }

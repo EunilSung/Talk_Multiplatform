@@ -95,11 +95,8 @@ class ChatRoomListViewModel(
     private fun updateUiState(isEditMode: Boolean = _uiState.value.isEditMode) {
         val query = _searchState.value.query
         val filterType = _searchState.value.filterType
-        val selectedIds = _selectedRoomIds.value
 
-        val mappedRooms = _chatRooms.value.map {
-            it.copy(isSelect = selectedIds.contains(it.id))
-        }
+        val mappedRooms = _chatRooms.value
 
         val typeFilteredRooms = when (filterType) {
             Search.FilterType.UNREAD ->

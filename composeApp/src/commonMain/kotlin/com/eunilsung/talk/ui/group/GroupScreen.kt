@@ -224,14 +224,15 @@ fun GroupContent(
                 groups = uiState.items,
                 listState = listState,
                 isToggleable = uiState.isEditMode,
-                userOf = { member -> groupUserOf(member, selectedUserIds) },
+                userOf = ::groupUserOf,
+                isUserSelected = { member -> selectedUserIds.contains(member.userId.orEmpty()) },
                 onExpand = { onAction(GroupActions.ToggleGroup(it)) },
                 onUserClick = { _, member ->
-                    if (uiState.isEditMode) onAction(GroupActions.OnSelectUser(groupUserOf(member, selectedUserIds)))
+                    if (uiState.isEditMode) onAction(GroupActions.OnSelectUser(groupUserOf(member)))
                     else showUserProfile(member.userId ?: "")
                 },
                 onUserLongClick = { group, member ->
-                    groupUserItemMenu.onLongClick(groupUserOf(member, selectedUserIds), group.id)
+                    groupUserItemMenu.onLongClick(groupUserOf(member), group.id)
                 },
                 onHeaderOption = { group -> groupHeaderItemMenu.onLongClickHandler(group) },
                 modifier = Modifier.fillMaxWidth().weight(1f).padding(top = 10.dp),
@@ -258,7 +259,7 @@ fun GroupContent(
     )
 }
 
-private fun groupUserOf(member: Group.User, selectedUserIds: Set<String>): User {
+private fun groupUserOf(member: Group.User): User {
     val userId = member.userId ?: ""
     return User(
         id = userId,
@@ -266,7 +267,6 @@ private fun groupUserOf(member: Group.User, selectedUserIds: Set<String>): User 
         departmentName = member.departmentName,
         positionName = member.positionName,
         nickname = member.alias?.takeIf { it.isNotBlank() } ?: member.statusMessage,
-        isSelect = selectedUserIds.contains(userId),
         presencePc = member.pcStatus?.takeIf { it.isNotBlank() },
         presenceMobile = member.mobileStatus?.takeIf { it.isNotBlank() },
     )

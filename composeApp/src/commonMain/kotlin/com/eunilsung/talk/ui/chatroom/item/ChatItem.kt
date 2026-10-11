@@ -1,10 +1,12 @@
 package com.eunilsung.talk.ui.chatroom.item
 
+import multiplatformtalk.composeapp.generated.resources.noti_chat
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -48,12 +49,11 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import multiplatformtalk.composeapp.generated.resources.Res
-import multiplatformtalk.composeapp.generated.resources.noti_chat
 import multiplatformtalk.composeapp.generated.resources.reply_icon
 import org.jetbrains.compose.resources.painterResource
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.Emoticon
-import com.eunilsung.talk.domain.model.GroupedChat
+import com.eunilsung.talk.ui.chatroom.GroupedChat
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.ui.chatroom.ChatTranslationUiState
 import com.eunilsung.talk.ui.theme.AppColors
