@@ -4,6 +4,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.User
+import com.eunilsung.talk.domain.model.Bookmark
+import com.eunilsung.talk.domain.model.Notice
+import com.eunilsung.talk.domain.model.PolishStyle
+import kotlinx.coroutines.flow.StateFlow
 
 /** 대화(채팅) 도메인 Repository. */
 interface ChatRoomRepository {
@@ -21,7 +25,7 @@ interface ChatRoomRepository {
      * 아래로 스크롤 시 Local DB 에서 더 최신 대화 한 페이지 추가 로드 (date ASC).
      * 진입 직후 호출 결과의 [List.firstOrNull] 은 첫 안읽음 대화(읽음 마커 위치).
      */
-    suspend fun fetchNewerChats(chatRoomId: String): List<com.eunilsung.talk.domain.model.Chat.Item>
+    suspend fun fetchNewerChats(chatRoomId: String): List<Chat.Item>
 
     /** 대화방 활성 참여자(User) 리스트 조회. 실패/빈 응답이면 emptyList. */
     suspend fun fetchChatRoomUsers(chatRoomId: String): List<User>
@@ -52,7 +56,7 @@ interface ChatRoomRepository {
     fun clearCurrentRoom(chatRoomId: String)
 
     /** 현재 활성 방의 공지. null 이면 공지 없음. */
-    val currentNotice: kotlinx.coroutines.flow.StateFlow<com.eunilsung.talk.domain.model.Notice?>
+    val currentNotice: StateFlow<Notice?>
 
     /** 대화방 공지 조회 — 결과가 [currentNotice] 에 실린다. */
     suspend fun requestNotice(chatRoomId: String)
@@ -64,7 +68,7 @@ interface ChatRoomRepository {
     suspend fun translateChat(chatRoomId: String, chatId: String, languageCode: String): String?
 
     /** 보내려고 쓴 글을 [style] 대로 다듬어 받는다. 지금 다듬을 수 없으면 null. 어디에도 남지 않는다. */
-    suspend fun polishText(text: String, style: com.eunilsung.talk.domain.model.PolishStyle): String?
+    suspend fun polishText(text: String, style: PolishStyle): String?
 
     /** 공지 등록 — [currentNotice] 갱신 + 시스템 대화 추가. */
     suspend fun addNotice(chatRoomId: String, content: String)
@@ -73,13 +77,13 @@ interface ChatRoomRepository {
     suspend fun deleteNotice(chatRoomId: String)
 
     /** 현재 활성 방의 책갈피 리스트. */
-    val bookmarks: kotlinx.coroutines.flow.StateFlow<List<com.eunilsung.talk.domain.model.Bookmark>>
+    val bookmarks: StateFlow<List<Bookmark>>
 
     /** 대화방 책갈피 리스트 조회 — 결과가 [bookmarks] 에 실린다. */
     suspend fun fetchBookmarks(chatRoomId: String)
 
     /** 책갈피 등록 — [bookmarks] 에 추가. */
-    suspend fun addBookmark(chatRoomId: String, chat: com.eunilsung.talk.domain.model.Chat.Item)
+    suspend fun addBookmark(chatRoomId: String, chat: Chat.Item)
 
     /** 책갈피 해제 — [bookmarks] 에서 해당 chatId 제거. */
     suspend fun deleteBookmark(chatRoomId: String, chatId: String)

@@ -6,7 +6,7 @@ import com.eunilsung.talk.data.remote.server.ServerResult
 import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.data.remote.server.UserDirectory
 import com.eunilsung.talk.data.remote.server.valueOrNull
-import com.eunilsung.talk.data.sample.LocalGroupRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalGroupRepositoryImpl
 import com.eunilsung.talk.domain.model.Group
 import com.eunilsung.talk.domain.model.isDefaultGroup
 import com.eunilsung.talk.domain.model.isMyProfileGroup

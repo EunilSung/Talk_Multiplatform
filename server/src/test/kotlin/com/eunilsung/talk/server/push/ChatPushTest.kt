@@ -36,6 +36,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import io.ktor.client.request.HttpRequestBuilder
 
 /** 대화 푸시 — 누구의 어느 기기로 무엇이 나가는지, 서버 전체를 띄워 발송 대역으로 받아 본다. */
 class ChatPushTest {
@@ -221,7 +222,7 @@ class ChatPushTest {
         serializer: KSerializer<T>,
         body: T,
     ): HttpResponse {
-        val build: io.ktor.client.request.HttpRequestBuilder.() -> Unit = {
+        val build: HttpRequestBuilder.() -> Unit = {
             header(HttpHeaders.Authorization, "Bearer $token")
             contentType(ContentType.Application.Json)
             setBody(ServerJson.encodeToString(serializer, body))

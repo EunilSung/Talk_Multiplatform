@@ -40,7 +40,7 @@ class ReadScenarioTest {
                 step("보낸 직후의 말풍선에는 안 읽은 사람 수가 붙는다") {
                     harness.chats.sendTextChat(roomId, "$tag 내 말")
                     awaitTrue("전송 완료") {
-                        harness.chatsOf(roomId).any { it.chatContent == "$tag 내 말" && it.chatStatue == Chat.Statue.COMPLETE }
+                        harness.chatsOf(roomId).any { it.chatContent == "$tag 내 말" && it.chatStatus == Chat.Status.COMPLETE }
                     }
                     requireEquals("2", myChat().unReadCount, "보낸 직후의 안읽음 수")
                 }

@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.repository
 
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.delay
@@ -12,6 +12,7 @@ import com.eunilsung.talk.data.repository.SettingsKeys.KEY_SAVE_PW
 import com.eunilsung.talk.domain.model.Login
 import com.eunilsung.talk.domain.repository.LoginRepository
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.data.local.seed.TestAccounts
 
 /** [TestAccounts] 로만 인증하는 로그인 저장소. */
 class LocalLoginRepositoryImpl(

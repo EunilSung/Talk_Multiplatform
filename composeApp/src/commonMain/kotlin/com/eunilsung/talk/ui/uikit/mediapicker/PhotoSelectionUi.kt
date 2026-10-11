@@ -41,6 +41,7 @@ import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.send
 import com.eunilsung.talk.ui.theme.AppColors
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.unit.Dp
 
 @Composable
 fun SelectablePhotoCell(
@@ -49,7 +50,7 @@ fun SelectablePhotoCell(
     onToggleSelect: () -> Unit,
     onDetailClick: () -> Unit,
     modifier: Modifier = Modifier,
-    cornerRadius: androidx.compose.ui.unit.Dp = 10.dp,
+    cornerRadius: Dp = 10.dp,
     isShowToggle: Boolean = true
 ) {
     val selected = selectionOrder > 0

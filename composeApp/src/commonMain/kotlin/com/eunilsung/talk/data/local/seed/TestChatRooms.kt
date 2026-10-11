@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.seed
 
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime

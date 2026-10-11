@@ -7,11 +7,12 @@ import com.eunilsung.talk.di.appModule
 import com.eunilsung.talk.util.Log
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
+import com.eunilsung.talk.data.local.AndroidLocalSecretSetup
 
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        com.eunilsung.talk.data.local.AndroidLocalSecretSetup.init(this)
+        AndroidLocalSecretSetup.init(this)
 
         startKoin {
             androidContext(this@MyApplication)

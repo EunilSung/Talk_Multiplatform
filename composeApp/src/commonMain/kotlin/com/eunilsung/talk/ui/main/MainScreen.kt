@@ -83,6 +83,11 @@ import com.eunilsung.talk.ui.uikit.swipe.SwipeDismissController
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import com.eunilsung.talk.util.Log
+import androidx.compose.runtime.CompositionLocalProvider
+import com.eunilsung.talk.data.remote.push.PendingPushNavigation
+import com.eunilsung.talk.data.remote.push.PushNotifier
+import com.eunilsung.talk.data.remote.share.PendingShareNavigation
+import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 
 object MainScreen : Screen {
     @Composable
@@ -128,8 +133,8 @@ object MainScreen : Screen {
                         .filter { !it }
                         .collect {
                             rightNavigator.popToEmptyRoot()
-                            com.eunilsung.talk.data.remote.push.PendingPushNavigation.consume()
-                            com.eunilsung.talk.data.remote.share.PendingShareNavigation.consume()
+                            PendingPushNavigation.consume()
+                            PendingShareNavigation.consume()
                         }
                 }
 
@@ -153,8 +158,8 @@ object MainScreen : Screen {
 @Composable
 private fun AppIconBadgeSync() {
     val loginRepository: LoginRepository = koinInject()
-    val chatRoomListUseCases: com.eunilsung.talk.domain.usecase.ChatRoomListUseCases = koinInject()
-    val notifier: com.eunilsung.talk.data.remote.push.PushNotifier = koinInject()
+    val chatRoomListUseCases: ChatRoomListUseCases = koinInject()
+    val notifier: PushNotifier = koinInject()
 
     LaunchedEffect(Unit) {
         combine(
@@ -219,7 +224,7 @@ fun MainContent() {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val isTablet = maxWidth >= 600.dp
 
-        androidx.compose.runtime.CompositionLocalProvider(LocalRightPaneOpen provides rightPaneOpen) {
+        CompositionLocalProvider(LocalRightPaneOpen provides rightPaneOpen) {
             if (isTablet) {
                 Tablet(rightNavigator, isKeyboardVisible, imeHeight)
             } else {
@@ -287,7 +292,7 @@ fun LeftPane() {
     val loginRepository: LoginRepository = koinInject()
     val isLoggedIn by loginRepository.isLoggedIn.collectAsState()
 
-    val chatRoomListUseCases: com.eunilsung.talk.domain.usecase.ChatRoomListUseCases = koinInject()
+    val chatRoomListUseCases: ChatRoomListUseCases = koinInject()
     val chatUnreadTotal by chatRoomListUseCases.observeChatRoomUnreadTotal().collectAsState()
 
     key(isLoggedIn) {
@@ -486,7 +491,7 @@ fun Phone(
                         }
                     }
             ) {
-                androidx.compose.runtime.CompositionLocalProvider(
+                CompositionLocalProvider(
                     LocalSwipeDismiss provides swipeController,
                 ) {
                     stickyOverlay?.Content()

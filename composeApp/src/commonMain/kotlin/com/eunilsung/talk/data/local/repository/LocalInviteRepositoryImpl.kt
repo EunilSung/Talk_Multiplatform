@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.repository
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

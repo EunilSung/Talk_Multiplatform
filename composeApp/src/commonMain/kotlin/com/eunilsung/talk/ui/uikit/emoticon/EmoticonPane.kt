@@ -53,6 +53,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import com.eunilsung.talk.ui.uikit.line.LineDivider
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import kotlinx.coroutines.FlowPreview
 
 class EmoticonPanelController {
     var isOpen by mutableStateOf(false)
@@ -90,7 +91,7 @@ class EmoticonPanelController {
 
 val LocalEmoticonPanel = compositionLocalOf<EmoticonPanelController?> { null }
 
-@OptIn(kotlinx.coroutines.FlowPreview::class)
+@OptIn(FlowPreview::class)
 @Composable
 fun rememberStableImeHeight(
     currentImeHeight: Dp,

@@ -110,6 +110,8 @@ import com.eunilsung.talk.ui.uikit.mediapicker.LocalShowFileDetail
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.mp.KoinPlatform
+import com.eunilsung.talk.domain.repository.ChatRoomRepository
+import androidx.compose.runtime.rememberUpdatedState
 
 class ChatRoomScreen(
     val chatRoomId: String
@@ -140,7 +142,7 @@ class ChatRoomScreen(
 
                 runCatching {
                     KoinPlatform.getKoin()
-                        .get<com.eunilsung.talk.domain.repository.ChatRoomRepository>()
+                        .get<ChatRoomRepository>()
                         .clearCurrentRoom(chatRoomId)
                 }
             }
@@ -428,8 +430,8 @@ fun ChatRoomContent(
     }
 
     val latestChat = (uiState as? ChatRoomUiState.Success)?.groupedChats
-        ?.firstOrNull { it.chat.chatStatue != Chat.Statue.SENDING && it.chat.chatStatue != Chat.Statue.FAIL }?.chat
-    val latestChatState = androidx.compose.runtime.rememberUpdatedState(latestChat)
+        ?.firstOrNull { it.chat.chatStatus != Chat.Status.SENDING && it.chat.chatStatus != Chat.Status.FAIL }?.chat
+    val latestChatState = rememberUpdatedState(latestChat)
     val newChatPush = signals.newChat
     if (newChatPush != null) {
         LaunchedEffect(newChatPush, currentChatRoomId) {

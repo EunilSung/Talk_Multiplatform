@@ -33,6 +33,8 @@ import com.eunilsung.talk.data.remote.push.NotificationSoundPreviewer
 import com.eunilsung.talk.data.remote.push.PushNotifier
 import com.eunilsung.talk.domain.repository.SystemNotificationGate
 import org.koin.dsl.module
+import com.eunilsung.talk.data.local.AndroidBiometricAuthenticator
+import com.eunilsung.talk.data.local.BiometricAuthenticator
 
 class AndroidPlatform(private val context: Context) : Platform {
     override val name: String = "ANDROID"
@@ -55,8 +57,8 @@ val platformModule = module {
     single<NotificationSoundPreviewer> { AndroidNotificationSoundPreviewer(get()) }
     single { HttpClient(OkHttp) { install(WebSockets) } }
     single<AppVersionProvider> { AndroidAppVersionProvider(get()) }
-    single<com.eunilsung.talk.data.local.BiometricAuthenticator> {
-        com.eunilsung.talk.data.local.AndroidBiometricAuthenticator(get())
+    single<BiometricAuthenticator> {
+        AndroidBiometricAuthenticator(get())
     }
     single<AppExiter> { AndroidAppExiter() }
     single<ExternalUrlOpener> { AndroidExternalUrlOpener(get(), get()) }

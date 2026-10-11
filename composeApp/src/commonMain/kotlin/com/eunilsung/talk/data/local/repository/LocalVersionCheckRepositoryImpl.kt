@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.repository
 
 import com.eunilsung.talk.domain.model.VersionInfo
 import com.eunilsung.talk.domain.repository.VersionCheckRepository

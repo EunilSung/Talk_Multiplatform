@@ -3,7 +3,7 @@ package com.eunilsung.talk.data.repository
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.data.mapper.ServerChatMapper
 import com.eunilsung.talk.data.remote.server.ServerFileStore
-import com.eunilsung.talk.data.sample.LocalChatRoomListRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalChatRoomListRepositoryImpl
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.shared.api.ServerEvent
 import com.eunilsung.talk.testsupport.FakeFileMetadataResolver
@@ -27,6 +27,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import com.eunilsung.talk.shared.api.ChatGroupDto
 
 /** 서버 대화방 목록 저장소 — 서버 목록이 로컬에 어떻게 반영되고, 실패했을 때 무엇이 남는지 본다. */
 class ChatRoomListRepositoryImplTest {
@@ -202,7 +203,7 @@ class ChatRoomListRepositoryImplTest {
     @Test
     fun 다른_기기에서_고친_그룹이_목록을_받을_때_반영된다() = runTest {
         server.addRoom("a", "test2" to "이서연")
-        server.chatGroups = listOf(com.eunilsung.talk.shared.api.ChatGroupDto("g1", "가족", 1, listOf("a")))
+        server.chatGroups = listOf(ChatGroupDto("g1", "가족", 1, listOf("a")))
 
         repo.fetchChatRooms()
 

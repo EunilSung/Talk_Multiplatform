@@ -1,6 +1,7 @@
 package com.eunilsung.talk.ui.group
 
 import com.eunilsung.talk.domain.model.User
+import com.eunilsung.talk.domain.util.GroupNameValidation
 
 sealed interface GroupActions {
     data class ToggleGroup(val groupId: String) : GroupActions
@@ -32,7 +33,7 @@ sealed interface GroupEvent {
     data class GroupRenamed(val success: Boolean, val newName: String) : GroupEvent
 
     data class RenameInvalid(
-        val reason: com.eunilsung.talk.domain.util.GroupNameValidation
+        val reason: GroupNameValidation
     ) : GroupEvent
 
     data class GroupDeleted(val success: Boolean) : GroupEvent
@@ -40,7 +41,7 @@ sealed interface GroupEvent {
     data class GroupCreated(val success: Boolean, val name: String) : GroupEvent
 
     data class CreateInvalid(
-        val reason: com.eunilsung.talk.domain.util.GroupNameValidation
+        val reason: GroupNameValidation
     ) : GroupEvent
 }
 

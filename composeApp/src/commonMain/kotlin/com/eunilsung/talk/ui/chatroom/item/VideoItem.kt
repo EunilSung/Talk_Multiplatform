@@ -65,7 +65,7 @@ fun VideoItem(
     } else sizeBase
 
     val showProgress = chat.isMe &&
-        chat.chatStatue == Chat.Statue.SENDING &&
+        chat.chatStatus == Chat.Status.SENDING &&
         chat.uploadProgress in 0..100
 
     ChatBubbleRow(itemProps) {

@@ -12,7 +12,7 @@ object Config {
      * 서버 연동.
      *
      * 주소는 `local.properties` 의 `server.baseUrl` 에서 빌드할 때 들어온다. 비어 있으면 서버 없이
-     * 로컬 데이터만으로 돈다(`data/sample`). 주소가 있으면 서버에 붙는 저장소 구현으로 바뀐다.
+     * 로컬 데이터만으로 돈다(`data/local/repository`). 주소가 있으면 서버에 붙는 저장소 구현으로 바뀐다.
      */
     object Server {
         val BASE_URL: String = SERVER_BASE_URL.trimEnd('/')

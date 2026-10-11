@@ -34,6 +34,7 @@ import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import com.eunilsung.talk.util.UserListCodec
 import org.koin.compose.koinInject
+import com.eunilsung.talk.Config
 
 /** 리스트 항목(사용자/그룹) 대상 빠른 액션의 단일 진입점. */
 class QuickActions(
@@ -56,7 +57,7 @@ class QuickActions(
             return
         }
         val targetId = cleaned.first()
-        val myId = com.eunilsung.talk.Config.MyInfo.userId
+        val myId = Config.MyInfo.userId
 
         coroutineScope.launch {
             val existing = findOneToOneChatRoom(targetUserId = targetId, myId = myId)

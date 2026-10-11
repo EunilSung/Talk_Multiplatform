@@ -1,6 +1,9 @@
 package com.eunilsung.talk.ui.chatroom
 
 import com.eunilsung.talk.ui.chatroomlist.ChatRoomNameValidation
+import com.eunilsung.talk.domain.model.Chat
+import com.eunilsung.talk.domain.model.PolishStyle
+import com.eunilsung.talk.domain.model.User
 
 sealed interface ChatRoomActions {
     data class Load(val chatRoomId: String) : ChatRoomActions
@@ -23,16 +26,16 @@ sealed interface ChatRoomActions {
 
     data object OnSearchPrev : ChatRoomActions
 
-    data class OnSearchUserSelect(val user: com.eunilsung.talk.domain.model.User) : ChatRoomActions
+    data class OnSearchUserSelect(val user: User) : ChatRoomActions
 
     /** 전송 주체 변경(샘플 전용). `null` 이면 나로 되돌린다. */
-    data class OnSelectSender(val user: com.eunilsung.talk.domain.model.User?) : ChatRoomActions
+    data class OnSelectSender(val user: User?) : ChatRoomActions
 
     data object OnSearchUserRemove : ChatRoomActions
 
     data class OnSearchByDate(val datePrefix: String) : ChatRoomActions
 
-    data class OnSwipeReply(val chat: com.eunilsung.talk.domain.model.Chat.Item) : ChatRoomActions
+    data class OnSwipeReply(val chat: Chat.Item) : ChatRoomActions
 
     data object OnCancelReply : ChatRoomActions
 
@@ -59,7 +62,7 @@ sealed interface ChatRoomActions {
 
     data class OnFocusChat(val chatId: String) : ChatRoomActions
 
-    data class OnAddBookmark(val chat: com.eunilsung.talk.domain.model.Chat.Item) : ChatRoomActions
+    data class OnAddBookmark(val chat: Chat.Item) : ChatRoomActions
 
     data class OnDeleteBookmark(val chatId: String) : ChatRoomActions
 
@@ -68,7 +71,7 @@ sealed interface ChatRoomActions {
 
     data class OnHideTranslation(val chatId: String) : ChatRoomActions
 
-    data class OnPolishText(val text: String, val style: com.eunilsung.talk.domain.model.PolishStyle) : ChatRoomActions
+    data class OnPolishText(val text: String, val style: PolishStyle) : ChatRoomActions
 
     /** 화면이 다듬기 결과를 입력창에 반영했거나 실패 안내를 띄웠다. */
     data object OnPolishHandled : ChatRoomActions

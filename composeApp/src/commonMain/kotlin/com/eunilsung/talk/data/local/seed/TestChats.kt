@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.seed
 
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
@@ -39,7 +39,7 @@ object TestChats {
                 chatID = chatIdAt(millis, speaker.first, index),
                 chatType = Chat.Type.TEXT,
                 chatContent = line.text,
-                chatStatue = Chat.Statue.COMPLETE,
+                chatStatus = Chat.Status.COMPLETE,
                 date = formatChatDate(millis),
                 unReadCount = "0",
                 user = User(id = speaker.first, name = speaker.second),

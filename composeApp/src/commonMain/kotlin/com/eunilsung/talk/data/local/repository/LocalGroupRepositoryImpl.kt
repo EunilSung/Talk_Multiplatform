@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.repository
 
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +21,8 @@ import com.eunilsung.talk.domain.repository.AddUserResult
 import com.eunilsung.talk.domain.repository.GroupRepository
 import com.eunilsung.talk.domain.repository.LoginRepository
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.data.local.seed.TestAccounts
+import com.eunilsung.talk.data.local.seed.TestGroups
 
 /** [TestAccounts]·[TestGroups] 를 원본으로 쓰고 저장은 SQLDelight 로 하는 그룹 저장소. */
 class LocalGroupRepositoryImpl(

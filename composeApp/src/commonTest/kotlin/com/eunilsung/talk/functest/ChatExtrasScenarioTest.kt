@@ -44,7 +44,7 @@ class ChatExtrasScenarioTest {
                 step("내 대화를 회수하면 본문이 비고 상대에게도 회수된 것으로 보인다") {
                     harness.chats.sendTextChat(roomId, "$tag 거둘 말")
                     awaitTrue("전송 완료") {
-                        harness.chatsOf(roomId).any { it.chatContent == "$tag 거둘 말" && it.chatStatue == Chat.Statue.COMPLETE }
+                        harness.chatsOf(roomId).any { it.chatContent == "$tag 거둘 말" && it.chatStatus == Chat.Status.COMPLETE }
                     }
                     val mine = harness.chatsOf(roomId).first { it.chatContent == "$tag 거둘 말" }
                     harness.chats.recallChat(roomId, mine.chatID)

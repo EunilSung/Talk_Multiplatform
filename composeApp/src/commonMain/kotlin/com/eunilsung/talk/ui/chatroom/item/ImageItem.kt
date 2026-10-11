@@ -35,7 +35,7 @@ fun ImageItem(
         baseSizeModifier.widthIn(max = itemProps.maxBubbleWidth)
     } else baseSizeModifier
 
-    val isSending = itemProps.chat.chatStatue == Chat.Statue.SENDING
+    val isSending = itemProps.chat.chatStatus == Chat.Status.SENDING
     val previewUrl = if (isSending && itemProps.chat.localPath.isNotBlank()) {
         itemProps.chat.localPath
     } else {
@@ -76,7 +76,7 @@ fun ImageItemPreview() {
                 chat = Chat.Item(
                     imagePath = "sample.png",
                     imageSize = "200:150",
-                    chatStatue = Chat.Statue.COMPLETE,
+                    chatStatus = Chat.Status.COMPLETE,
                 ),
             ),
         )
@@ -92,7 +92,7 @@ fun ImageItemUploadingPreview() {
                 chat = Chat.Item(
                     imagePath = "sample.png",
                     imageSize = "200:150",
-                    chatStatue = Chat.Statue.SENDING,
+                    chatStatus = Chat.Status.SENDING,
                     uploadProgress = 65,
                 ),
             ),

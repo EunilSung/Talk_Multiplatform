@@ -25,6 +25,9 @@ import com.eunilsung.talk.ui.uikit.emoticon.EmoticonItem
 import com.eunilsung.talk.ui.uikit.emoticon.EmoticonPaneContent
 import com.eunilsung.talk.ui.uikit.emoticon.EmoticonPanelController
 import com.eunilsung.talk.ui.uikit.line.LineDivider
+import androidx.compose.ui.unit.Dp
+import com.eunilsung.talk.ui.chatroom.input.PolishButtonState
+import com.eunilsung.talk.ui.uikit.mediapicker.MediaPickerState
 
 /**
  * 대화방 하단바 — 답장 미리보기 / 입력창+이모티콘 / 검색 모드의 이동 네비게이션.
@@ -35,23 +38,23 @@ import com.eunilsung.talk.ui.uikit.line.LineDivider
 fun ChatRoomBottomBar(
     isSearchMode: Boolean,
     searchState: ChatSearchState,
-    replyTarget: com.eunilsung.talk.domain.model.Chat.Item?,
-    mentionState: com.eunilsung.talk.ui.chatroom.input.MentionFieldState,
-    polishButton: com.eunilsung.talk.ui.chatroom.input.PolishButtonState,
+    replyTarget: Chat.Item?,
+    mentionState: MentionFieldState,
+    polishButton: PolishButtonState,
     onPolishClick: () -> Unit,
-    emoticon: com.eunilsung.talk.ui.uikit.emoticon.EmoticonPanelController,
-    selectedEmoticon: com.eunilsung.talk.ui.uikit.emoticon.EmoticonItem?,
-    onSelectedEmoticonChange: (com.eunilsung.talk.ui.uikit.emoticon.EmoticonItem?) -> Unit,
+    emoticon: EmoticonPanelController,
+    selectedEmoticon: EmoticonItem?,
+    onSelectedEmoticonChange: (EmoticonItem?) -> Unit,
     lastEmoticonTab: Int,
     onEmoticonTabChange: (Int) -> Unit,
     onEmoticonTabSelected: (Int) -> Unit,
     enterToSend: Boolean,
     isKeyboardVisible: Boolean,
-    imeHeight: androidx.compose.ui.unit.Dp,
-    panelHeight: androidx.compose.ui.unit.Dp,
-    mediaPicker: com.eunilsung.talk.ui.uikit.mediapicker.MediaPickerState,
-    chatInputFocusRequester: androidx.compose.ui.focus.FocusRequester,
-    chatFontSize: androidx.compose.ui.unit.TextUnit,
+    imeHeight: Dp,
+    panelHeight: Dp,
+    mediaPicker: MediaPickerState,
+    chatInputFocusRequester: FocusRequester,
+    chatFontSize: TextUnit,
     isSearchUserBoxVisible: Boolean,
     onSearchUserBoxToggle: () -> Unit,
     isSearchDateBoxVisible: Boolean,
@@ -59,7 +62,7 @@ fun ChatRoomBottomBar(
     hideKeyboard: () -> Unit,
     onAction: (ChatRoomActions) -> Unit,
 ) {
-    val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val keyboardController = LocalSoftwareKeyboardController.current
             Column {
                 LineDivider(modifier = Modifier.fillMaxWidth().height(1.dp))
                 if (!isSearchMode && replyTarget != null) {

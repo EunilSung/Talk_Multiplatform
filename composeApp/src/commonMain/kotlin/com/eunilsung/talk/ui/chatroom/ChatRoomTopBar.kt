@@ -45,16 +45,16 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatRoomTopBar(
-    chatRoom: com.eunilsung.talk.domain.model.ChatRoom.Item?,
+    chatRoom: ChatRoom.Item?,
     isSearchMode: Boolean,
     searchState: ChatSearchState,
-    senderOverride: com.eunilsung.talk.domain.model.User?,
+    senderOverride: User?,
     scrollBehavior: TopAppBarScrollBehavior,
     searchFocusRequester: FocusRequester,
     hideKeyboard: () -> Unit,
     handleBack: () -> Unit,
     isDrawerOpen: Boolean,
-    bookmarksFlow: kotlinx.coroutines.flow.StateFlow<List<com.eunilsung.talk.domain.model.Bookmark>>,
+    bookmarksFlow: StateFlow<List<Bookmark>>,
     onSenderPick: () -> Unit,
     onDrawerOpen: () -> Unit,
     onAction: (ChatRoomActions) -> Unit,

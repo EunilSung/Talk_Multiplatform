@@ -19,10 +19,10 @@ import com.eunilsung.talk.data.repository.InviteRepositoryImpl
 import com.eunilsung.talk.data.repository.LoginRepositoryImpl
 import com.eunilsung.talk.data.repository.UserProfileRepositoryImpl
 import com.eunilsung.talk.data.repository.VoteRepositoryImpl
-import com.eunilsung.talk.data.sample.ChatSenderOverride
-import com.eunilsung.talk.data.sample.LocalChatRoomListRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalGroupRepositoryImpl
+import com.eunilsung.talk.data.local.repository.ChatSenderOverride
+import com.eunilsung.talk.data.local.repository.LocalChatRoomListRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalChatRoomRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalGroupRepositoryImpl
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.model.Login

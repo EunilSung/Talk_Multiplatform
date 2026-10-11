@@ -3,6 +3,8 @@ package com.eunilsung.talk.domain.usecase
 import kotlinx.coroutines.flow.Flow
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.repository.ChatRoomRepository
+import com.eunilsung.talk.domain.model.PolishStyle
+import com.eunilsung.talk.domain.model.User
 
 /** Chat 도메인 UseCase 번들. */
 data class ChatRoomUseCases(
@@ -51,7 +53,7 @@ class TranslateChatUseCase(private val repository: ChatRoomRepository) {
 
 /** 보내기 전의 글 다듬기. */
 class PolishTextUseCase(private val repository: ChatRoomRepository) {
-    suspend operator fun invoke(text: String, style: com.eunilsung.talk.domain.model.PolishStyle) =
+    suspend operator fun invoke(text: String, style: PolishStyle) =
         repository.polishText(text, style)
 }
 
@@ -109,13 +111,13 @@ class FetchMoreChatsUseCase(private val repository: ChatRoomRepository) {
 
 /** 아래로 스크롤 / 진입 직후 — 더 최신 대화 한 페이지 append. */
 class FetchNewerChatsUseCase(private val repository: ChatRoomRepository) {
-    suspend operator fun invoke(chatRoomId: String): List<com.eunilsung.talk.domain.model.Chat.Item> =
+    suspend operator fun invoke(chatRoomId: String): List<Chat.Item> =
         repository.fetchNewerChats(chatRoomId)
 }
 
 /** 대화방 참여자 리스트 조회 — 활성 참여자만 반환. */
 class FetchChatRoomUsersUseCase(private val repository: ChatRoomRepository) {
-    suspend operator fun invoke(chatRoomId: String): List<com.eunilsung.talk.domain.model.User> =
+    suspend operator fun invoke(chatRoomId: String): List<User> =
         repository.fetchChatRoomUsers(chatRoomId)
 }
 

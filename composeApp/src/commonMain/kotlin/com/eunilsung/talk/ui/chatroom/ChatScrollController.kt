@@ -16,6 +16,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.lazy.LazyListState
+import com.eunilsung.talk.domain.model.GroupedChat
+import androidx.compose.runtime.rememberUpdatedState
 
 
 /**
@@ -27,8 +30,8 @@ import androidx.compose.runtime.setValue
  */
 @Composable
 fun ChatScrollController(
-    listState: androidx.compose.foundation.lazy.LazyListState,
-    groupedChats: List<com.eunilsung.talk.domain.model.GroupedChat>,
+    listState: LazyListState,
+    groupedChats: List<GroupedChat>,
     currentChatRoomId: String,
     searchState: ChatSearchState,
     signals: ChatRoomSignals,
@@ -73,7 +76,7 @@ fun ChatScrollController(
                     }
                 }
 
-                val groupedForScroll = androidx.compose.runtime.rememberUpdatedState(groupedChats)
+                val groupedForScroll = rememberUpdatedState(groupedChats)
                 val entryScroll = signals.entryScroll
                 if (entryScroll != null) {
                     LaunchedEffect(entryScroll, currentChatRoomId) {

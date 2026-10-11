@@ -12,6 +12,7 @@ import com.eunilsung.talk.domain.model.Search
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.util.GroupNameValidation
 import com.eunilsung.talk.domain.util.validateGroupName
+import com.eunilsung.talk.util.UserSearch
 
 @OptIn(FlowPreview::class)
 class GroupViewModel(
@@ -181,7 +182,7 @@ class GroupViewModel(
 
         val filteredGroups = _groups.value.mapNotNull { group ->
             val matchingUsers = group.userData.filter { user ->
-                com.eunilsung.talk.util.UserSearch.matches(user.userName, user.phoneNumber, query)
+                UserSearch.matches(user.userName, user.phoneNumber, query)
             }
             if (matchingUsers.isNotEmpty()) {
                 group.copy(userData = matchingUsers, isExpanded = true)

@@ -63,6 +63,7 @@ import multiplatformtalk.composeapp.generated.resources.connection_reconnecting
 import com.eunilsung.talk.ui.theme.AppColors
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import com.eunilsung.talk.domain.repository.LoginRepository
 
 @Composable
 fun AppHosts(
@@ -120,7 +121,7 @@ fun AppHosts(
 /** 상단 연결상태 배너 — 로그인 상태에서 소켓이 끊기거나 재연결 중이면 표시. */
 @Composable
 private fun ConnectionStatusBar() {
-    val loginRepository: com.eunilsung.talk.domain.repository.LoginRepository = koinInject()
+    val loginRepository: LoginRepository = koinInject()
     val isConnected by loginRepository.isConnected.collectAsState()
     val isLoggedIn by loginRepository.isLoggedIn.collectAsState()
 

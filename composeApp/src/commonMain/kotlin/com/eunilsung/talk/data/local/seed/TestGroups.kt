@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.seed
 
 /** 로컬 테스트용 그룹 구성 — 사용자별 그룹 초기 배치. */
 object TestGroups {

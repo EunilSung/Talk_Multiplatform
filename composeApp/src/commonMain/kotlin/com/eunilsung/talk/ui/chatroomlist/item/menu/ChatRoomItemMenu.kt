@@ -22,6 +22,7 @@ import com.eunilsung.talk.domain.model.Search
 import com.eunilsung.talk.ui.uikit.dialog.DialogManager
 import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
 import org.jetbrains.compose.resources.stringResource
+import com.eunilsung.talk.Config
 
 @Stable
 class ChatRoomItemMenu internal constructor(
@@ -41,7 +42,7 @@ class ChatRoomItemMenu internal constructor(
         val isMuted = item.isAlarm == "1"
         val alarmLabel = if (isMuted) labels.alarmOn else labels.alarmOff
 
-        val groupLabel: String? = if (!com.eunilsung.talk.Config.ChatRoom.IS_CHAT_GROUP_ENABLED) {
+        val groupLabel: String? = if (!Config.ChatRoom.IS_CHAT_GROUP_ENABLED) {
             null
         } else when (filterType) {
             Search.FilterType.ALL -> labels.addToGroup

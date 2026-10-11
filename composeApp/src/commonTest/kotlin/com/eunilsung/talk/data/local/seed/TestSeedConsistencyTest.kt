@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.seed
 
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.testsupport.TestMyInfo

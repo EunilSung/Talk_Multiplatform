@@ -38,6 +38,7 @@ import com.eunilsung.talk.data.remote.linkpreview.LinkPreviewRepository
 import com.eunilsung.talk.data.remote.linkpreview.LinkPreviewState
 import com.eunilsung.talk.ui.theme.AppColors
 import org.koin.compose.koinInject
+import com.eunilsung.talk.util.Log
 
 @Composable
 fun LinkPreviewCard(
@@ -49,7 +50,7 @@ fun LinkPreviewCard(
 
     var stateFlow by remember(url) { mutableStateOf<StateFlow<LinkPreviewState>?>(null) }
     LaunchedEffect(url) {
-        com.eunilsung.talk.util.Log.message("[LinkPreview] LinkPreviewCard launchedEffect url=$url")
+        Log.message("[LinkPreview] LinkPreviewCard launchedEffect url=$url")
         stateFlow = repository.getState(url)
     }
     val flow = stateFlow

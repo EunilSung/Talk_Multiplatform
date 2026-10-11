@@ -4,6 +4,7 @@ import com.eunilsung.talk.data.remote.server.ServerResult
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.PolishStyle
 import kotlin.test.Test
+import kotlinx.coroutines.delay
 
 /**
  * AI — 방에서 부르면 답이 대화로 오는지, 번역과 글 다듬기가 결과를 돌려주는지.
@@ -27,9 +28,9 @@ class AiScenarioTest {
                 step("부르지 않은 말에는 AI 가 답하지 않는다") {
                     harness.chats.sendTextChat(roomId, "$tag 우리끼리 하는 말")
                     awaitTrue("전송 완료") {
-                        harness.chatsOf(roomId).any { it.chatContent == "$tag 우리끼리 하는 말" && it.chatStatue == Chat.Statue.COMPLETE }
+                        harness.chatsOf(roomId).any { it.chatContent == "$tag 우리끼리 하는 말" && it.chatStatus == Chat.Status.COMPLETE }
                     }
-                    kotlinx.coroutines.delay(SILENCE_WAIT_MS)
+                    delay(SILENCE_WAIT_MS)
                     require(aiChats().isEmpty(), "부르지 않았는데 AI 가 답했다")
                 }
                 step("멘션으로 부르면 AI 의 답이 알림으로 방에 들어온다") {

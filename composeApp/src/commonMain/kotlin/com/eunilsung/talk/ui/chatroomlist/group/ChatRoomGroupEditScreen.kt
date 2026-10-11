@@ -62,7 +62,7 @@ class ChatRoomGroupEditScreen(
 
     @Composable
     override fun Content() {
-        val viewModel: ChatRoomRoomGroupManageViewModel = koinViewModel()
+        val viewModel: ChatRoomGroupManageViewModel = koinViewModel()
         val showOverlay = LocalFullScreenOverlay.current
         var name by remember { mutableStateOf(groupName) }
 

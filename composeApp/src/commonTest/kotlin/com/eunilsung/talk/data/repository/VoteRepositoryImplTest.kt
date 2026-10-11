@@ -4,9 +4,9 @@ import com.eunilsung.talk.data.mapper.ChatMapper
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.data.mapper.ServerChatMapper
 import com.eunilsung.talk.data.remote.server.ServerFileStore
-import com.eunilsung.talk.data.sample.ChatSenderOverride
-import com.eunilsung.talk.data.sample.LocalChatRoomListRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
+import com.eunilsung.talk.data.local.repository.ChatSenderOverride
+import com.eunilsung.talk.data.local.repository.LocalChatRoomListRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalChatRoomRepositoryImpl
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.VoteForm
 import com.eunilsung.talk.domain.model.VoteFormItem

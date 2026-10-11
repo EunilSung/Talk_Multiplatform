@@ -26,19 +26,19 @@ import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.data.mapper.GroupMapper
 import com.eunilsung.talk.data.repository.ChatSettingsRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalChatRoomListRepositoryImpl
-import com.eunilsung.talk.data.sample.ChatSenderOverride
+import com.eunilsung.talk.data.local.repository.LocalChatRoomListRepositoryImpl
+import com.eunilsung.talk.data.local.repository.ChatSenderOverride
 import com.eunilsung.talk.domain.repository.SenderOverrideRepository
-import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalGroupRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalInviteRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalLoginRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalMainRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalNotificationSettingsRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalPushTokenRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalUserProfileRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalVoteRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalVersionCheckRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalChatRoomRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalGroupRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalInviteRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalLoginRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalMainRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalNotificationSettingsRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalPushTokenRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalUserProfileRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalVoteRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalVersionCheckRepositoryImpl
 import com.eunilsung.talk.ui.screenlock.ScreenLockViewModel
 import com.eunilsung.talk.domain.repository.ChatRoomRepository
 import com.eunilsung.talk.domain.repository.ChatRoomListRepository
@@ -54,7 +54,7 @@ import com.eunilsung.talk.domain.repository.GroupRepository
 import com.eunilsung.talk.domain.repository.UserProfileRepository
 import com.eunilsung.talk.domain.usecase.*
 import com.eunilsung.talk.ui.chatroom.ChatRoomViewModel
-import com.eunilsung.talk.ui.chatroomlist.group.ChatRoomRoomGroupManageViewModel
+import com.eunilsung.talk.ui.chatroomlist.group.ChatRoomGroupManageViewModel
 import com.eunilsung.talk.ui.invite.InviteViewModel
 import com.eunilsung.talk.ui.invite.tab.group.InviteGroupViewModel
 import com.eunilsung.talk.ui.share.ShareViewModel
@@ -68,6 +68,10 @@ import com.eunilsung.talk.ui.chatroom.vote.VoteViewModel
 import org.koin.core.module.dsl.singleOf
 import org.koin.compose.viewmodel.dsl.viewModelOf
 import org.koin.dsl.module
+import com.eunilsung.talk.data.remote.linkpreview.LinkPreviewRepository
+import com.eunilsung.talk.data.remote.push.PushPayloadParser
+import com.eunilsung.talk.data.repository.ScreenLockRepositoryImpl
+import com.eunilsung.talk.domain.repository.ScreenLockRepository
 
 val appModule = module {
     single { Settings() }
@@ -80,9 +84,9 @@ val appModule = module {
     single<PushTokenRepository>(createdAtStart = true) {
         if (Config.Server.IS_ENABLED) PushTokenRepositoryImpl(get(), get(), get()) else LocalPushTokenRepositoryImpl()
     }
-    single { com.eunilsung.talk.data.remote.push.PushPayloadParser() }
+    single { PushPayloadParser() }
 
-    single { com.eunilsung.talk.data.remote.linkpreview.LinkPreviewRepository(get()) }
+    single { LinkPreviewRepository(get()) }
 
     // 원격 XML 대신 즉시 "업데이트 불필요" 반환.
     single<VersionCheckRepository> { LocalVersionCheckRepositoryImpl() }
@@ -228,13 +232,13 @@ val appModule = module {
     singleOf(::DeleteChatGroupUseCase)
     singleOf(::ReorderChatGroupsUseCase)
     singleOf(::ChatRoomListUseCases)
-    viewModelOf(::ChatRoomRoomGroupManageViewModel)
+    viewModelOf(::ChatRoomGroupManageViewModel)
 
     // 알림 설정은 로컬 저장만 한다.
     single<NotificationSettingsRepository> { LocalNotificationSettingsRepositoryImpl(get(), get()) }
     single<ChatSettingsRepository> { ChatSettingsRepositoryImpl(get()) }
-    single<com.eunilsung.talk.domain.repository.ScreenLockRepository> {
-        com.eunilsung.talk.data.repository.ScreenLockRepositoryImpl(get())
+    single<ScreenLockRepository> {
+        ScreenLockRepositoryImpl(get())
     }
     viewModelOf(::ScreenLockViewModel)
     viewModelOf(::SettingViewModel)

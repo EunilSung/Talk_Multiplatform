@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.eunilsung.talk.ui.theme.AppColors
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun ForceUpdateOverlay(
@@ -92,7 +93,7 @@ private fun ForceUpdateContent(
                     onClick = onUpdate,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AppColors.Main,
-                        contentColor = androidx.compose.ui.graphics.Color.Black,
+                        contentColor = Color.Black,
                     ),
                     enabled = updateUrl.isNotBlank(),
                     modifier = Modifier.padding(start = 8.dp)

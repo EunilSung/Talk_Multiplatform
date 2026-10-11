@@ -35,6 +35,7 @@ import multiplatformtalk.composeapp.generated.resources.bookmark_title
 import multiplatformtalk.composeapp.generated.resources.bookmark_empty
 import multiplatformtalk.composeapp.generated.resources.bookmark_remove
 import org.jetbrains.compose.resources.stringResource
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun BookmarkBottomSheetContent(
@@ -137,7 +138,7 @@ private fun BookmarkRow(bookmark: Bookmark, onClick: () -> Unit, onRemove: () ->
 fun BookmarkBottomSheetContentPreview() {
     MaterialTheme {
         BookmarkBottomSheetContent(
-            bookmarksFlow = kotlinx.coroutines.flow.MutableStateFlow(
+            bookmarksFlow = MutableStateFlow(
                 listOf(
                     Bookmark(
                         chatId = "1",

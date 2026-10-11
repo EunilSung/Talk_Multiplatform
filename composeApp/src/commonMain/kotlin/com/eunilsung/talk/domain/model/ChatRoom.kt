@@ -2,6 +2,7 @@ package com.eunilsung.talk.domain.model
 
 import androidx.compose.runtime.Immutable
 import com.eunilsung.talk.util.UserListCodec
+import com.eunilsung.talk.Config
 
 sealed class ChatRoom{
     @Immutable
@@ -48,7 +49,7 @@ sealed class ChatRoom{
         private val directPartner: Pair<String, String>?
             get() {
                 if (!isDirectRoom) return null
-                val me = com.eunilsung.talk.Config.MyInfo.userId
+                val me = Config.MyInfo.userId
                 return UserListCodec.decode(totalUserList).firstOrNull { it.first != me }
                     ?: UserListCodec.decode(exitUserList).firstOrNull { it.first != me }
             }
@@ -68,7 +69,7 @@ sealed class ChatRoom{
             get() {
                 if (isAbandonedRoom && !isDirectRoom) return emptyList()
 
-                val me = com.eunilsung.talk.Config.MyInfo.userId
+                val me = Config.MyInfo.userId
                 val activeIds = UserListCodec.decode(totalUserList).map { it.first }
                 val others = activeIds.filter { it != me }.take(4)
                 if (others.isNotEmpty()) return others
