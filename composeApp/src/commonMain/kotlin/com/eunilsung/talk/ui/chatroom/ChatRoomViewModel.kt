@@ -20,12 +20,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.repository.SenderOverrideRepository
 import com.eunilsung.talk.data.local.FilePickerProvider
-import com.eunilsung.talk.data.local.NoticeUiStateStore
 import com.eunilsung.talk.data.local.PhotoAlbum
 import com.eunilsung.talk.data.local.RecentPhoto
 import com.eunilsung.talk.data.local.RecentPhotosProvider
 import com.eunilsung.talk.data.local.RecentPhotosResult
-import com.eunilsung.talk.data.remote.push.CurrentChatRoomTracker
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.model.User
@@ -40,6 +38,8 @@ import com.eunilsung.talk.data.local.FilePickerRequestId
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.usecase.InviteUseCases
+import com.eunilsung.talk.domain.repository.NoticeUiStateRepository
+import com.eunilsung.talk.domain.repository.CurrentChatRoomRepository
 
 class ChatRoomViewModel(
     private val chatRoomUseCases: ChatRoomUseCases,
@@ -50,7 +50,8 @@ class ChatRoomViewModel(
     private val chatRoomListUseCases: ChatRoomListUseCases,
     private val inviteUseCases: InviteUseCases,
     private val senderOverride: SenderOverrideRepository,
-    private val noticeUiStateStore: NoticeUiStateStore,
+    private val noticeUiStateStore: NoticeUiStateRepository,
+    private val currentChatRoom: CurrentChatRoomRepository,
 ) : ViewModel() {
 
     fun lastEmoticonTab(): Int = chatSettingsRepository.getLastEmoticonTab()
@@ -588,7 +589,7 @@ class ChatRoomViewModel(
                 }
 
                 if (currentChatRoomId == chatRoomId &&
-                    CurrentChatRoomTracker.currentChatRoomId == chatRoomId
+                    currentChatRoom.currentChatRoomId == chatRoomId
                 ) {
                     val lastChatId = chatRoomUseCases.getChats(chatRoomId)
                         .first()
@@ -611,7 +612,7 @@ class ChatRoomViewModel(
             chatRoomRepository.newChatPush
                 .filter { it == chatRoomId && currentChatRoomId == chatRoomId }
                 .collect {
-                    if (CurrentChatRoomTracker.currentChatRoomId != chatRoomId) return@collect
+                    if (currentChatRoom.currentChatRoomId != chatRoomId) return@collect
 
                     val lastChatId = chatRoomUseCases.getChats(chatRoomId)
                         .first()

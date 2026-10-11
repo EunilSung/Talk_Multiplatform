@@ -1,29 +1,30 @@
 package com.eunilsung.talk.data.local
 
 import com.russhwolf.settings.Settings
+import com.eunilsung.talk.domain.repository.NoticeUiStateRepository
 
 /** 대화방 공지 UI state (숨김/접힘/상세표시) 를 identityKey 별로 영속화. */
 class NoticeUiStateStore(
     private val settings: Settings,
-) {
-    fun isHidden(identityKey: String): Boolean =
+) : NoticeUiStateRepository {
+    override fun isHidden(identityKey: String): Boolean =
         settings.getBoolean(hiddenKey(identityKey), false)
 
-    fun setHidden(identityKey: String, hidden: Boolean) {
+    override fun setHidden(identityKey: String, hidden: Boolean) {
         settings.putBoolean(hiddenKey(identityKey), hidden)
     }
 
-    fun isCollapsed(identityKey: String): Boolean =
+    override fun isCollapsed(identityKey: String): Boolean =
         settings.getBoolean(collapsedKey(identityKey), false)
 
-    fun setCollapsed(identityKey: String, collapsed: Boolean) {
+    override fun setCollapsed(identityKey: String, collapsed: Boolean) {
         settings.putBoolean(collapsedKey(identityKey), collapsed)
     }
 
-    fun isDetailsShown(identityKey: String): Boolean =
+    override fun isDetailsShown(identityKey: String): Boolean =
         settings.getBoolean(detailsKey(identityKey), true)
 
-    fun setDetailsShown(identityKey: String, shown: Boolean) {
+    override fun setDetailsShown(identityKey: String, shown: Boolean) {
         settings.putBoolean(detailsKey(identityKey), shown)
     }
 

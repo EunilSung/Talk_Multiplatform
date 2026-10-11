@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.remote.push
+package com.eunilsung.talk.domain.repository
 
 import com.eunilsung.talk.domain.model.PushPayload
 

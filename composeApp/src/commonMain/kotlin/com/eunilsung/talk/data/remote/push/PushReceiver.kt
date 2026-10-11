@@ -4,6 +4,7 @@ import com.eunilsung.talk.domain.model.PushPayload
 import com.eunilsung.talk.domain.repository.LoginRepository
 import com.eunilsung.talk.util.Log
 import org.koin.mp.KoinPlatform
+import com.eunilsung.talk.domain.repository.PushNotifier
 
 /** 푸시 메시지 처리 진입점 — Android/iOS 가 공통으로 호출. */
 object PushReceiver {

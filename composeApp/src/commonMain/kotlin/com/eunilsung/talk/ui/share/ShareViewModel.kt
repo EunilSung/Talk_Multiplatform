@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.model.User
-import com.eunilsung.talk.data.remote.share.SharedContent
+import com.eunilsung.talk.domain.model.SharedContent
 import com.eunilsung.talk.data.remote.share.cleanupSharedFile
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases

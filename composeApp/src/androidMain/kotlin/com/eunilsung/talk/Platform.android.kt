@@ -30,7 +30,7 @@ import com.eunilsung.talk.data.remote.push.AndroidNotificationSoundPreviewer
 import com.eunilsung.talk.data.remote.push.AndroidPushNotifier
 import com.eunilsung.talk.data.remote.push.AndroidSystemNotificationGate
 import com.eunilsung.talk.data.remote.push.NotificationSoundPreviewer
-import com.eunilsung.talk.data.remote.push.PushNotifier
+import com.eunilsung.talk.domain.repository.PushNotifier
 import com.eunilsung.talk.domain.repository.SystemNotificationGate
 import org.koin.dsl.module
 import com.eunilsung.talk.data.local.AndroidBiometricAuthenticator

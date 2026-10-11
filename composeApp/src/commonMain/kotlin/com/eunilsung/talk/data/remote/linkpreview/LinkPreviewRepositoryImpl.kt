@@ -20,18 +20,21 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeoutOrNull
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.domain.model.LinkPreview
+import com.eunilsung.talk.domain.model.LinkPreviewState
+import com.eunilsung.talk.domain.repository.LinkPreviewRepository
 
 /** 채팅 본문의 URL → Open Graph 메타데이터 fetch + 세션 내 메모리 캐시. */
-class LinkPreviewRepository(
+class LinkPreviewRepositoryImpl(
     private val httpClient: HttpClient,
-) {
+) : LinkPreviewRepository {
     private val cache = mutableMapOf<String, MutableStateFlow<LinkPreviewState>>()
     private val cacheMutex = Mutex()
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val fetchSemaphore = Semaphore(permits = 5)
 
     /** [url] 의 미리보기 상태 Flow. 캐시 hit 면 그 값, miss 면 백그라운드 fetch. */
-    suspend fun getState(url: String): StateFlow<LinkPreviewState> {
+    override suspend fun getState(url: String): StateFlow<LinkPreviewState> {
         return cacheMutex.withLock {
             cache.getOrPut(url) {
                 val flow = MutableStateFlow<LinkPreviewState>(LinkPreviewState.Loading)

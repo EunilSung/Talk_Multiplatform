@@ -1,9 +1,6 @@
 package com.eunilsung.talk.ui.main
 
-import com.eunilsung.talk.data.repository.SettingsKeys
-import com.eunilsung.talk.data.local.AppVersionProvider
 import com.eunilsung.talk.Config
-import com.russhwolf.settings.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
@@ -15,14 +12,14 @@ import com.eunilsung.talk.domain.repository.MainRepository
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 import com.eunilsung.talk.domain.usecase.GroupUseCases
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.domain.repository.AppMaintenanceRepository
 
 class MainViewModel(
     mainRepository: MainRepository,
     loginRepository: LoginRepository,
     private val groupUseCases: GroupUseCases,
     private val chatRoomListUseCases: ChatRoomListUseCases,
-    private val settings: Settings,
-    private val appVersionProvider: AppVersionProvider,
+    private val maintenance: AppMaintenanceRepository,
 ) : ViewModel() {
 
     val events: Flow<MainEvent> = mainRepository.events
@@ -35,11 +32,11 @@ class MainViewModel(
      */
     fun shouldClearImageCache(today: String): Boolean {
         if (!Config.UserProfile.IS_KEEP_CACHE_DAY) return true
-        return settings.getStringOrNull(SettingsKeys.KEY_IMAGE_CACHE_CLEAR_DATE) != today
+        return maintenance.imageCacheClearedDate() != today
     }
 
     fun markImageCacheCleared(today: String) {
-        settings.putString(SettingsKeys.KEY_IMAGE_CACHE_CLEAR_DATE, today)
+        maintenance.setImageCacheClearedDate(today)
     }
 
     /**
@@ -49,13 +46,13 @@ class MainViewModel(
      */
     fun pendingNoticeVersion(): String? {
         if (Config.Server.IS_ENABLED) return null
-        val version = appVersionProvider.currentVersionName().takeIf { it.isNotBlank() } ?: return null
-        val shown = settings.getStringOrNull(SettingsKeys.KEY_NOTICE_SHOWN_VERSION)
+        val version = maintenance.currentVersionName().takeIf { it.isNotBlank() } ?: return null
+        val shown = maintenance.noticeShownVersion()
         return version.takeIf { it != shown }
     }
 
     fun markNoticeShown(version: String) {
-        settings.putString(SettingsKeys.KEY_NOTICE_SHOWN_VERSION, version)
+        maintenance.setNoticeShownVersion(version)
     }
 
     init {

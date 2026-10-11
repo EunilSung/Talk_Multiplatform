@@ -28,7 +28,7 @@ import com.eunilsung.talk.data.remote.push.AndroidPushNotifier
 import com.eunilsung.talk.data.remote.push.PendingPushNavigation
 import com.eunilsung.talk.data.remote.push.SystemNotificationBridge
 import com.eunilsung.talk.data.remote.share.PendingShareNavigation
-import com.eunilsung.talk.data.remote.share.SharedContent
+import com.eunilsung.talk.domain.model.SharedContent
 
 class MainActivity : FragmentActivity() {
 

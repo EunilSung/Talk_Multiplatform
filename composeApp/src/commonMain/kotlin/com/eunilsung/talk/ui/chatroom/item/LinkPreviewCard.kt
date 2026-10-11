@@ -33,9 +33,9 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.flow.StateFlow
 import com.eunilsung.talk.data.local.ExternalUrlOpener
-import com.eunilsung.talk.data.remote.linkpreview.LinkPreview
-import com.eunilsung.talk.data.remote.linkpreview.LinkPreviewRepository
-import com.eunilsung.talk.data.remote.linkpreview.LinkPreviewState
+import com.eunilsung.talk.domain.model.LinkPreview
+import com.eunilsung.talk.domain.repository.LinkPreviewRepository
+import com.eunilsung.talk.domain.model.LinkPreviewState
 import com.eunilsung.talk.ui.theme.AppColors
 import org.koin.compose.koinInject
 import com.eunilsung.talk.util.Log

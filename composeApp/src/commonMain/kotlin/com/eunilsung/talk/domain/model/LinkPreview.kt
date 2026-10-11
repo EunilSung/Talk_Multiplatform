@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.remote.linkpreview
+package com.eunilsung.talk.domain.model
 
 /** Open Graph / meta 태그로부터 파싱한 링크 미리보기 정보. */
 data class LinkPreview(

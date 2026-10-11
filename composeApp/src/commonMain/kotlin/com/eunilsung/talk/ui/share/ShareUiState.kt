@@ -1,7 +1,7 @@
 package com.eunilsung.talk.ui.share
 
 import com.eunilsung.talk.domain.model.User
-import com.eunilsung.talk.data.remote.share.SharedContent
+import com.eunilsung.talk.domain.model.SharedContent
 import com.eunilsung.talk.domain.model.ChatRoom
 
 data class ShareUiState(
