@@ -10,13 +10,18 @@ import com.eunilsung.talk.domain.repository.LoginRepository
 import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
 import com.eunilsung.talk.ui.uikit.sheet.LocalBottomSheetManager
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.data.remote.push.PendingPushNavigation
+import com.eunilsung.talk.data.remote.push.PushNavRequest
+import com.eunilsung.talk.data.remote.share.PendingShareNavigation
+import com.eunilsung.talk.ui.chatroom.ChatRoomScreen
+import com.eunilsung.talk.ui.share.ShareScreen
 
 @Composable
 internal fun PendingPushNavigationHandler(
     rightNavigator: cafe.adriel.voyager.navigator.Navigator,
     loginRepository: LoginRepository,
 ) {
-    val pending by com.eunilsung.talk.data.remote.push.PendingPushNavigation.pending.collectAsState()
+    val pending by PendingPushNavigation.pending.collectAsState()
     val isLoggedIn by loginRepository.isLoggedIn.collectAsState()
     val isConnected by loginRepository.isConnected.collectAsState()
 
@@ -37,7 +42,7 @@ internal fun PendingPushNavigationHandler(
             runCatching { loginRepository.checkConnectionAndRelogin() }
         }
 
-        val consumed = com.eunilsung.talk.data.remote.push.PendingPushNavigation.consume()
+        val consumed = PendingPushNavigation.consume()
             ?: return@LaunchedEffect
         Log.message("[PushNav] routing — kind=${consumed.kind} key=${consumed.msgKey} isConnected=$isConnected")
 
@@ -53,7 +58,7 @@ internal fun PendingPushNavigationHandler(
 internal fun PendingShareNavigationHandler(
     loginRepository: LoginRepository,
 ) {
-    val pending by com.eunilsung.talk.data.remote.share.PendingShareNavigation.pending.collectAsState()
+    val pending by PendingShareNavigation.pending.collectAsState()
     val isLoggedIn by loginRepository.isLoggedIn.collectAsState()
     val showOverlay = LocalFullScreenOverlay.current
 
@@ -63,28 +68,28 @@ internal fun PendingShareNavigationHandler(
             Log.message("[ShareNav] waiting — not logged in (text=${content.text.length} files=${content.filePaths.size})")
             return@LaunchedEffect
         }
-        val consumed = com.eunilsung.talk.data.remote.share.PendingShareNavigation.consume()
+        val consumed = PendingShareNavigation.consume()
             ?: return@LaunchedEffect
         Log.message("[ShareNav] routing — text=${consumed.text.length} files=${consumed.filePaths.size}")
-        showOverlay(com.eunilsung.talk.ui.share.ShareScreen(consumed))
+        showOverlay(ShareScreen(consumed))
     }
 }
 
 internal fun routePushNavigation(
     rightNavigator: Navigator,
-    req: com.eunilsung.talk.data.remote.push.PushNavRequest,
+    req: PushNavRequest,
 ) {
     val newScreen: Screen = when (req.kind) {
         "TALK", "CHAT" ->
-            com.eunilsung.talk.ui.chatroom.ChatRoomScreen(chatRoomId = req.msgKey)
+            ChatRoomScreen(chatRoomId = req.msgKey)
         else -> null
     } ?: return
 
     val current = rightNavigator.lastItem
 
     val alreadyOpen = when {
-        current is com.eunilsung.talk.ui.chatroom.ChatRoomScreen &&
-            newScreen is com.eunilsung.talk.ui.chatroom.ChatRoomScreen ->
+        current is ChatRoomScreen &&
+            newScreen is ChatRoomScreen ->
             current.chatRoomId == newScreen.chatRoomId
         else -> false
     }

@@ -89,7 +89,7 @@ Kotlin Multiplatform(Android + iOS) 메신저 + Ktor 서버. 앱·서버·공유
 ```
 composeApp/src/
   commonMain/kotlin/com/eunilsung/talk/
-    data/      local(플랫폼 추상화) · mapper · sample(로컬 구현·시드)
+    data/      local(플랫폼 추상화 · repository(로컬 모드 구현) · seed(시연용 데이터)) · mapper
                remote/ server(REST·WebSocket·파일·사용자 목록) · push · linkpreview · share
                repository(서버 모드 구현)
     domain/    model · repository(interface) · usecase
@@ -114,7 +114,7 @@ iosApp/        Xcode 프로젝트
 `local.properties` 의 `server.baseUrl` 이 비어 있으면 로컬 모드, 값이 있으면 서버 모드로 빌드된다
 (`Config.Server.IS_ENABLED`). 어느 저장소 구현을 쓸지는 `di/Modules.kt` 한 곳에서 갈린다.
 
-- **로컬 모드** — `data/sample/Local*RepositoryImpl` 이 시연용 데이터를 기기 DB 에 채워 쓴다.
+- **로컬 모드** — `data/local/repository/Local*RepositoryImpl` 이 시연용 데이터를 기기 DB 에 채워 쓴다.
 - **서버 모드** — `data/repository/*RepositoryImpl` 이 서버와 주고받는다. 화면은 계속 기기 DB 를
   보고, 서버 구현은 그 위에 얹혀(`by local` 위임) 서버에서 받은 것을 기기 DB 에 반영한다.
   서버 모드는 기기 DB 파일을 따로 쓴다(`Config.Database.NAME`).

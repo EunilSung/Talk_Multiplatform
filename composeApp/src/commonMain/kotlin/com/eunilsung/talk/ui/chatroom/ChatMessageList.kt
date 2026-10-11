@@ -39,6 +39,9 @@ import com.eunilsung.talk.ui.util.chatDateHeaderText
 import com.eunilsung.talk.ui.util.formatChatTime
 import multiplatformtalk.composeapp.generated.resources.cancel
 import multiplatformtalk.composeapp.generated.resources.delete
+import androidx.compose.foundation.lazy.LazyListState
+import com.eunilsung.talk.domain.model.GroupedChat
+import com.eunilsung.talk.ui.uikit.mediapicker.MediaPickerState
 
 
 /**
@@ -49,28 +52,28 @@ import multiplatformtalk.composeapp.generated.resources.delete
  */
 @Composable
 fun ChatMessageList(
-    groupedChats: List<com.eunilsung.talk.domain.model.GroupedChat>,
-    listState: androidx.compose.foundation.lazy.LazyListState,
+    groupedChats: List<GroupedChat>,
+    listState: LazyListState,
     searchState: ChatSearchState,
-    chatFontSize: androidx.compose.ui.unit.TextUnit,
+    chatFontSize: TextUnit,
     bookmarkedChatIds: Set<String>,
     currentChatRoomId: String,
     strings: ChatRoomStrings,
     lastShakenFocusKey: Int,
     onShakenFocusKeyChange: (Int) -> Unit,
-    mediaPicker: com.eunilsung.talk.ui.uikit.mediapicker.MediaPickerState,
+    mediaPicker: MediaPickerState,
     hideKeyboard: () -> Unit,
-    users: List<com.eunilsung.talk.domain.model.User>,
+    users: List<User>,
     onLongPress: (Chat.Item) -> Unit,
     translations: Map<String, ChatTranslationUiState>,
     onNoticeClick: (Chat.Item) -> Unit,
     onAction: (ChatRoomActions) -> Unit,
 ) {
-    val dialog = com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager.current
-    val bottomSheet = com.eunilsung.talk.ui.uikit.sheet.LocalBottomSheetManager.current
-    val fullScreenOverlay = com.eunilsung.talk.ui.main.LocalFullScreenOverlay.current
-    val showUserProfileFromContent = com.eunilsung.talk.ui.userprofile.LocalShowUserProfile.current
-    val showFileDetail = com.eunilsung.talk.ui.uikit.mediapicker.LocalShowFileDetail.current
+    val dialog = LocalDialogManager.current
+    val bottomSheet = LocalBottomSheetManager.current
+    val fullScreenOverlay = LocalFullScreenOverlay.current
+    val showUserProfileFromContent = LocalShowUserProfile.current
+    val showFileDetail = LocalShowFileDetail.current
 
     LazyColumn(
         state = listState,

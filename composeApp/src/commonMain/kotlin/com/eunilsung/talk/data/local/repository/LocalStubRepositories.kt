@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.repository
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow

@@ -39,7 +39,7 @@ fun FileItem(
 ) {
     val chat = itemProps.chat
     val showProgress = chat.isMe &&
-        chat.chatStatue == Chat.Statue.SENDING &&
+        chat.chatStatus == Chat.Status.SENDING &&
         chat.uploadProgress in 0..100
 
     ChatBubbleRow(
@@ -136,7 +136,7 @@ fun FileItemUploadingPreview() {
             chat = Chat.Item(
                 originalFileName = "File_Name.pdf",
                 chatContent = "100MB",
-                chatStatue = Chat.Statue.SENDING,
+                chatStatus = Chat.Status.SENDING,
                 uploadProgress = 65,
             )
         ))

@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.repository
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,6 +24,7 @@ import com.eunilsung.talk.domain.model.VoteSetting
 import com.eunilsung.talk.domain.repository.VoteRepository
 import com.eunilsung.talk.util.ChatIdUtils
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.data.local.seed.TestAccounts
 
 /** `VoteEntity` 에 직접 읽고 쓰는 투표 저장소. */
 class LocalVoteRepositoryImpl(
@@ -187,7 +188,7 @@ class LocalVoteRepositoryImpl(
         chatType = type,
         // 투표 화면은 제목을 Chat.Item.title 에서 읽는다.
         title = data.title,
-        chatStatue = Chat.Statue.COMPLETE,
+        chatStatus = Chat.Status.COMPLETE,
         date = nowChatDate(),
         unReadCount = "0",
         user = User(id = myId, name = TestAccounts.find(myId)?.userName ?: myId),

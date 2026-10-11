@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.repository
 
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.db.AppDatabase
@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.eunilsung.talk.data.local.seed.TestChatRooms
 
 /** 대화방 목록 저장소 + SQLDelight 통합 — 방 조작과 그룹 칩 동기화를 확인한다. */
 class LocalChatRoomListRepositoryTest {

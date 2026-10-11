@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.emoticon.EmoticonPanelController
 import com.eunilsung.talk.util.Log
+import androidx.compose.ui.platform.LocalWindowInfo
 
 /** 키보드 표시 여부와 무관하게 안정적인 하단 인셋(내비바/홈인디케이터). */
 @Composable
@@ -156,7 +157,7 @@ fun EmoticonOverlay(
 
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
-    val windowInfo = androidx.compose.ui.platform.LocalWindowInfo.current
+    val windowInfo = LocalWindowInfo.current
 
     val minH = panelHeight.coerceAtLeast(0.dp)
     val minPx = with(density) { minH.toPx() }

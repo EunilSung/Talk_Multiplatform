@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.repository
 
 import com.eunilsung.talk.data.mapper.GroupMapper
 import com.eunilsung.talk.db.AppDatabase
@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.eunilsung.talk.data.local.seed.TestGroups
 
 /** 그룹 저장소 + SQLDelight 통합 — 변경이 DB 를 거쳐 다시 조회되는지 확인한다. */
 class LocalGroupRepositoryTest {

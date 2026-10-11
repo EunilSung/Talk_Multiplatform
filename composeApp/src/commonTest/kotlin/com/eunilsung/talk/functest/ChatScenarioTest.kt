@@ -2,6 +2,7 @@ package com.eunilsung.talk.functest
 
 import com.eunilsung.talk.domain.model.Chat
 import kotlin.test.Test
+import com.eunilsung.talk.Config
 
 /** 대화 — 보내기·받기·순서·답장·멘션·과거 대화·검색이 서버를 거쳐 화면이 보는 목록에 반영되는지. */
 class ChatScenarioTest {
@@ -18,7 +19,7 @@ class ChatScenarioTest {
                 step("내가 보낸 대화는 전송 완료가 되고 상대에게 보인다") {
                     harness.chats.sendTextChat(roomId, "$tag 내가 보냄")
                     awaitTrue("전송 완료") {
-                        harness.chatsOf(roomId).any { it.chatContent == "$tag 내가 보냄" && it.chatStatue == Chat.Statue.COMPLETE }
+                        harness.chatsOf(roomId).any { it.chatContent == "$tag 내가 보냄" && it.chatStatus == Chat.Status.COMPLETE }
                     }
                     val seen = peer.messages(roomId).filter { it.content == "$tag 내가 보냄" }
                     requireEquals(1, seen.size, "상대가 본 내 대화의 수")
@@ -36,7 +37,7 @@ class ChatScenarioTest {
                     peer.say(roomId, "$tag 순서 1")
                     harness.chats.sendTextChat(roomId, "$tag 순서 2")
                     awaitTrue("내 대화 완료") {
-                        harness.chatsOf(roomId).any { it.chatContent == "$tag 순서 2" && it.chatStatue == Chat.Statue.COMPLETE }
+                        harness.chatsOf(roomId).any { it.chatContent == "$tag 순서 2" && it.chatStatus == Chat.Status.COMPLETE }
                     }
                     peer.say(roomId, "$tag 순서 3")
                     awaitTrue("세 대화가 모두 도착") { harness.chatsOf(roomId).count { "$tag 순서" in it.chatContent } == 3 }
@@ -58,7 +59,7 @@ class ChatScenarioTest {
                     val target = harness.chatsOf(roomId).first { it.chatID == origin.id }
                     harness.chats.sendTextChat(roomId, "$tag 답장", replyTarget = target)
                     awaitTrue("답장 전송 완료") {
-                        harness.chatsOf(roomId).any { it.chatContent == "$tag 답장" && it.chatStatue == Chat.Statue.COMPLETE }
+                        harness.chatsOf(roomId).any { it.chatContent == "$tag 답장" && it.chatStatus == Chat.Status.COMPLETE }
                     }
                     val reply = harness.chatsOf(roomId).first { it.chatContent == "$tag 답장" }
                     requireEquals(Chat.Type.REPLY, reply.chatType, "대화 종류")
@@ -69,7 +70,7 @@ class ChatScenarioTest {
                 }
                 step("나를 멘션하면 목록의 멘션 수가 오른다") {
                     val before = harness.room(roomId)?.mentionCount?.toIntOrNull() ?: 0
-                    peer.say(roomId, "<mention>@${com.eunilsung.talk.Config.MyInfo.userName}</mention> $tag 확인 부탁")
+                    peer.say(roomId, "<mention>@${Config.MyInfo.userName}</mention> $tag 확인 부탁")
                     awaitTrue("멘션 수 증가") {
                         (harness.room(roomId)?.mentionCount?.toIntOrNull() ?: 0) == before + 1
                     }

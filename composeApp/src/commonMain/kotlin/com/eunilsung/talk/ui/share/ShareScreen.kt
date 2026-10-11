@@ -62,6 +62,7 @@ import com.eunilsung.talk.ui.uikit.topbar.TopBarV1
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import com.eunilsung.talk.ui.main.LocalRightNavigator
 
 class ShareScreen(
     private val content: SharedContent,
@@ -74,7 +75,7 @@ class ShareScreen(
         val uiState by viewModel.uiState.collectAsState()
         val rooms by viewModel.chatRooms.collectAsState()
         val showOverlay = LocalFullScreenOverlay.current
-        val rightNavigator = com.eunilsung.talk.ui.main.LocalRightNavigator.current
+        val rightNavigator = LocalRightNavigator.current
         val toastManager = LocalToastManager.current
         val txtSendFailed = stringResource(Res.string.toast_send_failed)
 

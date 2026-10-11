@@ -1,8 +1,9 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.repository
 
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.UserProfile
 import com.eunilsung.talk.domain.repository.UserProfileRepository
+import com.eunilsung.talk.data.local.seed.TestAccounts
 
 /** [TestAccounts] 를 그대로 프로필로 돌려주는 저장소. 미등록 id 는 id 만 채운 최소 프로필. */
 class LocalUserProfileRepositoryImpl : UserProfileRepository {

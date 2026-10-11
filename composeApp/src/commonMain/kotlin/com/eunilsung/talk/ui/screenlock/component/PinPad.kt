@@ -27,6 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eunilsung.talk.ui.theme.AppColors
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.Color
 
 private const val PIN_LENGTH = 4
 
@@ -37,11 +39,11 @@ fun PinPad(
     subtitle: String,
     onEntered: (String) -> Unit,
     modifier: Modifier = Modifier,
-    subtitleColor: androidx.compose.ui.graphics.Color = AppColors.TextSub,
+    subtitleColor: Color = AppColors.TextSub,
     errorKey: Int = 0,
 ) {
     var input by remember { mutableStateOf("") }
-    androidx.compose.runtime.LaunchedEffect(errorKey) { input = "" }
+    LaunchedEffect(errorKey) { input = "" }
 
     fun press(d: String) {
         if (input.length >= PIN_LENGTH) return

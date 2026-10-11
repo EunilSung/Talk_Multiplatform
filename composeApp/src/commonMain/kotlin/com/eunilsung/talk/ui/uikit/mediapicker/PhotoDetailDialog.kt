@@ -70,6 +70,7 @@ import multiplatformtalk.composeapp.generated.resources.download_icon
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import androidx.compose.foundation.layout.Arrangement
 
 /** 사진 한 장 상세보기 — 프로필 사진 업로드 확인에도 쓴다. */
 @Composable
@@ -178,7 +179,7 @@ fun PhotoDetailDialog(
                         modifier = Modifier
                             .weight(1f)
                             .padding(start = 12.dp),
-                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Text(
                             text = photo.senderName,

@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.repository
 
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.CoroutineScope
@@ -29,6 +29,7 @@ import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.repository.ChatRoomListRepository
 import com.eunilsung.talk.domain.repository.LoginRepository
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.data.local.seed.TestChatRooms
 
 /**
  * 대화방 목록 저장소 — 본문은 SQLDelight, pinDate/그룹 칩은 [Settings] 에 저장.

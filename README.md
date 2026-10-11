@@ -83,7 +83,7 @@
 flowchart TD
     UI["ui/<br/>Screen · ViewModel · UiState · Actions"]
     DOMAIN["domain/<br/>model · repository(interface) · usecase"]
-    LOCAL["data/sample<br/>로컬 구현 · 시드"]
+    LOCAL["data/local<br/>로컬 구현 · 시드"]
     REMOTE["data/repository<br/>서버 모드 구현"]
     DB[("SQLDelight<br/>기기 DB")]
     SERVER["server/<br/>Ktor · PostgreSQL"]
@@ -108,7 +108,7 @@ composeApp/src/
 │   ├── kotlin/com/eunilsung/talk/
 │   │   ├── ui/          화면 (chatroom, chatroomlist, group, invite, setting …)
 │   │   ├── domain/      model · repository(interface 15) · usecase(57)
-│   │   ├── data/        sample(로컬 구현 + 시드) · repository(서버 모드 구현) · remote/server · mapper · local
+│   │   ├── data/        local(플랫폼 추상화 · repository 로컬 구현 · seed 시드) · repository(서버 모드 구현) · remote/server · mapper
 │   │   └── di/          Koin 모듈
 │   ├── sqldelight/      AppDatabase.sq
 │   └── composeResources/ strings(ko·en) · drawable
@@ -127,7 +127,7 @@ server/                   29 files — Ktor 서버 (+ 테스트 15 files, 마이
 
 서버가 없어도 "진짜처럼" 동작하게 만든 부분입니다.
 
-- **`data/sample/`** — 서버 자리를 대신하는 저장소 구현 12개와 시드 데이터.
+- **`data/local/repository/`·`data/local/seed/`** — 서버 자리를 대신하는 저장소 구현 12개와 시드 데이터.
   시드는 계정 10명, 대화방 7개, 방마다 대화 스크립트로 구성되며 최초 실행 시 DB에 적재됩니다.
 - **단일 출처** — 대화방 목록의 안읽음·멘션 수를 하드코딩하지 않고 **대화 스크립트에서 도출**합니다.
   목록엔 12인데 방엔 5개뿐인 어긋남을 구조적으로 막았고, 테스트로 고정했습니다.

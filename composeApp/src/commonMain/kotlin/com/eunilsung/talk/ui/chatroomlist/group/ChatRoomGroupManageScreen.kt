@@ -71,7 +71,7 @@ object ChatRoomGroupManageScreen : Screen {
 
     @Composable
     override fun Content() {
-        val viewModel: ChatRoomRoomGroupManageViewModel = koinViewModel()
+        val viewModel: ChatRoomGroupManageViewModel = koinViewModel()
         val groups by viewModel.groups.collectAsState()
         val showOverlay = LocalFullScreenOverlay.current
 

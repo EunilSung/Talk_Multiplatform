@@ -114,7 +114,7 @@ fun ChatItem(
         ExitItem(chat = chat)
         return
     }
-    val canInteract = chat.chatStatue == Chat.Statue.COMPLETE
+    val canInteract = chat.chatStatus == Chat.Status.COMPLETE
     val canReply = !chat.isRecalled && canInteract
     val canEmpathy = !chat.isRecalled && canInteract
 

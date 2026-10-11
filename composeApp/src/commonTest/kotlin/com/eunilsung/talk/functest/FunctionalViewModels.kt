@@ -6,7 +6,7 @@ import com.eunilsung.talk.data.local.PickedFile
 import com.eunilsung.talk.data.local.RecentPhotosProvider
 import com.eunilsung.talk.data.local.RecentPhotosResult
 import com.eunilsung.talk.data.repository.ChatSettingsRepositoryImpl
-import com.eunilsung.talk.data.sample.ChatSenderOverride
+import com.eunilsung.talk.data.local.repository.ChatSenderOverride
 import com.eunilsung.talk.domain.usecase.*
 import com.eunilsung.talk.ui.chatroom.ChatRoomViewModel
 import com.russhwolf.settings.MapSettings

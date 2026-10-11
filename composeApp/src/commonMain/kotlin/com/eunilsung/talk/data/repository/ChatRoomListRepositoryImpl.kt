@@ -7,7 +7,7 @@ import com.eunilsung.talk.data.remote.server.ServerEvents
 import com.eunilsung.talk.data.remote.server.ServerResult
 import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.data.remote.server.valueOrNull
-import com.eunilsung.talk.data.sample.LocalChatRoomListRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalChatRoomListRepositoryImpl
 import com.eunilsung.talk.domain.model.ChatGroup
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.repository.ChatRoomListRepository

@@ -36,6 +36,10 @@ import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 import com.eunilsung.talk.domain.usecase.ChatRoomUseCases
 import com.eunilsung.talk.util.Log
 import com.eunilsung.talk.util.chatDisplayText
+import com.eunilsung.talk.data.local.FilePickerRequestId
+import com.eunilsung.talk.domain.model.Bookmark
+import com.eunilsung.talk.domain.model.Notice
+import com.eunilsung.talk.domain.usecase.InviteUseCases
 
 class ChatRoomViewModel(
     private val chatRoomUseCases: ChatRoomUseCases,
@@ -44,7 +48,7 @@ class ChatRoomViewModel(
     private val filePickerProvider: FilePickerProvider,
     private val chatSettingsRepository: ChatSettingsRepository,
     private val chatRoomListUseCases: ChatRoomListUseCases,
-    private val inviteUseCases: com.eunilsung.talk.domain.usecase.InviteUseCases,
+    private val inviteUseCases: InviteUseCases,
     private val senderOverride: SenderOverrideRepository,
     private val noticeUiStateStore: NoticeUiStateStore,
 ) : ViewModel() {
@@ -56,7 +60,7 @@ class ChatRoomViewModel(
 
     /** picker 결과가 싱글톤 provider 로 broadcast 되므로, 이 VM 이 띄운 요청만 소비하기 위한 태그. */
     private val filePickerRequestId =
-        com.eunilsung.talk.data.local.FilePickerRequestId.next("chatroom")
+        FilePickerRequestId.next("chatroom")
 
     init {
         viewModelScope.launch {
@@ -159,7 +163,7 @@ class ChatRoomViewModel(
     private val _entryScroll = MutableSharedFlow<String?>(replay = 1, extraBufferCapacity = 1)
     val entryScroll: SharedFlow<String?> = _entryScroll
 
-    val currentNotice: StateFlow<com.eunilsung.talk.domain.model.Notice?> =
+    val currentNotice: StateFlow<Notice?> =
         chatRoomRepository.currentNotice
 
     private val _noticeBar = MutableStateFlow(NoticeBarUiState())
@@ -191,7 +195,7 @@ class ChatRoomViewModel(
         _noticeBar.update { it.copy(hidden = true) }
     }
 
-    val bookmarks: StateFlow<List<com.eunilsung.talk.domain.model.Bookmark>> =
+    val bookmarks: StateFlow<List<Bookmark>> =
         chatRoomRepository.bookmarks
 
     private val _recentPhotos = MutableStateFlow<RecentPhotosResult>(
@@ -588,7 +592,7 @@ class ChatRoomViewModel(
                 ) {
                     val lastChatId = chatRoomUseCases.getChats(chatRoomId)
                         .first()
-                        .lastOrNull { it.chatStatue != Chat.Statue.SENDING && it.chatStatue != Chat.Statue.FAIL }
+                        .lastOrNull { it.chatStatus != Chat.Status.SENDING && it.chatStatus != Chat.Status.FAIL }
                         ?.chatID
                         .orEmpty()
 
@@ -611,7 +615,7 @@ class ChatRoomViewModel(
 
                     val lastChatId = chatRoomUseCases.getChats(chatRoomId)
                         .first()
-                        .lastOrNull { it.chatStatue != Chat.Statue.SENDING && it.chatStatue != Chat.Statue.FAIL }
+                        .lastOrNull { it.chatStatus != Chat.Status.SENDING && it.chatStatus != Chat.Status.FAIL }
                         ?.chatID
                         .orEmpty()
                     if (lastChatId.isNotBlank()) {

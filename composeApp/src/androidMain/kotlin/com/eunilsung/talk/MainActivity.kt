@@ -24,6 +24,11 @@ import com.eunilsung.talk.data.local.PickedPhoto
 import com.eunilsung.talk.ui.main.MainScreen
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.data.remote.push.AndroidPushNotifier
+import com.eunilsung.talk.data.remote.push.PendingPushNavigation
+import com.eunilsung.talk.data.remote.push.SystemNotificationBridge
+import com.eunilsung.talk.data.remote.share.PendingShareNavigation
+import com.eunilsung.talk.data.remote.share.SharedContent
 
 class MainActivity : FragmentActivity() {
 
@@ -31,25 +36,25 @@ class MainActivity : FragmentActivity() {
     private fun handlePushIntent(intent: android.content.Intent?) {
         intent ?: return
         val kind = intent.getStringExtra(
-            com.eunilsung.talk.data.remote.push.AndroidPushNotifier.EXTRA_MSG_KIND
+            AndroidPushNotifier.EXTRA_MSG_KIND
         ).orEmpty()
         val key = intent.getStringExtra(
-            com.eunilsung.talk.data.remote.push.AndroidPushNotifier.EXTRA_MSG_KEY
+            AndroidPushNotifier.EXTRA_MSG_KEY
         ).orEmpty()
         val cat = intent.getStringExtra(
-            com.eunilsung.talk.data.remote.push.AndroidPushNotifier.EXTRA_MSG_CATEGORY
+            AndroidPushNotifier.EXTRA_MSG_CATEGORY
         ).orEmpty()
         if (kind.isNotBlank() && key.isNotBlank()) {
             Log.message("[Push/Android] tap → kind=$kind key=$key cat=$cat")
-            com.eunilsung.talk.data.remote.push.PendingPushNavigation.set(kind, key, cat)
+            PendingPushNavigation.set(kind, key, cat)
             intent.removeExtra(
-                com.eunilsung.talk.data.remote.push.AndroidPushNotifier.EXTRA_MSG_KIND
+                AndroidPushNotifier.EXTRA_MSG_KIND
             )
             intent.removeExtra(
-                com.eunilsung.talk.data.remote.push.AndroidPushNotifier.EXTRA_MSG_KEY
+                AndroidPushNotifier.EXTRA_MSG_KEY
             )
             intent.removeExtra(
-                com.eunilsung.talk.data.remote.push.AndroidPushNotifier.EXTRA_MSG_CATEGORY
+                AndroidPushNotifier.EXTRA_MSG_CATEGORY
             )
         }
     }
@@ -82,7 +87,7 @@ class MainActivity : FragmentActivity() {
             else -> emptyList()
         }
 
-        val content = com.eunilsung.talk.data.remote.share.SharedContent(
+        val content = SharedContent(
             text = text,
             filePaths = uris.map { it.toString() }
         )
@@ -91,7 +96,7 @@ class MainActivity : FragmentActivity() {
         Log.message(
             "[Share/Android] received action=$action text=${text.length} files=${uris.size}"
         )
-        com.eunilsung.talk.data.remote.share.PendingShareNavigation.set(content)
+        PendingShareNavigation.set(content)
 
         intent.removeExtra(Intent.EXTRA_TEXT)
         intent.removeExtra(Intent.EXTRA_STREAM)
@@ -108,7 +113,7 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         AppSwitcherSnapshotGuard.onResume(this)
-        com.eunilsung.talk.data.remote.push.SystemNotificationBridge.refreshEnabled()
+        SystemNotificationBridge.refreshEnabled()
     }
 
     override fun onPause() {

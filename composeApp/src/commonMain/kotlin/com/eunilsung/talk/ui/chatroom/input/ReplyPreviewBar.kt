@@ -111,7 +111,7 @@ private fun ReplyLeading(target: Chat.Item) {
 
     when (target.chatType) {
         Chat.Type.IMAGE -> {
-            val isSending = target.chatStatue == Chat.Statue.SENDING
+            val isSending = target.chatStatus == Chat.Status.SENDING
             val hasLocal = isSending && target.localPath.isNotBlank()
             if (target.imagePath.isNotBlank() || hasLocal) {
                 val url = if (hasLocal) target.localPath

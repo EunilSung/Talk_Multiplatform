@@ -32,6 +32,8 @@ import com.eunilsung.talk.data.remote.push.PushNotifier
 import com.eunilsung.talk.domain.repository.SystemNotificationGate
 import org.koin.dsl.module
 import platform.UIKit.UIDevice
+import com.eunilsung.talk.data.local.BiometricAuthenticator
+import com.eunilsung.talk.data.local.IosBiometricAuthenticator
 
 class IOSPlatform : Platform {
     override val name: String = "IPHONE"
@@ -55,8 +57,8 @@ val platformModule = module {
     single<NotificationSoundPreviewer> { IosNotificationSoundPreviewer() }
     single { HttpClient(Darwin) { install(WebSockets) } }
     single<AppVersionProvider> { IosAppVersionProvider() }
-    single<com.eunilsung.talk.data.local.BiometricAuthenticator> {
-        com.eunilsung.talk.data.local.IosBiometricAuthenticator()
+    single<BiometricAuthenticator> {
+        IosBiometricAuthenticator()
     }
     single<ExternalUrlOpener> { IosExternalUrlOpener() }
     single<AppExiter> { IosAppExiter() }

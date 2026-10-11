@@ -7,6 +7,7 @@ import com.eunilsung.talk.shared.api.MessageKind
 import com.eunilsung.talk.shared.api.MessagePayloadDto
 import com.eunilsung.talk.shared.api.SendMessageRequest
 import kotlin.test.Test
+import com.eunilsung.talk.data.remote.server.ServerResult
 
 /** 파일과 투표 — 올린 파일이 그대로 내려오는지, 투표의 생성·참여·마감이 양쪽에 같은 결과로 보이는지. */
 class FileAndVoteScenarioTest {
@@ -25,7 +26,7 @@ class FileAndVoteScenarioTest {
                     harness.deviceFiles.put("/device/$tag.txt", bytes)
                     harness.chats.sendFile(roomId, "/device/$tag.txt")
                     awaitTrue("파일 전송 완료") {
-                        harness.chatsOf(roomId).any { it.originalFileName == "$tag.txt" && it.chatStatue == Chat.Statue.COMPLETE }
+                        harness.chatsOf(roomId).any { it.originalFileName == "$tag.txt" && it.chatStatus == Chat.Status.COMPLETE }
                     }
                     requireEquals(Chat.Type.FILE, harness.chatsOf(roomId).first { it.originalFileName == "$tag.txt" }.chatType, "대화 종류")
                     val seen = peer.messages(roomId).first { it.payload?.fileName == "$tag.txt" }
@@ -51,7 +52,7 @@ class FileAndVoteScenarioTest {
                     val outsider = harness.peer(OUTSIDER)
                     val fileId = peer.messages(roomId).first { it.payload?.fileName == "$tag.txt" }.payload?.fileId.orEmpty()
                     val result = outsider.client.downloadFile(fileId)
-                    require(result !is com.eunilsung.talk.data.remote.server.ServerResult.Success, "방 밖의 사람이 파일을 받았다")
+                    require(result !is ServerResult.Success, "방 밖의 사람이 파일을 받았다")
                 }
             },
         )
@@ -92,7 +93,7 @@ class FileAndVoteScenarioTest {
                     awaitTrue("마감 대화 도착") { harness.chatsOf(roomId).any { it.chatType == Chat.Type.VOTE_COMPLETE } }
                     requireEquals(true, harness.votes.fetchVote(roomId, voteId)?.isClosed, "마감 여부")
                     val late = harness.peer(RealServerHarness.THIRD).client.castVote(roomId, voteId, listOf(0))
-                    require(late !is com.eunilsung.talk.data.remote.server.ServerResult.Success, "마감한 투표가 표를 받았다")
+                    require(late !is ServerResult.Success, "마감한 투표가 표를 받았다")
                 }
             },
         )

@@ -4,7 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import com.eunilsung.talk.data.local.ProfilePhotoStore
-import com.eunilsung.talk.data.sample.TestProfileImages
+import com.eunilsung.talk.data.local.seed.TestProfileImages
 
 /** 프로필 이미지 강제 갱신 버전 — 사진 교체 시 [bump] 호출로 재구성 유발. */
 object ProfileImageRefresh {

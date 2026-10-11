@@ -23,7 +23,7 @@ class DetailScenarioTest {
                 step("이모티콘과 함께 보낸 말이 이모티콘 대화로 가고 상대에게도 그 이모티콘이 보인다") {
                     harness.chats.sendTextChat(roomId, "$tag 이모티콘과 함께", emoticonId = EMOTICON_ID)
                     awaitTrue("전송 완료") {
-                        harness.chatsOf(roomId).any { it.emoticon.id == EMOTICON_ID && it.chatStatue == Chat.Statue.COMPLETE }
+                        harness.chatsOf(roomId).any { it.emoticon.id == EMOTICON_ID && it.chatStatus == Chat.Status.COMPLETE }
                     }
                     val mine = harness.chatsOf(roomId).first { it.emoticon.id == EMOTICON_ID }
                     requireEquals(Chat.Type.EMOTICON, mine.chatType, "대화 종류")
@@ -44,7 +44,7 @@ class DetailScenarioTest {
                     harness.deviceFiles.put("/device/$tag.png", ByteArray(PHOTO_BYTES) { (it % 127).toByte() })
                     harness.chats.sendFile(roomId, "/device/$tag.png")
                     awaitTrue("사진 전송 완료") {
-                        harness.chatsOf(roomId).any { it.originalFileName == "$tag.png" && it.chatStatue == Chat.Statue.COMPLETE }
+                        harness.chatsOf(roomId).any { it.originalFileName == "$tag.png" && it.chatStatus == Chat.Status.COMPLETE }
                     }
                     val mine = harness.chatsOf(roomId).first { it.originalFileName == "$tag.png" }
                     chatId = mine.chatID

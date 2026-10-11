@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.repository
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +39,8 @@ import com.eunilsung.talk.util.EMOTICON_LABEL
 import com.eunilsung.talk.util.chatDisplayText
 import com.eunilsung.talk.util.stripMentionTags
 import com.eunilsung.talk.util.UserListCodec
+import com.eunilsung.talk.data.local.seed.TestAccounts
+import com.eunilsung.talk.data.local.seed.TestChats
 
 /** `ChatEntity` 에 직접 읽고 쓰는 대화 내용 저장소. */
 class LocalChatRoomRepositoryImpl(
@@ -175,7 +177,7 @@ class LocalChatRoomRepositoryImpl(
         if (text.isBlank() && emoticonId.isNullOrBlank()) return@withContext
 
         /** 서버가 없으므로 곧바로 전송 완료 상태로 둔다. */
-        val chat = buildTextChat(chatRoomId, text, replyTarget, emoticonId, Chat.Statue.COMPLETE)
+        val chat = buildTextChat(chatRoomId, text, replyTarget, emoticonId, Chat.Status.COMPLETE)
         appendMyChat(chatRoomId, chat)
         Log.message("[Chat/Local] sent ${chat.chatID} in $chatRoomId")
     }
@@ -199,7 +201,7 @@ class LocalChatRoomRepositoryImpl(
                 else -> Chat.Type.TEXT
             },
             chatContent = text,
-            chatStatue = statue,
+            chatStatus = statue,
             date = nowChatDate(),
             unReadCount = "0",
             user = sender,
@@ -231,7 +233,7 @@ class LocalChatRoomRepositoryImpl(
         }
 
     override suspend fun sendFile(chatRoomId: String, path: String) {
-        val chat = buildFileChat(chatRoomId, path, Chat.Statue.COMPLETE) ?: return
+        val chat = buildFileChat(chatRoomId, path, Chat.Status.COMPLETE) ?: return
         appendMyChat(chatRoomId, chat)
         Log.message("[Chat/Local] sent file '${chat.originalFileName}' (${chat.chatType}) in $chatRoomId")
     }
@@ -272,7 +274,7 @@ class LocalChatRoomRepositoryImpl(
                 },
                 // 파일 말풍선 부제 — 이미지는 "(사진)", 그 외는 파일 크기.
                 chatContent = if (chatType == Chat.Type.IMAGE) "(사진)" else formatFileSize(meta.sizeBytes),
-                chatStatue = statue,
+                chatStatus = statue,
                 date = nowChatDate(),
                 unReadCount = "0",
                 user = sender,
@@ -403,7 +405,7 @@ class LocalChatRoomRepositoryImpl(
                 chatContent = noticeContent,
                 // 등록/삭제 구분 — 문구는 표시하는 쪽에서 고른다.
                 title = if (added) Notice.ACTION_ADD else Notice.ACTION_DELETE,
-                chatStatue = Chat.Statue.COMPLETE,
+                chatStatus = Chat.Status.COMPLETE,
                 date = nowChatDate(),
                 unReadCount = "0",
                 user = sender,
@@ -542,7 +544,7 @@ class LocalChatRoomRepositoryImpl(
         val chats = dbQueries.selectRecentChatsByRoom(myId, chatRoomId, loadLimits[chatRoomId] ?: LOAD_LIMIT)
             .executeAsList()
             .map { chatMapper.toModel(it) }
-            .sortedWith(compareBy({ it.date }, { Chat.Statue.displayPriority(it.chatStatue) }))
+            .sortedWith(compareBy({ it.date }, { Chat.Status.displayPriority(it.chatStatus) }))
         chatsByRoom.value = chatsByRoom.value + (chatRoomId to chats)
         syncRoomPreview(myId, chatRoomId, chats.lastOrNull())
     }

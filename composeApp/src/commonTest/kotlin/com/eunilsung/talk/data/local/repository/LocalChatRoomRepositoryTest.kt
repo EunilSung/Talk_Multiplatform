@@ -1,4 +1,4 @@
-package com.eunilsung.talk.data.sample
+package com.eunilsung.talk.data.local.repository
 
 import com.eunilsung.talk.data.local.FileMetadata
 import com.eunilsung.talk.data.local.FileMetadataResolver
@@ -20,6 +20,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.eunilsung.talk.domain.model.Notice
 
 /**
  * 대화 저장소 통합 — 공감 토글 / 공지 / 책갈피 / 회수.
@@ -130,7 +131,7 @@ class LocalChatRoomRepositoryTest {
         assertEquals(Chat.Type.NOTICE, noticeChat.chatType)
         // 본문은 chatContent, 등록/삭제 구분은 title.
         assertEquals("금요일 3시 전체 회의", noticeChat.chatContent)
-        assertEquals(com.eunilsung.talk.domain.model.Notice.ACTION_ADD, noticeChat.title)
+        assertEquals(Notice.ACTION_ADD, noticeChat.title)
     }
 
     @Test
@@ -143,7 +144,7 @@ class LocalChatRoomRepositoryTest {
         assertNull(repo.currentNotice.value)
         val last = chats().last()
         assertEquals(Chat.Type.NOTICE, last.chatType)
-        assertEquals(com.eunilsung.talk.domain.model.Notice.ACTION_DELETE, last.title)
+        assertEquals(Notice.ACTION_DELETE, last.title)
         assertEquals("임시 공지", last.chatContent)
     }
 

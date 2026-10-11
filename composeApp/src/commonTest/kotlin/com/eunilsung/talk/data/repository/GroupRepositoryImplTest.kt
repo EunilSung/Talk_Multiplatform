@@ -3,7 +3,7 @@ package com.eunilsung.talk.data.repository
 import com.eunilsung.talk.data.mapper.GroupMapper
 import com.eunilsung.talk.data.remote.server.UserDirectory
 import com.eunilsung.talk.data.repository.GroupRepositoryImpl.Companion.toGroupUser
-import com.eunilsung.talk.data.sample.LocalGroupRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalGroupRepositoryImpl
 import com.eunilsung.talk.domain.model.Group
 import com.eunilsung.talk.domain.model.MY_PROFILE_GROUP_ID
 import com.eunilsung.talk.domain.repository.AddUserResult

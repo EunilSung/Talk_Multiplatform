@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eunilsung.talk.ui.theme.AppColors
+import androidx.compose.animation.core.tween
 
 @Composable
 fun DateHeaderItem(
@@ -35,7 +36,7 @@ fun DateHeaderItem(
         if (!isHighlighted) return@LaunchedEffect
         val amplitudes = listOf(8f, -8f, 6f, -6f, 4f, -4f, 2f, -2f, 0f)
         amplitudes.forEach { amp ->
-            offsetX.animateTo(amp, animationSpec = androidx.compose.animation.core.tween(durationMillis = 60))
+            offsetX.animateTo(amp, animationSpec = tween(durationMillis = 60))
         }
     }
 

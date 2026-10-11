@@ -76,7 +76,7 @@ class ChatRoomViewModelScenarioTest {
                 step("보내면 화면 목록에 전송 완료로 나타나고 상대에게 간다") {
                     viewModel.onAction(ChatRoomActions.OnSendText("$tag 화면에서 보냄"))
                     awaitTrue("화면에 전송 완료") {
-                        viewModel.shown().any { it.chat.chatContent == "$tag 화면에서 보냄" && it.chat.chatStatue == Chat.Statue.COMPLETE }
+                        viewModel.shown().any { it.chat.chatContent == "$tag 화면에서 보냄" && it.chat.chatStatus == Chat.Status.COMPLETE }
                     }
                     require(peer.messages(roomId).any { it.content == "$tag 화면에서 보냄" }, "상대에게 가지 않았다")
                 }

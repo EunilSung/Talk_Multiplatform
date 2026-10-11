@@ -36,6 +36,7 @@ import multiplatformtalk.composeapp.generated.resources.setting_noti_sound_item
 import com.eunilsung.talk.ui.setting.component.SettingItemNavigate
 import com.eunilsung.talk.ui.setting.overlay.notificationSoundLabel
 import org.jetbrains.compose.resources.stringResource
+import com.eunilsung.talk.ui.screenlock.setting.ScreenLockSettingScreen
 
 class SettingSecurityDetailScreen : Screen {
     override val key: ScreenKey = uniqueScreenKey
@@ -54,7 +55,7 @@ class SettingSecurityDetailScreen : Screen {
             SecurityDetailBody(
                 padding = padding,
                 onScreenLock = {
-                    navigator.push(com.eunilsung.talk.ui.screenlock.setting.ScreenLockSettingScreen())
+                    navigator.push(ScreenLockSettingScreen())
                 },
                 onMobileLogout = {
                     dialog.confirm(

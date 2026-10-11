@@ -9,7 +9,7 @@ import com.eunilsung.talk.data.remote.server.ServerResult
 import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.data.remote.server.UserDirectory
 import com.eunilsung.talk.data.remote.server.valueOrNull
-import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalChatRoomRepositoryImpl
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
@@ -118,7 +118,7 @@ class ChatRoomRepositoryImpl(
      */
     override suspend fun fetchMoreChats(chatRoomId: String): Boolean {
         val oldest = local.getChats(chatRoomId).first()
-            .firstOrNull { it.chatStatue == Chat.Statue.COMPLETE }
+            .firstOrNull { it.chatStatus == Chat.Status.COMPLETE }
             ?.chatID
             ?: return false
         val older = when (val result = server.messages(chatRoomId, beforeId = oldest, limit = PAGE_SIZE)) {
@@ -243,7 +243,7 @@ class ChatRoomRepositoryImpl(
         if (Config.MyInfo.userId.isBlank() || chatRoomId.isBlank()) return
         if (text.isBlank() && emoticonId.isNullOrBlank()) return
 
-        val chat = local.buildTextChat(chatRoomId, text, replyTarget, emoticonId, Chat.Statue.SENDING)
+        val chat = local.buildTextChat(chatRoomId, text, replyTarget, emoticonId, Chat.Status.SENDING)
         sendingIds.update { it + chat.chatID }
         local.appendMyChat(chatRoomId, chat)
         deliver(chatRoomId, chat)
@@ -257,10 +257,10 @@ class ChatRoomRepositoryImpl(
      */
     override suspend fun resendFailedChat(chatRoomId: String, chatId: String) {
         val failed = local.getChats(chatRoomId).first()
-            .firstOrNull { it.chatID == chatId && it.chatStatue == Chat.Statue.FAIL }
+            .firstOrNull { it.chatID == chatId && it.chatStatus == Chat.Status.FAIL }
             ?: return
         val retry = failed.copy(
-            chatStatue = Chat.Statue.SENDING,
+            chatStatus = Chat.Status.SENDING,
             date = ChatIdUtils.formatChatDate(ChatIdUtils.nowAsLocalDateTime()),
         )
         sendingIds.update { it + retry.chatID }
@@ -278,7 +278,7 @@ class ChatRoomRepositoryImpl(
 
     override suspend fun refreshChatUnreadCounts(chatRoomId: String) {
         val oldest = local.getChats(chatRoomId).first()
-            .firstOrNull { it.chatStatue == Chat.Statue.COMPLETE }
+            .firstOrNull { it.chatStatus == Chat.Status.COMPLETE }
             ?.chatID
             ?: return
         val counts = server.unreadCounts(chatRoomId, oldest).valueOrNull() ?: return
@@ -327,14 +327,14 @@ class ChatRoomRepositoryImpl(
      * 파일만 올라가고 대화가 못 간 경우에도 실패로 남긴다 — 상대에게는 아무것도 보이지 않았기 때문이다.
      */
     override suspend fun sendFile(chatRoomId: String, path: String) {
-        val chat = local.buildFileChat(chatRoomId, path, Chat.Statue.SENDING) ?: return
+        val chat = local.buildFileChat(chatRoomId, path, Chat.Status.SENDING) ?: return
         sendingIds.update { it + chat.chatID }
         local.appendMyChat(chatRoomId, chat)
         deliverFile(chatRoomId, chat)
     }
 
     private suspend fun deliverFile(chatRoomId: String, chat: Chat.Item) {
-        val settled = uploadAndSend(chatRoomId, chat) ?: chat.copy(chatStatue = Chat.Statue.FAIL)
+        val settled = uploadAndSend(chatRoomId, chat) ?: chat.copy(chatStatus = Chat.Status.FAIL)
         local.storeChats(chatRoomId, listOf(settled))
         sendingIds.update { it - chat.chatID }
     }
@@ -385,7 +385,7 @@ class ChatRoomRepositoryImpl(
     private suspend fun deliver(chatRoomId: String, chat: Chat.Item) {
         val settled = when (val result = server.sendMessage(chatRoomId, mapper.toRequest(chat))) {
             is ServerResult.Success -> mapper.toChat(result.value)
-            else -> chat.copy(chatStatue = Chat.Statue.FAIL)
+            else -> chat.copy(chatStatus = Chat.Status.FAIL)
         }
         local.storeChats(chatRoomId, listOf(settled))
         sendingIds.update { it - chat.chatID }
@@ -399,9 +399,9 @@ class ChatRoomRepositoryImpl(
      */
     private suspend fun failStaleSendingChats(chatRoomId: String) {
         val stale = local.getChats(chatRoomId).first()
-            .filter { it.chatStatue == Chat.Statue.SENDING && it.chatID !in sendingIds.value }
+            .filter { it.chatStatus == Chat.Status.SENDING && it.chatID !in sendingIds.value }
         if (stale.isNotEmpty()) {
-            local.storeChats(chatRoomId, stale.map { it.copy(chatStatue = Chat.Statue.FAIL) })
+            local.storeChats(chatRoomId, stale.map { it.copy(chatStatus = Chat.Status.FAIL) })
         }
     }
 

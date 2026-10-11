@@ -7,4 +7,4 @@ val LocalRightNavigator = compositionLocalOf<Navigator> {
     error("LocalRightNavigator is not provided. Wrap usage with MainContent.")
 }
 
-val LocalRightPaneOpen = androidx.compose.runtime.compositionLocalOf { false }
+val LocalRightPaneOpen = compositionLocalOf { false }

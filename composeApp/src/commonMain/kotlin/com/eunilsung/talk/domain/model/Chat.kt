@@ -11,7 +11,7 @@ sealed class Chat {
         val chatType: String = "0",
         val title: String = "",
         val chatContent: String = "",
-        val chatStatue: String = "0",
+        val chatStatus: String = "0",
         val date: String = "",
         val unReadCount: String = "0",
         val empathy: EmpathyChat = EmpathyChat(),
@@ -60,7 +60,7 @@ sealed class Chat {
     }
 
     /** 전송 상태. */
-    object Statue {
+    object Status {
         const val SENDING           = "0"
         const val FAIL              = "1"
         const val COMPLETE          = "2"
@@ -86,9 +86,9 @@ sealed class Chat {
 
         /** 화면 정렬용 표준 Comparator — 하단고정 → 날짜 ASC → 전송상태 순. */
         val SortByDateAndStatue: Comparator<Item> =
-            compareBy<Item> { Statue.bottomPinRank(it.chatStatue) }
+            compareBy<Item> { Status.bottomPinRank(it.chatStatus) }
                 .thenBy { it.date }
-                .thenBy { Statue.displayPriority(it.chatStatue) }
+                .thenBy { Status.displayPriority(it.chatStatus) }
 
         /** 첨부 파일 path 의 확장자/URI 패턴으로 chatType 분류. */
         fun typeFromPath(path: String): String {

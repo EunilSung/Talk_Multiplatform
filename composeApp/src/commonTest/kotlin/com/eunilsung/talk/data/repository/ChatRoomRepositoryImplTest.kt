@@ -5,9 +5,9 @@ import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.data.mapper.ServerChatMapper
 import com.eunilsung.talk.data.remote.server.ServerFileStore
 import com.eunilsung.talk.data.remote.server.UserDirectory
-import com.eunilsung.talk.data.sample.ChatSenderOverride
-import com.eunilsung.talk.data.sample.LocalChatRoomListRepositoryImpl
-import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
+import com.eunilsung.talk.data.local.repository.ChatSenderOverride
+import com.eunilsung.talk.data.local.repository.LocalChatRoomListRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalChatRoomRepositoryImpl
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.shared.api.ServerEvent
@@ -94,7 +94,7 @@ class ChatRoomRepositoryImplTest {
         repo.fetchChats(roomId)
 
         assertEquals(listOf("안녕", "점심 먹었어?"), contents())
-        assertTrue(chats().all { it.chatStatue == Chat.Statue.COMPLETE && it.user.name == "이서연" })
+        assertTrue(chats().all { it.chatStatus == Chat.Status.COMPLETE && it.user.name == "이서연" })
     }
 
     @Test
@@ -140,7 +140,7 @@ class ChatRoomRepositoryImplTest {
         repo.sendTextChat(roomId, "보냅니다")
 
         val sent = chats().single()
-        assertEquals(Chat.Statue.COMPLETE, sent.chatStatue)
+        assertEquals(Chat.Status.COMPLETE, sent.chatStatus)
         assertEquals("보냅니다", server.messagesOf(roomId).single().content)
         assertEquals(sent.chatID, server.messagesOf(roomId).single().id)
         assertEquals("1", sent.unReadCount)
@@ -152,12 +152,12 @@ class ChatRoomRepositoryImplTest {
         server.isReachable = false
         repo.sendTextChat(roomId, "끊긴 사이")
         val failed = chats().single()
-        assertEquals(Chat.Statue.FAIL, failed.chatStatue)
+        assertEquals(Chat.Status.FAIL, failed.chatStatus)
 
         server.isReachable = true
         repo.resendFailedChat(roomId, failed.chatID)
 
-        assertEquals(Chat.Statue.COMPLETE, chats().single().chatStatue)
+        assertEquals(Chat.Status.COMPLETE, chats().single().chatStatus)
         assertEquals(listOf(failed.chatID), server.messagesOf(roomId).map { it.id })
     }
 
@@ -246,12 +246,12 @@ class ChatRoomRepositoryImplTest {
             LocalChatRoomListRepositoryImpl(FakeLoginRepository(), MapSettings(), ChatRoomMapper(), database, seedsSampleRooms = false),
             deviceFiles, ChatSenderOverride(), database, seedsSampleChats = false,
         )
-        local.appendMyChat(roomId, local.buildTextChat(roomId, "보내다 꺼짐", null, null, Chat.Statue.SENDING))
+        local.appendMyChat(roomId, local.buildTextChat(roomId, "보내다 꺼짐", null, null, Chat.Status.SENDING))
 
         repo = newRepository()
         repo.fetchChats(roomId)
 
-        assertEquals(Chat.Statue.FAIL, chats().single().chatStatue)
+        assertEquals(Chat.Status.FAIL, chats().single().chatStatus)
         assertTrue(server.messagesOf(roomId).isEmpty())
     }
 
@@ -283,7 +283,7 @@ class ChatRoomRepositoryImplTest {
         assertEquals(FakeFileMetadataResolver.IMAGE_SIZE, stored.payload?.imageSize)
         assertTrue(photo.contentEquals(server.uploads[stored.payload?.fileId]))
         val mine = chats().single()
-        assertEquals(Chat.Statue.COMPLETE, mine.chatStatue)
+        assertEquals(Chat.Status.COMPLETE, mine.chatStatus)
         assertEquals(Chat.Type.IMAGE, mine.chatType)
         assertEquals("/gallery/trip.jpg", mine.imagePath)
         assertTrue(server.calls.none { it.startsWith("download") })
@@ -296,13 +296,13 @@ class ChatRoomRepositoryImplTest {
         server.isReachable = false
         repo.sendFile(roomId, "/docs/report.pdf")
         val failed = chats().single()
-        assertEquals(Chat.Statue.FAIL, failed.chatStatue)
+        assertEquals(Chat.Status.FAIL, failed.chatStatus)
         assertEquals(Chat.Type.FILE, failed.chatType)
 
         server.isReachable = true
         repo.resendFailedChat(roomId, failed.chatID)
 
-        assertEquals(Chat.Statue.COMPLETE, chats().single().chatStatue)
+        assertEquals(Chat.Status.COMPLETE, chats().single().chatStatus)
         assertEquals(listOf(failed.chatID), server.messagesOf(roomId).map { it.id })
         assertEquals("file", server.messagesOf(roomId).single().kind)
     }

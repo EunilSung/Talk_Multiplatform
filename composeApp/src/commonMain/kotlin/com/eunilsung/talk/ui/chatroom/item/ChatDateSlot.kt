@@ -45,12 +45,12 @@ fun ChatDateSlot(
             horizontalAlignment = if (itemProps.isMe) Alignment.End else Alignment.Start,
         ) {
             if (itemProps.isMe) {
-                if (itemProps.chat.chatStatue == Chat.Statue.COMPLETE) {
+                if (itemProps.chat.chatStatus == Chat.Status.COMPLETE) {
                     UnreadCountLabel(itemProps.chat.unReadCount)
                 }
-                if (itemProps.showTime || itemProps.chat.chatStatue != Chat.Statue.COMPLETE) {
+                if (itemProps.showTime || itemProps.chat.chatStatus != Chat.Status.COMPLETE) {
                     ChatSendStatueSlot(
-                        statue = itemProps.chat.chatStatue,
+                        statue = itemProps.chat.chatStatus,
                         displayDate = chatTimeText(itemProps.chat.date),
                         onResend = itemProps.onResend,
                         onDelete = itemProps.onDelete,
@@ -112,14 +112,14 @@ private fun ChatSendStatueSlot(
     modifier: Modifier,
 ) {
     when (statue) {
-        Chat.Statue.SENDING -> {
+        Chat.Status.SENDING -> {
             CircularProgressIndicator(
                 modifier = modifier.size(12.dp),
                 color = AppColors.PrimaryMain,
                 strokeWidth = 1.5.dp,
             )
         }
-        Chat.Statue.FAIL -> {
+        Chat.Status.FAIL -> {
             Row(
                 modifier = modifier,
                 verticalAlignment = Alignment.CenterVertically,

@@ -4,7 +4,7 @@ import com.eunilsung.talk.Config
 import com.eunilsung.talk.data.mapper.ServerChatMapper
 import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.data.remote.server.valueOrNull
-import com.eunilsung.talk.data.sample.LocalChatRoomRepositoryImpl
+import com.eunilsung.talk.data.local.repository.LocalChatRoomRepositoryImpl
 import com.eunilsung.talk.domain.model.VoteData
 import com.eunilsung.talk.domain.model.VoteForm
 import com.eunilsung.talk.domain.model.VoteSummary

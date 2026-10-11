@@ -71,7 +71,7 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
                 MessageKind.VIDEO, MessageKind.FILE -> formatFileSize(payload?.fileSize ?: -1)
                 else -> message.content
             },
-            chatStatue = Chat.Statue.COMPLETE,
+            chatStatus = Chat.Status.COMPLETE,
             date = chatDateOf(message.sentAtEpochMillis),
             unReadCount = message.unreadCount.toString(),
             user = User(id = message.senderId, name = message.senderName),

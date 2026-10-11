@@ -10,7 +10,7 @@ import com.eunilsung.talk.domain.model.ChatGroup
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 
 /** 대화 그룹 관리 화면 VM — 그룹 목록 구독 + 생성/이름변경/삭제/순서변경. */
-class ChatRoomRoomGroupManageViewModel(
+class ChatRoomGroupManageViewModel(
     private val useCases: ChatRoomListUseCases
 ) : ViewModel() {
 

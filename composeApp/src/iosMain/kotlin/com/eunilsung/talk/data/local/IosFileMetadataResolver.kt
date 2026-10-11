@@ -64,7 +64,7 @@ class IosFileMetadataResolver : FileMetadataResolver {
                     NSData.create(bytes = pinned.addressOf(0), length = bytes.size.toULong())
                 }
                 val image = UIImage.imageWithData(nsData) ?: return@withContext null
-                kotlinx.coroutines.suspendCancellableCoroutine<String?> { cont ->
+                suspendCancellableCoroutine<String?> { cont ->
                     PHPhotoLibrary.sharedPhotoLibrary().performChanges(
                         changeBlock = {
                             PHAssetChangeRequest.creationRequestForAssetFromImage(image)
@@ -90,7 +90,7 @@ class IosFileMetadataResolver : FileMetadataResolver {
                 if (!nsData.writeToFile(tmpPath, atomically = true)) return@withContext null
                 val fileUrl = NSURL.fileURLWithPath(tmpPath)
 
-                kotlinx.coroutines.suspendCancellableCoroutine<String?> { cont ->
+                suspendCancellableCoroutine<String?> { cont ->
                     PHPhotoLibrary.sharedPhotoLibrary().performChanges(
                         changeBlock = {
                             PHAssetChangeRequest.creationRequestForAssetFromVideoAtFileURL(fileUrl)

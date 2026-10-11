@@ -53,6 +53,7 @@ import com.eunilsung.talk.ui.uikit.BackHandler
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import com.eunilsung.talk.ui.uikit.rememberMoveToBackground
 
 /** 앱 전역 화면 잠금 게이트 — 잠금 사용 중 + 로그인 + locked 이면 전체화면 잠금 표시. */
 @Composable
@@ -87,7 +88,7 @@ private fun LockScreenHost(onUnlocked: () -> Unit) {
     var errorKey by remember { mutableStateOf(0) }
     var isError by remember { mutableStateOf(false) }
 
-    val moveToBackground = com.eunilsung.talk.ui.uikit.rememberMoveToBackground()
+    val moveToBackground = rememberMoveToBackground()
     BackHandler(enabled = true) { moveToBackground() }
 
     val bioTitle = stringResource(Res.string.lock_biometric_prompt_title)
