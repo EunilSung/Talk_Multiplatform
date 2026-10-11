@@ -28,7 +28,7 @@ import com.eunilsung.talk.data.remote.push.IosNotificationSoundPreviewer
 import com.eunilsung.talk.data.remote.push.IosPushNotifier
 import com.eunilsung.talk.data.remote.push.IosSystemNotificationGate
 import com.eunilsung.talk.data.remote.push.NotificationSoundPreviewer
-import com.eunilsung.talk.data.remote.push.PushNotifier
+import com.eunilsung.talk.domain.repository.PushNotifier
 import com.eunilsung.talk.domain.repository.SystemNotificationGate
 import org.koin.dsl.module
 import platform.UIKit.UIDevice

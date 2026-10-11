@@ -68,10 +68,20 @@ import com.eunilsung.talk.ui.chatroom.vote.VoteViewModel
 import org.koin.core.module.dsl.singleOf
 import org.koin.compose.viewmodel.dsl.viewModelOf
 import org.koin.dsl.module
-import com.eunilsung.talk.data.remote.linkpreview.LinkPreviewRepository
+import com.eunilsung.talk.data.remote.linkpreview.LinkPreviewRepositoryImpl
+import com.eunilsung.talk.domain.repository.LinkPreviewRepository
 import com.eunilsung.talk.data.remote.push.PushPayloadParser
 import com.eunilsung.talk.data.repository.ScreenLockRepositoryImpl
 import com.eunilsung.talk.domain.repository.ScreenLockRepository
+import com.eunilsung.talk.domain.repository.NoticeUiStateRepository
+import com.eunilsung.talk.domain.repository.CurrentChatRoomRepository
+import com.eunilsung.talk.domain.repository.PendingPushNavigationRepository
+import com.eunilsung.talk.domain.repository.PendingShareNavigationRepository
+import com.eunilsung.talk.domain.repository.AppMaintenanceRepository
+import com.eunilsung.talk.data.repository.AppMaintenanceRepositoryImpl
+import com.eunilsung.talk.data.remote.push.CurrentChatRoomTracker
+import com.eunilsung.talk.data.remote.push.PendingPushNavigation
+import com.eunilsung.talk.data.remote.share.PendingShareNavigation
 
 val appModule = module {
     single { Settings() }
@@ -86,7 +96,7 @@ val appModule = module {
     }
     single { PushPayloadParser() }
 
-    single { LinkPreviewRepository(get()) }
+    single<LinkPreviewRepository> { LinkPreviewRepositoryImpl(get()) }
 
     // 원격 XML 대신 즉시 "업데이트 불필요" 반환.
     single<VersionCheckRepository> { LocalVersionCheckRepositoryImpl() }
@@ -158,7 +168,11 @@ val appModule = module {
     }
 
     viewModelOf(::ChatRoomViewModel)
-    singleOf(::NoticeUiStateStore)
+    single<NoticeUiStateRepository> { NoticeUiStateStore(get()) }
+    single<CurrentChatRoomRepository> { CurrentChatRoomTracker }
+    single<PendingPushNavigationRepository> { PendingPushNavigation }
+    single<PendingShareNavigationRepository> { PendingShareNavigation }
+    single<AppMaintenanceRepository> { AppMaintenanceRepositoryImpl(get(), get()) }
 
     singleOf(::ChatMapper)
     // ChatEntity 에 대화를 직접 읽고 쓴다. (투표 저장소도 구현 타입이 필요해 둘 다 등록)

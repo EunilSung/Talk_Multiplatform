@@ -12,6 +12,7 @@ import com.eunilsung.talk.ui.chatroom.ChatRoomViewModel
 import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import com.eunilsung.talk.data.remote.push.CurrentChatRoomTracker
 
 /**
  * 진짜 서버에 붙은 저장소 위에 대화방 ViewModel 을 세운다.
@@ -75,6 +76,7 @@ fun RealServerHarness.chatRoomViewModel(): ChatRoomViewModel {
         inviteUseCases = InviteUseCases(InviteUsersUseCase(invite)),
         senderOverride = ChatSenderOverride(),
         noticeUiStateStore = NoticeUiStateStore(MapSettings()),
+        currentChatRoom = CurrentChatRoomTracker,
     )
 }
 

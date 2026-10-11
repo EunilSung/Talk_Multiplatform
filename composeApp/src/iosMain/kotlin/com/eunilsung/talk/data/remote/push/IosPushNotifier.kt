@@ -9,6 +9,7 @@ import platform.UserNotifications.UNNotification
 import platform.UserNotifications.UNNotificationRequest
 import platform.UserNotifications.UNNotificationSound
 import platform.UserNotifications.UNUserNotificationCenter
+import com.eunilsung.talk.domain.repository.PushNotifier
 
 /** iOS [PushNotifier] 구현 — `UNUserNotificationCenter` 로컬 알림. */
 @OptIn(ExperimentalForeignApi::class)

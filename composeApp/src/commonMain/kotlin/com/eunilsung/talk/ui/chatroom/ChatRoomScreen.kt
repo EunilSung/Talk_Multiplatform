@@ -60,8 +60,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.eunilsung.talk.data.local.RecentPhotosResult
-import com.eunilsung.talk.data.remote.push.CurrentChatRoomTracker
-import com.eunilsung.talk.data.remote.push.PushNotifier
+import com.eunilsung.talk.domain.repository.PushNotifier
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.model.User
@@ -112,6 +111,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.mp.KoinPlatform
 import com.eunilsung.talk.domain.repository.ChatRoomRepository
 import androidx.compose.runtime.rememberUpdatedState
+import com.eunilsung.talk.domain.repository.CurrentChatRoomRepository
 
 class ChatRoomScreen(
     val chatRoomId: String
@@ -120,8 +120,9 @@ class ChatRoomScreen(
 
     @Composable
     override fun Content() {
+        val roomTracker: CurrentChatRoomRepository = koinInject()
         DisposableEffect(chatRoomId) {
-            CurrentChatRoomTracker.set(chatRoomId)
+            roomTracker.set(chatRoomId)
 
             runCatching {
                 KoinPlatform.getKoin()
@@ -130,8 +131,8 @@ class ChatRoomScreen(
             }
 
             onDispose {
-                if (CurrentChatRoomTracker.currentChatRoomId == chatRoomId) {
-                    CurrentChatRoomTracker.clear()
+                if (roomTracker.currentChatRoomId == chatRoomId) {
+                    roomTracker.clear()
                 }
 
                 runCatching {

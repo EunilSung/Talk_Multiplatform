@@ -40,7 +40,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import com.eunilsung.talk.ui.main.tab.CurrentAppTab
 import com.eunilsung.talk.ui.main.tab.rememberAppTabState
 import com.eunilsung.talk.domain.model.User
-import com.eunilsung.talk.data.remote.share.SharedContent
+import com.eunilsung.talk.domain.model.SharedContent
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.ui.chatroom.ChatRoomScreen
 import com.eunilsung.talk.ui.invite.InviteController

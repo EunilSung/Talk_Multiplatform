@@ -84,16 +84,18 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import com.eunilsung.talk.util.Log
 import androidx.compose.runtime.CompositionLocalProvider
-import com.eunilsung.talk.data.remote.push.PendingPushNavigation
-import com.eunilsung.talk.data.remote.push.PushNotifier
-import com.eunilsung.talk.data.remote.share.PendingShareNavigation
+import com.eunilsung.talk.domain.repository.PushNotifier
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
+import com.eunilsung.talk.domain.repository.PendingPushNavigationRepository
+import com.eunilsung.talk.domain.repository.PendingShareNavigationRepository
 
 object MainScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel: MainViewModel = koinViewModel()
         val loginRepository: LoginRepository = koinInject()
+        val pendingPush: PendingPushNavigationRepository = koinInject()
+        val pendingShare: PendingShareNavigationRepository = koinInject()
         val isLoggedIn by loginRepository.isLoggedIn.collectAsState()
 
         val imageContext = coil3.compose.LocalPlatformContext.current
@@ -133,8 +135,8 @@ object MainScreen : Screen {
                         .filter { !it }
                         .collect {
                             rightNavigator.popToEmptyRoot()
-                            PendingPushNavigation.consume()
-                            PendingShareNavigation.consume()
+                            pendingPush.consume()
+                            pendingShare.consume()
                         }
                 }
 

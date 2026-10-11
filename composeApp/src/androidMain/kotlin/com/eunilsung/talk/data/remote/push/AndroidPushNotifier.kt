@@ -15,6 +15,7 @@ import com.eunilsung.talk.MainActivity
 import com.eunilsung.talk.domain.model.PushPayload
 import com.eunilsung.talk.domain.repository.NotificationSettingsRepository
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.domain.repository.PushNotifier
 
 /** Android [PushNotifier] 구현 — NotificationCompat + 사운드/진동 조합별 38개 NotificationChannel. */
 class AndroidPushNotifier(

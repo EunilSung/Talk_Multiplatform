@@ -10,18 +10,20 @@ import com.eunilsung.talk.domain.repository.LoginRepository
 import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
 import com.eunilsung.talk.ui.uikit.sheet.LocalBottomSheetManager
 import com.eunilsung.talk.util.Log
-import com.eunilsung.talk.data.remote.push.PendingPushNavigation
-import com.eunilsung.talk.data.remote.push.PushNavRequest
-import com.eunilsung.talk.data.remote.share.PendingShareNavigation
+import com.eunilsung.talk.domain.model.PushNavRequest
 import com.eunilsung.talk.ui.chatroom.ChatRoomScreen
 import com.eunilsung.talk.ui.share.ShareScreen
+import com.eunilsung.talk.domain.repository.PendingPushNavigationRepository
+import com.eunilsung.talk.domain.repository.PendingShareNavigationRepository
+import org.koin.compose.koinInject
 
 @Composable
 internal fun PendingPushNavigationHandler(
     rightNavigator: cafe.adriel.voyager.navigator.Navigator,
     loginRepository: LoginRepository,
 ) {
-    val pending by PendingPushNavigation.pending.collectAsState()
+    val pendingPush: PendingPushNavigationRepository = koinInject()
+    val pending by pendingPush.pending.collectAsState()
     val isLoggedIn by loginRepository.isLoggedIn.collectAsState()
     val isConnected by loginRepository.isConnected.collectAsState()
 
@@ -42,7 +44,7 @@ internal fun PendingPushNavigationHandler(
             runCatching { loginRepository.checkConnectionAndRelogin() }
         }
 
-        val consumed = PendingPushNavigation.consume()
+        val consumed = pendingPush.consume()
             ?: return@LaunchedEffect
         Log.message("[PushNav] routing — kind=${consumed.kind} key=${consumed.msgKey} isConnected=$isConnected")
 
@@ -58,7 +60,8 @@ internal fun PendingPushNavigationHandler(
 internal fun PendingShareNavigationHandler(
     loginRepository: LoginRepository,
 ) {
-    val pending by PendingShareNavigation.pending.collectAsState()
+    val pendingShare: PendingShareNavigationRepository = koinInject()
+    val pending by pendingShare.pending.collectAsState()
     val isLoggedIn by loginRepository.isLoggedIn.collectAsState()
     val showOverlay = LocalFullScreenOverlay.current
 
@@ -68,7 +71,7 @@ internal fun PendingShareNavigationHandler(
             Log.message("[ShareNav] waiting — not logged in (text=${content.text.length} files=${content.filePaths.size})")
             return@LaunchedEffect
         }
-        val consumed = PendingShareNavigation.consume()
+        val consumed = pendingShare.consume()
             ?: return@LaunchedEffect
         Log.message("[ShareNav] routing — text=${consumed.text.length} files=${consumed.filePaths.size}")
         showOverlay(ShareScreen(consumed))
