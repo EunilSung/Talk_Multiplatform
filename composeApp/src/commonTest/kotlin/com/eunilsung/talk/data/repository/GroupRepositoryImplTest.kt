@@ -2,7 +2,7 @@ package com.eunilsung.talk.data.repository
 
 import com.eunilsung.talk.data.mapper.GroupMapper
 import com.eunilsung.talk.data.remote.server.UserDirectory
-import com.eunilsung.talk.data.repository.GroupRepositoryImpl.Companion.toGroupUser
+import com.eunilsung.talk.data.mapper.ServerPeopleMapper
 import com.eunilsung.talk.data.local.repository.LocalGroupRepositoryImpl
 import com.eunilsung.talk.domain.model.Group
 import com.eunilsung.talk.domain.model.MY_PROFILE_GROUP_ID
@@ -42,13 +42,14 @@ class GroupRepositoryImplTest {
         server = FakeTalkServer()
         directory = UserDirectory()
         val mapper = GroupMapper()
+        val people = ServerPeopleMapper()
         val local = LocalGroupRepositoryImpl(
             mapper, FakeLoginRepository(), MapSettings(), createTestDatabase(),
             seedsSampleGroups = false,
-            findUser = { userId, groupId -> directory.find(userId)?.toGroupUser(groupId) },
+            findUser = { userId, groupId -> directory.find(userId)?.let { people.toGroupUser(it, groupId) } },
         )
-        repo = GroupRepositoryImpl(local, server, directory, mapper)
-        profiles = UserProfileRepositoryImpl(server, directory)
+        repo = GroupRepositoryImpl(local, server, directory, mapper, people)
+        profiles = UserProfileRepositoryImpl(server, directory, people)
     }
 
     @AfterTest

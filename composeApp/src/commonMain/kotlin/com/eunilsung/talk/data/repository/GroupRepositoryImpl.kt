@@ -2,6 +2,7 @@ package com.eunilsung.talk.data.repository
 
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.data.mapper.GroupMapper
+import com.eunilsung.talk.data.mapper.ServerPeopleMapper
 import com.eunilsung.talk.data.remote.server.ServerResult
 import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.data.remote.server.UserDirectory
@@ -28,6 +29,7 @@ class GroupRepositoryImpl(
     private val server: TalkServer,
     private val directory: UserDirectory,
     private val mapper: GroupMapper,
+    private val people: ServerPeopleMapper,
 ) : GroupRepository by local {
 
     /**
@@ -97,7 +99,7 @@ class GroupRepositoryImpl(
         val after = local.currentGroups()
         if (after == before) return@withLock true
         val customGroups = after.filterNot { it.isMyProfileGroup || it.isDefaultGroup }
-        if (server.putContactGroups(customGroups.mapIndexed(::toDto)) !is ServerResult.Success) {
+        if (server.putContactGroups(customGroups.mapIndexed(people::toContactGroupDto)) !is ServerResult.Success) {
             local.replaceGroups(before)
             return@withLock false
         }
@@ -116,50 +118,22 @@ class GroupRepositoryImpl(
             id = DEFAULT_GROUP_ID,
             name = "",
             alineCode = DEFAULT_GROUP_ALINE_CODE,
-            userData = others.values.filterNot { it.id in grouped }.map { it.toGroupUser(DEFAULT_GROUP_ID) },
+            userData = others.values.filterNot { it.id in grouped }.map { people.toGroupUser(it, DEFAULT_GROUP_ID) },
         )
         val custom = groups.map { group ->
             Group.Item(
                 id = group.id,
                 name = group.name,
                 alineCode = group.sort.toString(),
-                userData = group.memberIds.mapNotNull { others[it]?.toGroupUser(group.id) },
+                userData = group.memberIds.mapNotNull { member -> others[member]?.let { people.toGroupUser(it, group.id) } },
             )
         }
         return listOf(myProfile, defaultGroup) + custom
     }
 
-    private fun toDto(index: Int, group: Group.Item) = ContactGroupDto(
-        id = group.id,
-        name = group.name,
-        sort = group.alineCode.toIntOrNull() ?: index,
-        memberIds = group.userData.mapNotNull { it.userId },
-    )
-
     companion object {
         /** 기본 그룹(어느 그룹에도 넣지 않은 사람들)의 고정 id 와 정렬 코드. 화면이 이 값으로 기본 그룹을 알아본다. */
         const val DEFAULT_GROUP_ID = "0"
         const val DEFAULT_GROUP_ALINE_CODE = "-3"
-
-        const val STATUS_ONLINE = "1"
-        const val STATUS_OFFLINE = "0"
-
-        /** 서버 사용자 → 그룹 화면의 사람. 접속 여부는 모바일 상태 칸에 싣는다. */
-        fun UserDto.toGroupUser(groupId: String) = Group.User(
-            groupId = groupId,
-            userId = id,
-            userName = name,
-            email = email,
-            phoneNumber = phoneNumber,
-            birthday = birthday,
-            departmentName = organName,
-            positionName = positionName,
-            positionSortCode = positionSort.toString().padStart(2, '0'),
-            statusMessage = statusMessage,
-            pcStatus = STATUS_OFFLINE,
-            mobileStatus = if (isOnline) STATUS_ONLINE else STATUS_OFFLINE,
-            etcStatus = "0",
-            userType = "0",
-        )
     }
 }

@@ -139,17 +139,7 @@ class ChatRoomRepositoryImpl(
      */
     override suspend fun fetchChatRoomUsers(chatRoomId: String): List<User> {
         val room = server.room(chatRoomId).valueOrNull() ?: return local.fetchChatRoomUsers(chatRoomId)
-        return room.members.filterNot { it.hasLeft }.map { member ->
-            val person = directory.find(member.id)
-            User(
-                id = member.id,
-                name = member.name,
-                departmentName = person?.organName,
-                positionName = person?.positionName,
-                presencePc = STATUS_OFFLINE,
-                presenceMobile = if (person?.isOnline == true) STATUS_ONLINE else STATUS_OFFLINE,
-            )
-        }
+        return room.members.filterNot { it.hasLeft }.map { mapper.toRoomUser(it, directory.find(it.id)) }
     }
 
     override fun clearCurrentRoom(chatRoomId: String) {
@@ -451,8 +441,6 @@ class ChatRoomRepositoryImpl(
         /** 파일을 한꺼번에 몇 개까지 받을지. 방에 들어갈 때 사진이 많아도 연결을 독차지하지 않게 한다. */
         const val MAX_PARALLEL_DOWNLOADS = 2
         const val DEFAULT_FILE_NAME = "file"
-        const val STATUS_ONLINE = "1"
-        const val STATUS_OFFLINE = "0"
         val FILE_CHAT_TYPES = setOf(Chat.Type.IMAGE, Chat.Type.VIDEO, Chat.Type.FILE)
     }
 }
