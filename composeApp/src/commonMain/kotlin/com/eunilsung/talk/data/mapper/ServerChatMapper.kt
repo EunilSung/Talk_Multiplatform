@@ -2,6 +2,9 @@ package com.eunilsung.talk.data.mapper
 
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
+import com.eunilsung.talk.shared.api.UserDto
+import com.eunilsung.talk.shared.api.RoomMemberDto
+import com.eunilsung.talk.domain.model.ChatGroup
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.model.Emoticon
 import com.eunilsung.talk.domain.model.EmpathyChat
@@ -17,6 +20,7 @@ import com.eunilsung.talk.domain.model.VoteSetting
 import com.eunilsung.talk.domain.model.VoteVoter
 import com.eunilsung.talk.data.remote.server.ServerFileStore
 import com.eunilsung.talk.shared.api.BookmarkDto
+import com.eunilsung.talk.shared.api.ChatGroupDto
 import com.eunilsung.talk.shared.api.FileDto
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MessageKind
@@ -205,6 +209,32 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
         items = vote.items.map { VoteResultItem(it.idx, it.idx, it.content, it.voteCount, it.writerId) },
     )
 
+    /** 서버의 대화그룹 → 대화함의 그룹 칩. 서버에는 사용자가 만든 그룹만 있다. */
+    fun toChatGroup(group: ChatGroupDto) = ChatGroup(
+        id = group.id,
+        name = group.name,
+        kind = USER_GROUP_KIND,
+        sort = group.sort.toString(),
+        roomIds = group.roomIds,
+    )
+
+    fun toChatGroupDto(group: ChatGroup) = ChatGroupDto(
+        id = group.id,
+        name = group.name,
+        sort = group.sort.toIntOrNull() ?: 0,
+        roomIds = group.roomIds,
+    )
+
+    /** 방의 참여자 → 화면의 사람. 부서·직위·접속 여부는 사용자 목록([person])에서 입힌다. 모르는 사람이면 비워 둔다. */
+    fun toRoomUser(member: RoomMemberDto, person: UserDto?) = User(
+        id = member.id,
+        name = member.name,
+        departmentName = person?.organName,
+        positionName = person?.positionName,
+        presencePc = ServerPeopleMapper.STATUS_OFFLINE,
+        presenceMobile = if (person?.isOnline == true) ServerPeopleMapper.STATUS_ONLINE else ServerPeopleMapper.STATUS_OFFLINE,
+    )
+
     fun toBookmark(roomId: String, bookmark: BookmarkDto): Bookmark = Bookmark(
         chatId = bookmark.messageId,
         chatRoomId = roomId,
@@ -283,5 +313,7 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
         const val TITLE_SEPARATOR = ", "
         const val ALARM_ON = "0"
         const val ALARM_OFF = "1"
+        /** 사용자가 만든 그룹 칩의 종류 값. */
+        const val USER_GROUP_KIND = "2"
     }
 }

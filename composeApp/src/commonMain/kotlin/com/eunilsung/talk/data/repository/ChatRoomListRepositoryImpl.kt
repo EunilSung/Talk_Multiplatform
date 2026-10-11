@@ -8,11 +8,9 @@ import com.eunilsung.talk.data.remote.server.ServerResult
 import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.data.remote.server.valueOrNull
 import com.eunilsung.talk.data.local.repository.LocalChatRoomListRepositoryImpl
-import com.eunilsung.talk.domain.model.ChatGroup
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.repository.ChatRoomListRepository
 import com.eunilsung.talk.domain.repository.LoginRepository
-import com.eunilsung.talk.shared.api.ChatGroupDto
 import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.ServerEvent
 import kotlinx.coroutines.CoroutineScope
@@ -87,7 +85,7 @@ class ChatRoomListRepositoryImpl(
                 local.replaceRooms(rooms.map { toItem(it, myId) })
                 groupMutex.withLock {
                     server.chatGroups().valueOrNull()?.let { groups ->
-                        if (Config.MyInfo.userId == myId) local.replaceChatGroups(groups.map(::toChatGroup))
+                        if (Config.MyInfo.userId == myId) local.replaceChatGroups(groups.map(mapper::toChatGroup))
                     }
                 }
             } finally {
@@ -145,25 +143,10 @@ class ChatRoomListRepositoryImpl(
         change()
         val after = local.currentChatGroups()
         if (after == before) return@withLock
-        if (server.putChatGroups(after.map(::toChatGroupDto)) !is ServerResult.Success) {
+        if (server.putChatGroups(after.map(mapper::toChatGroupDto)) !is ServerResult.Success) {
             local.replaceChatGroups(before)
         }
     }
-
-    private fun toChatGroup(group: ChatGroupDto) = ChatGroup(
-        id = group.id,
-        name = group.name,
-        kind = USER_GROUP_KIND,
-        sort = group.sort.toString(),
-        roomIds = group.roomIds,
-    )
-
-    private fun toChatGroupDto(group: ChatGroup) = ChatGroupDto(
-        id = group.id,
-        name = group.name,
-        sort = group.sort.toIntOrNull() ?: 0,
-        roomIds = group.roomIds,
-    )
 
     /** 서버에서 나간 뒤에 로컬의 방·대화·고정·그룹 소속을 지운다. 서버가 거절하면 아무것도 지우지 않는다. */
     override suspend fun leaveChatRoom(chatRoomId: String): Boolean {
@@ -198,8 +181,6 @@ class ChatRoomListRepositoryImpl(
 
     private companion object {
         const val ALARM_OFF = "1"
-        /** 사용자가 만든 그룹 칩의 종류 값. */
-        const val USER_GROUP_KIND = "2"
         const val PUSH_BUFFER = 8
     }
 }

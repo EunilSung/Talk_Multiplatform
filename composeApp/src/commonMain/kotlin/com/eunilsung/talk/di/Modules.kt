@@ -14,7 +14,6 @@ import com.eunilsung.talk.data.repository.ChatRoomRepositoryImpl
 import com.eunilsung.talk.data.repository.InviteRepositoryImpl
 import com.eunilsung.talk.data.remote.server.UserDirectory
 import com.eunilsung.talk.data.repository.GroupRepositoryImpl
-import com.eunilsung.talk.data.repository.GroupRepositoryImpl.Companion.toGroupUser
 import com.eunilsung.talk.data.repository.LoginRepositoryImpl
 import com.eunilsung.talk.data.repository.PushTokenRepositoryImpl
 import com.eunilsung.talk.data.repository.UserProfileRepositoryImpl
@@ -25,6 +24,7 @@ import com.eunilsung.talk.data.mapper.ChatMapper
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.data.mapper.GroupMapper
+import com.eunilsung.talk.data.mapper.ServerPeopleMapper
 import com.eunilsung.talk.data.repository.ChatSettingsRepositoryImpl
 import com.eunilsung.talk.data.local.repository.LocalChatRoomListRepositoryImpl
 import com.eunilsung.talk.data.local.repository.ChatSenderOverride
@@ -117,17 +117,19 @@ val appModule = module {
     single<GroupRepository> {
         if (Config.Server.IS_ENABLED) {
             val directory: UserDirectory = get()
+            val people: ServerPeopleMapper = get()
             val local = LocalGroupRepositoryImpl(
                 get(), get(), get(), get(),
                 seedsSampleGroups = false,
-                findUser = { userId, groupId -> directory.find(userId)?.toGroupUser(groupId) },
+                findUser = { userId, groupId -> directory.find(userId)?.let { people.toGroupUser(it, groupId) } },
             )
-            GroupRepositoryImpl(local, get(), directory, get())
+            GroupRepositoryImpl(local, get(), directory, get(), people)
         } else {
             LocalGroupRepositoryImpl(get(), get(), get(), get())
         }
     }
     singleOf(::GroupMapper)
+    singleOf(::ServerPeopleMapper)
     singleOf(::GetGroupsUseCase)
     singleOf(::FetchGroupsUseCase)
     singleOf(::ToggleGroupExpandedUseCase)
@@ -152,7 +154,7 @@ val appModule = module {
     viewModelOf(::UserProfileViewModel)
     // TestAccounts 를 프로필로 사용.
     single<UserProfileRepository> {
-        if (Config.Server.IS_ENABLED) UserProfileRepositoryImpl(get(), get()) else LocalUserProfileRepositoryImpl()
+        if (Config.Server.IS_ENABLED) UserProfileRepositoryImpl(get(), get(), get()) else LocalUserProfileRepositoryImpl()
     }
 
     viewModelOf(::ChatRoomViewModel)

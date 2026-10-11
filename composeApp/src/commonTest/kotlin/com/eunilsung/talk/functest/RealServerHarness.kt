@@ -14,7 +14,7 @@ import com.eunilsung.talk.data.remote.server.valueOrNull
 import com.eunilsung.talk.data.repository.ChatRoomListRepositoryImpl
 import com.eunilsung.talk.data.repository.ChatRoomRepositoryImpl
 import com.eunilsung.talk.data.repository.GroupRepositoryImpl
-import com.eunilsung.talk.data.repository.GroupRepositoryImpl.Companion.toGroupUser
+import com.eunilsung.talk.data.mapper.ServerPeopleMapper
 import com.eunilsung.talk.data.repository.InviteRepositoryImpl
 import com.eunilsung.talk.data.repository.LoginRepositoryImpl
 import com.eunilsung.talk.data.repository.UserProfileRepositoryImpl
@@ -65,6 +65,7 @@ class RealServerHarness private constructor(private val baseUrl: String) {
     private val database = createFunctionalTestDatabase()
     private val chatRoomMapper = ChatRoomMapper()
     private val groupMapper = GroupMapper()
+    private val people = ServerPeopleMapper()
     private val peers = mutableListOf<Peer>()
     private val createdRoomIds = mutableListOf<String>()
 
@@ -98,11 +99,11 @@ class RealServerHarness private constructor(private val baseUrl: String) {
         LocalGroupRepositoryImpl(
             groupMapper, login, MapSettings(), database,
             seedsSampleGroups = false,
-            findUser = { userId, groupId -> directory.find(userId)?.toGroupUser(groupId) },
+            findUser = { userId, groupId -> directory.find(userId)?.let { people.toGroupUser(it, groupId) } },
         ),
-        server, directory, groupMapper,
+        server, directory, groupMapper, people,
     )
-    val profiles = UserProfileRepositoryImpl(server, directory)
+    val profiles = UserProfileRepositoryImpl(server, directory, people)
 
     /** 테스트 계정으로 로그인한다. 성공하면 대화방 저장소가 서버 알림을 듣기 시작한다. */
     suspend fun signIn(userId: String = ME, password: String = PASSWORD): Login.LoginResult =
