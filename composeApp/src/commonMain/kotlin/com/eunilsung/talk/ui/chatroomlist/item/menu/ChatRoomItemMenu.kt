@@ -18,7 +18,7 @@ import multiplatformtalk.composeapp.generated.resources.confirm_chat_room_leave
 import multiplatformtalk.composeapp.generated.resources.confirm_leave_selected_chat_rooms
 import com.eunilsung.talk.domain.model.ChatGroup
 import com.eunilsung.talk.domain.model.ChatRoom
-import com.eunilsung.talk.domain.model.Search
+import com.eunilsung.talk.ui.uikit.search.Search
 import com.eunilsung.talk.ui.uikit.dialog.DialogManager
 import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
 import org.jetbrains.compose.resources.stringResource

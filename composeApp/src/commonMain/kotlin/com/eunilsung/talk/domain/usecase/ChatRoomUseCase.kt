@@ -32,6 +32,7 @@ data class ChatRoomUseCases(
     val fetchBookmarks: FetchBookmarksUseCase,
     val addBookmark: AddBookmarkUseCase,
     val deleteBookmark: DeleteBookmarkUseCase,
+    val reinviteDirectPartner: ReinviteDirectPartnerUseCase,
 )
 
 /** 대화를 공지로 등록. */

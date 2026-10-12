@@ -1,5 +1,6 @@
-package com.eunilsung.talk.domain.model
+package com.eunilsung.talk.ui.uikit.search
 
+/** 목록 화면의 검색어와 고른 필터 칩. 화면 상태라 ui 에 둔다. */
 sealed class Search{
 
     data class State(
