@@ -37,6 +37,8 @@ import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.click.itemClickable
 import org.jetbrains.compose.resources.painterResource
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
 
 private val EMPATHY_ICONS = listOf(
     Res.drawable.empathy_0, Res.drawable.empathy_1, Res.drawable.empathy_2,
@@ -65,6 +67,7 @@ fun EmpathyItem(
         Spacer(modifier = Modifier.size(5.dp))
         Row(
             modifier = modifier
+                .testTag(TestTags.CHAT_EMPATHY)
                 .background(AppColors.BgChatEmpathy, RoundedCornerShape(10.dp))
                 .padding(horizontal = 6.dp, vertical = 3.dp),
             verticalAlignment = Alignment.CenterVertically,

@@ -28,6 +28,9 @@ import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.arrow_right_icon
 import com.eunilsung.talk.ui.theme.AppColors
 import org.jetbrains.compose.resources.painterResource
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
+import com.eunilsung.talk.ui.uikit.exposeTestTags
 
 @Composable
 fun ListDialog(
@@ -40,7 +43,7 @@ fun ListDialog(
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+            modifier = Modifier.fillMaxWidth().wrapContentHeight().exposeTestTags(),
             shape = RoundedCornerShape(8.dp),
             color = AppColors.BgSub
         ) {
@@ -62,6 +65,7 @@ fun ListDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
+                            .then(if (option in destructiveItems) Modifier.testTag(TestTags.LIST_DIALOG_DESTRUCTIVE) else Modifier)
                             .clickable { onOptionSelected(option) },
                         verticalAlignment = Alignment.CenterVertically
                     ) {

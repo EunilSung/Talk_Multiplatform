@@ -1,0 +1,69 @@
+appId: com.eunilsung.talk
+name: 대화 주고받기와 공감
+tags:
+  - smoke
+onFlowComplete:
+  - runScript:
+      file: ../scripts/peer.js
+      env:
+        ACTION: cleanup
+---
+- runScript:
+    file: ../scripts/peer.js
+    env:
+      ACTION: setup
+- runFlow: ../common/login.yaml
+- tapOn:
+    id: tab_chat
+- assertVisible:
+    id: chat_room_item
+    containsDescendants:
+      - text: ${output.title}
+      - id: chat_room_unread
+    label: 상대가 만든 방이 안읽음 표시와 함께 목록에 뜬다
+- tapOn: ${output.title}
+- assertVisible:
+    text: ${output.peerText}
+    label: 상대의 말이 보인다
+- tapOn:
+    id: chat_input
+- inputText: ${output.replyText}
+- tapOn:
+    id: chat_send
+- assertVisible:
+    text: ${output.replyText}
+    label: 보낸 말이 화면에 뜬다
+- retry:
+    maxRetries: 3
+    commands:
+      - runScript:
+          file: ../scripts/peer.js
+          env:
+            ACTION: checkReply
+      - assertTrue:
+          condition: ${output.ok}
+          label: 보낸 말이 서버에 남았다
+- longPressOn: ${output.peerText}
+- tapOn:
+    id: chat_menu_empathy_0
+- assertVisible:
+    id: chat_empathy
+    label: 공감이 말풍선 아래에 붙는다
+- retry:
+    maxRetries: 3
+    commands:
+      - runScript:
+          file: ../scripts/peer.js
+          env:
+            ACTION: checkEmpathy
+      - assertTrue:
+          condition: ${output.ok}
+          label: 공감이 서버에 남았다
+- tapOn:
+    id: chat_room_back
+- assertNotVisible:
+    id: chat_room_item
+    containsDescendants:
+      - text: ${output.title}
+      - id: chat_room_unread
+    label: 읽고 나온 방에는 안읽음 표시가 없다

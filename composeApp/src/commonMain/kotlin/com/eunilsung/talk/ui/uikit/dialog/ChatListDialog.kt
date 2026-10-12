@@ -36,6 +36,9 @@ import multiplatformtalk.composeapp.generated.resources.empathy_5
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.line.LineDivider
 import org.jetbrains.compose.resources.painterResource
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
+import com.eunilsung.talk.ui.uikit.exposeTestTags
 
 
 private val EMPATHY_ICONS = listOf(
@@ -55,7 +58,7 @@ fun ChatListDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+            modifier = Modifier.fillMaxWidth().wrapContentHeight().exposeTestTags(),
             shape = RoundedCornerShape(8.dp),
             color = AppColors.BgSub
         ) {
@@ -72,6 +75,7 @@ fun ChatListDialog(
                                 modifier = Modifier
                                     .height(30.dp)
                                     .weight(1f)
+                                    .testTag(TestTags.chatMenuEmpathy(index))
                                     .clickable { onEmpathyClick(index) },
                             ) {
                                 Image(

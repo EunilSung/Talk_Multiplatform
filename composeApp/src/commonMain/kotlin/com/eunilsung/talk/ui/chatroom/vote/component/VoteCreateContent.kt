@@ -46,6 +46,8 @@ import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.chatroom.vote.VoteActions
 import com.eunilsung.talk.ui.chatroom.vote.VoteUiState
 import org.jetbrains.compose.resources.painterResource
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
 
 @Composable
 fun VoteCreateContent(
@@ -67,17 +69,19 @@ fun VoteCreateContent(
                 value = form.title,
                 hint = stringResource(Res.string.vote_title_hint),
                 onValueChange = { onAction(VoteActions.OnTitleChange(it)) },
+                modifier = Modifier.testTag(TestTags.VOTE_TITLE),
             )
 
             Spacer(modifier = Modifier.size(20.dp))
             SectionLabel(stringResource(Res.string.vote_option_label))
             Spacer(modifier = Modifier.size(8.dp))
-            form.items.forEach { item ->
+            form.items.forEachIndexed { index, item ->
                 ItemRow(
                     item = item,
                     removable = form.items.size > 2,
                     onContentChange = { onAction(VoteActions.OnItemContentChange(item.id, it)) },
                     onRemove = { onAction(VoteActions.OnRemoveItem(item.id)) },
+                    modifier = Modifier.testTag(TestTags.voteOption(index)),
                 )
                 Spacer(modifier = Modifier.size(8.dp))
             }
@@ -139,8 +143,9 @@ private fun ItemRow(
     removable: Boolean,
     onContentChange: (String) -> Unit,
     onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         FormField(
             value = item.content,
             hint = stringResource(Res.string.vote_option_hint),
@@ -226,6 +231,7 @@ private fun SubmitButton(
             .padding(16.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(if (enabled) AppColors.Main else AppColors.Line)
+            .testTag(TestTags.VOTE_SUBMIT_CREATE)
             .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = 15.dp),
         contentAlignment = Alignment.Center,

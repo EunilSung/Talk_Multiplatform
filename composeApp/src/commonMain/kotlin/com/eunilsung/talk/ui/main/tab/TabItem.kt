@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.click.clickable
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
 
 @Composable
 fun TabItem(
@@ -43,6 +45,7 @@ fun TabItem(
     Box(
         modifier = modifier
             .fillMaxHeight()
+            .testTag(TestTags.tab(tab.key))
             .clickable(
                 rippleColor = null,
                 onClick = onClick

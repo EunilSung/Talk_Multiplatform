@@ -43,6 +43,8 @@ import com.eunilsung.talk.ui.uikit.drawer.DrawerSectionHeader
 import com.eunilsung.talk.ui.uikit.user.UserItemV3
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
 
 /** 대화방 우측 드로어 — 메뉴 카드(공지/투표) + 참여자 카드. */
 @Composable
@@ -74,6 +76,7 @@ fun ChatRoomDrawerContent(
                     icon = painterResource(Res.drawable.vote_icon),
                     label = stringResource(Res.string.vote),
                     onClick = onVoteClick,
+                    modifier = Modifier.testTag(TestTags.DRAWER_VOTE),
                 )
             }
         }
@@ -121,9 +124,10 @@ private fun DrawerMenuRow(
     icon: Painter,
     label: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .itemClickable(onClick = onClick)
             .padding(vertical = 12.dp),

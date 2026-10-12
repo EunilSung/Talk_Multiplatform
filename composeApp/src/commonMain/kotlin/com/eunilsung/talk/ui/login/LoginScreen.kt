@@ -71,6 +71,8 @@ import com.eunilsung.talk.ui.uikit.textfield.TextFieldV1
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
 
 @Composable
 fun LoginScreen(
@@ -243,6 +245,7 @@ private fun LoginInputForm(
         Spacer(modifier = Modifier.height(5.dp))
 
         TextFieldV1(
+            modifier = Modifier.testTag(TestTags.LOGIN_ID),
             inputText = inputState.id,
             hintText = stringResource(Res.string.id),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -263,6 +266,7 @@ private fun LoginInputForm(
         Spacer(modifier = Modifier.height(5.dp))
 
         TextFieldV1(
+            modifier = Modifier.testTag(TestTags.LOGIN_PW),
             inputText = inputState.pw,
             hintText = stringResource(Res.string.pw),
             visualTransformation = PasswordVisualTransformation(),
@@ -289,7 +293,7 @@ private fun LoginInputForm(
         Spacer(modifier = Modifier.height(24.dp))
 
         ButtonV1(
-            modifier = Modifier.fillMaxWidth().height(50.dp),
+            modifier = Modifier.fillMaxWidth().height(50.dp).testTag(TestTags.LOGIN_SUBMIT),
             text = stringResource(Res.string.login),
             onClick = {
                 keyboardController?.hide()
