@@ -28,22 +28,23 @@ class UserProfileViewModel(
 
     private fun load(userId: String) {
         currentUserId = userId
+        val isMe = userId.isNotBlank() && userId.equals(useCases.getMyUser().id, ignoreCase = true)
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             val cached = runCatching { useCases.getCachedProfile(userId) }.getOrNull()
             _uiState.value = if (cached != null) {
-                UserProfileUiState.Success(profile = cached, isStale = true)
+                UserProfileUiState.Success(profile = cached, isStale = true, isMe = isMe)
             } else {
                 UserProfileUiState.Loading
             }
 
             useCases.fetchProfile(userId)
                 .onSuccess { fresh ->
-                    _uiState.value = UserProfileUiState.Success(profile = fresh, isStale = false)
+                    _uiState.value = UserProfileUiState.Success(profile = fresh, isStale = false, isMe = isMe)
                 }
                 .onFailure { err ->
                     _uiState.value = if (cached != null) {
-                        UserProfileUiState.Success(profile = cached, isStale = true)
+                        UserProfileUiState.Success(profile = cached, isStale = true, isMe = isMe)
                     } else {
                         UserProfileUiState.Error(err.message)
                     }

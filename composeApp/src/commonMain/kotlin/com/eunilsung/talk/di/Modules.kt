@@ -129,6 +129,7 @@ val appModule = module {
     singleOf(::ObserveLoginStateUseCase)
     singleOf(::GetSavedLoginUseCase)
     singleOf(::SetSavePasswordUseCase)
+    singleOf(::GetMyUserUseCase)
     singleOf(::LoginUseCases)
 
     viewModelOf(::MainViewModel)

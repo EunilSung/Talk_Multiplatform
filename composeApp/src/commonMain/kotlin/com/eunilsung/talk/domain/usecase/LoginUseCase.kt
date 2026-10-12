@@ -1,6 +1,7 @@
 package com.eunilsung.talk.domain.usecase
 
 import com.eunilsung.talk.domain.model.Login
+import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.repository.LoginRepository
 import kotlinx.coroutines.flow.StateFlow
 
@@ -12,6 +13,7 @@ data class LoginUseCases(
     val observeLoginState: ObserveLoginStateUseCase,
     val getSavedLogin: GetSavedLoginUseCase,
     val setSavePassword: SetSavePasswordUseCase,
+    val getMyUser: GetMyUserUseCase,
 )
 
 /** 로그인 요청 유스케이스. */
@@ -66,4 +68,9 @@ class GetSavedLoginUseCase(private val loginRepository: LoginRepository) {
 /** 비밀번호를 기억할지. */
 class SetSavePasswordUseCase(private val loginRepository: LoginRepository) {
     operator fun invoke(isSave: Boolean) = loginRepository.setSavePw(isSave)
+}
+
+/** 로그인한 나. 화면과 ViewModel 은 설정값 대신 이것으로 내 아이디·이름을 안다. 로그인 전이면 빈 값이다. */
+class GetMyUserUseCase(private val loginRepository: LoginRepository) {
+    operator fun invoke(): User = loginRepository.getMyUser()
 }

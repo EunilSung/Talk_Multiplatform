@@ -25,6 +25,7 @@ internal fun ChatRoomDrawer(
     chatRoom: ChatRoom.Item?,
     currentChatRoomId: String,
     users: List<User>,
+    myId: String,
     notice: Notice?,
     strings: ChatRoomStrings,
     onDismiss: () -> Unit,
@@ -40,6 +41,7 @@ internal fun ChatRoomDrawer(
         val showUserProfile = LocalShowUserProfile.current
         ChatRoomDrawerContent(
             users = users,
+            myId = myId,
             onVoteClick = {
                 onDismiss()
                 fullScreenOverlay(

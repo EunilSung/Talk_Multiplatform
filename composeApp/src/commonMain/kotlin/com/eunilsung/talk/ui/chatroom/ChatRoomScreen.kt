@@ -173,6 +173,7 @@ fun ChatRoomContent(
     val messages = uiState.messages
     val users = uiState.users
     val senderOverride = uiState.sender
+    val myId = uiState.myId
     val searchState = uiState.search
     val replyTarget = uiState.replyTarget
     val translations = uiState.translations
@@ -468,7 +469,7 @@ fun ChatRoomContent(
                         if (isSenderBoxVisible) {
                             ChatUserSelectPopup(
                                 users = users,
-                                selectedUserId = senderOverride?.id ?: Config.MyInfo.userId,
+                                selectedUserId = senderOverride?.id ?: myId,
                                 onDismiss = { isSenderBoxVisible = false },
                                 onUserClick = {
                                     onAction(ChatRoomActions.OnSelectSender(it))
@@ -556,6 +557,7 @@ fun ChatRoomContent(
             chatRoom = chatRoom,
             currentChatRoomId = currentChatRoomId,
             users = users,
+            myId = myId,
             notice = notice,
             strings = strings,
             onDismiss = { isDrawerOpen = false },

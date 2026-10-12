@@ -64,7 +64,6 @@ import multiplatformtalk.composeapp.generated.resources.profile_call
 import multiplatformtalk.composeapp.generated.resources.profile_chat
 import multiplatformtalk.composeapp.generated.resources.profile_contact
 import multiplatformtalk.composeapp.generated.resources.profile_group
-import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.UserProfile
 import com.eunilsung.talk.ui.chatroom.ChatRoomActions
 import com.eunilsung.talk.ui.theme.AppColors
@@ -199,6 +198,7 @@ private fun UserProfileContent(
                 is UserProfileUiState.Success -> {
                     ProfileBody(
                         profile = uiState.profile,
+                        isMe = uiState.isMe,
                         isLandscape = isLandscape,
                         onAction = onAction,
                         onCameraClick = onCameraClick,
@@ -239,6 +239,7 @@ private val PROFILE_ACTIONS = listOf(
 @Composable
 private fun ProfileBody(
     profile: UserProfile,
+    isMe: Boolean,
     isLandscape: Boolean,
     onAction: (UserProfileActions) -> Unit,
     onCameraClick: () -> Unit = {},
@@ -255,8 +256,6 @@ private fun ProfileBody(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val isMe = profile.userId.isNotBlank() &&
-                profile.userId.equals(Config.MyInfo.userId, ignoreCase = true)
             val imageUrls = LocalProfileImageUrls.current
             Box(modifier = Modifier.size(93.dp)) {
                 ProfileImages(

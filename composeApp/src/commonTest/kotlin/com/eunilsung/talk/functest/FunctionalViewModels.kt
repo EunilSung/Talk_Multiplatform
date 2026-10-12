@@ -93,6 +93,7 @@ fun RealServerHarness.chatRoomViewModel(): ChatRoomViewModel {
         openChatRoom = OpenChatRoomUseCase(CurrentChatRoomTracker, NoNotifications),
         closeChatRoom = CloseChatRoomUseCase(CurrentChatRoomTracker, NoNotifications, chats),
         cancelChatRoomNotification = CancelChatRoomNotificationUseCase(NoNotifications),
+        getMyUser = GetMyUserUseCase(login),
     )
     return ChatRoomViewModel(
         chatRoomUseCases = chatUseCases,
@@ -100,7 +101,7 @@ fun RealServerHarness.chatRoomViewModel(): ChatRoomViewModel {
         recentPhotosProvider = NoPhotos,
         filePickerProvider = NoFilePicker,
         chatRoomListUseCases = roomUseCases,
-        inviteUseCases = InviteUseCases(InviteUsersUseCase(invite)),
+        inviteUseCases = InviteUseCases(InviteUsersUseCase(invite), GetMyUserUseCase(login)),
     )
 }
 

@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.eunilsung.talk.domain.model.Login
+import com.eunilsung.talk.domain.model.User
 
 interface LoginRepository {
     val isLoggedIn: StateFlow<Boolean>
@@ -17,4 +18,7 @@ interface LoginRepository {
     fun setSavePw(isSave: Boolean)
     fun checkConnectionAndRelogin()
     suspend fun duplicateLogin(input: Login.LoginRequest): Login.LoginResult
+
+    /** 로그인한 나(아이디·이름). 로그인 전이면 빈 값이다. */
+    fun getMyUser(): User
 }

@@ -40,6 +40,7 @@ data class ChatRoomStateUseCases(
     val openChatRoom: OpenChatRoomUseCase,
     val closeChatRoom: CloseChatRoomUseCase,
     val cancelChatRoomNotification: CancelChatRoomNotificationUseCase,
+    val getMyUser: GetMyUserUseCase,
 )
 
 /** 상대의 새 대화가 들어왔다는 신호. 값은 대화방 id. */

@@ -9,6 +9,7 @@ import com.eunilsung.talk.data.repository.SettingsKeys.KEY_ID
 import com.eunilsung.talk.data.repository.SettingsKeys.KEY_PW
 import com.eunilsung.talk.data.repository.SettingsKeys.KEY_SAVE_PW
 import com.eunilsung.talk.domain.model.Login
+import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.repository.LoginRepository
 import com.eunilsung.talk.shared.api.ApiErrorCode
 import com.eunilsung.talk.shared.api.UserDto
@@ -92,6 +93,8 @@ class LoginRepositoryImpl(
         clearMyInfo()
         _isLoggedIn.value = false
     }
+
+    override fun getMyUser(): User = User(id = Config.MyInfo.userId, name = Config.MyInfo.userName)
 
     override fun getSavedId(): String? = settings.getStringOrNull(KEY_ID)
 

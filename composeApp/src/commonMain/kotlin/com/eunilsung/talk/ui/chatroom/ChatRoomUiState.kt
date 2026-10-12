@@ -19,6 +19,8 @@ data class ChatRoomUiState(
     val users: List<User> = emptyList(),
     /** 이 방의 전송 주체 — `null` 이면 나. 상단바 아이콘 강조와 선택 목록 표시에 쓴다. */
     val sender: User? = null,
+    /** 로그인한 나의 아이디. 참여자 목록의 '나' 표시와 전송 주체 기본값에 쓴다. */
+    val myId: String = "",
     val search: ChatSearchState = ChatSearchState(),
     val replyTarget: Chat.Item? = null,
     /** 지금 걸린 공지. 없으면 null. */

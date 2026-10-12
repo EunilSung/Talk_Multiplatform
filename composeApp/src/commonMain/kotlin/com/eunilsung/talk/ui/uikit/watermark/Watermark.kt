@@ -17,11 +17,16 @@ import com.eunilsung.talk.Config
 
 /** 화면 전역 워터마크 — 로그인 시 "내 아이디 + 내 이름" 을 대각선으로 반복 표기. */
 @Composable
-fun Watermark(isLoggedIn: Boolean, modifier: Modifier = Modifier) {
+fun Watermark(
+    isLoggedIn: Boolean,
+    userId: String,
+    userName: String,
+    modifier: Modifier = Modifier,
+) {
     if (!Config.Watermark.IS_ENABLED) return
     if (!isLoggedIn) return
 
-    val label = listOf(Config.MyInfo.userId, Config.MyInfo.userName)
+    val label = listOf(userId, userName)
         .filter { it.isNotBlank() }
         .joinToString("\n")
     if (label.isBlank()) return
