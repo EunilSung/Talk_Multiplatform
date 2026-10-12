@@ -7,6 +7,8 @@ import com.eunilsung.talk.data.local.RecentPhotosProvider
 import com.eunilsung.talk.data.local.RecentPhotosResult
 import com.eunilsung.talk.data.repository.ChatSettingsRepositoryImpl
 import com.eunilsung.talk.data.local.repository.ChatSenderOverride
+import com.eunilsung.talk.domain.model.PushPayload
+import com.eunilsung.talk.domain.repository.PushNotifier
 import com.eunilsung.talk.domain.usecase.*
 import com.eunilsung.talk.ui.chatroom.ChatRoomViewModel
 import com.russhwolf.settings.MapSettings
@@ -88,6 +90,9 @@ fun RealServerHarness.chatRoomViewModel(): ChatRoomViewModel {
         setNoticeCollapsed = SetNoticeCollapsedUseCase(noticeBar),
         setNoticeDetailsShown = SetNoticeDetailsShownUseCase(noticeBar),
         hideNotice = HideNoticeUseCase(noticeBar),
+        openChatRoom = OpenChatRoomUseCase(CurrentChatRoomTracker, NoNotifications),
+        closeChatRoom = CloseChatRoomUseCase(CurrentChatRoomTracker, NoNotifications, chats),
+        cancelChatRoomNotification = CancelChatRoomNotificationUseCase(NoNotifications),
     )
     return ChatRoomViewModel(
         chatRoomUseCases = chatUseCases,
@@ -107,6 +112,13 @@ private object NoPhotos : RecentPhotosProvider {
     override fun hasPhotoAccess(): Boolean = false
     override fun openAppSettings() = Unit
     override fun requestPhotoAccess() = Unit
+}
+
+/** 알림을 띄우지 않는 기기. */
+private object NoNotifications : PushNotifier {
+    override fun show(payload: PushPayload) = Unit
+    override fun cancel(key: String) = Unit
+    override fun setBadge(count: Int) = Unit
 }
 
 /** 파일을 고를 수 없는 기기. */

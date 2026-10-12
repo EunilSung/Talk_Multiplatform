@@ -7,6 +7,7 @@ import com.eunilsung.talk.domain.repository.ChatRoomRepository
 import com.eunilsung.talk.domain.repository.ChatSettingsRepository
 import com.eunilsung.talk.domain.repository.CurrentChatRoomRepository
 import com.eunilsung.talk.domain.repository.NoticeUiStateRepository
+import com.eunilsung.talk.domain.repository.PushNotifier
 import com.eunilsung.talk.domain.repository.SenderOverrideRepository
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,6 +37,9 @@ data class ChatRoomStateUseCases(
     val setNoticeCollapsed: SetNoticeCollapsedUseCase,
     val setNoticeDetailsShown: SetNoticeDetailsShownUseCase,
     val hideNotice: HideNoticeUseCase,
+    val openChatRoom: OpenChatRoomUseCase,
+    val closeChatRoom: CloseChatRoomUseCase,
+    val cancelChatRoomNotification: CancelChatRoomNotificationUseCase,
 )
 
 /** 상대의 새 대화가 들어왔다는 신호. 값은 대화방 id. */
@@ -76,6 +80,39 @@ class ObserveBookmarksUseCase(private val repository: ChatRoomRepository) {
 /** 방을 닫을 때 그 방에 딸려 들고 있던 것(공지·책갈피)을 비운다. */
 class ClearCurrentRoomUseCase(private val repository: ChatRoomRepository) {
     operator fun invoke(chatRoomId: String) = repository.clearCurrentRoom(chatRoomId)
+}
+
+/** 방을 화면에 띄웠다. 그 방의 알림을 걷고, 그 방의 새 대화는 알림 없이 읽은 것으로 치게 한다. */
+class OpenChatRoomUseCase(
+    private val currentRoom: CurrentChatRoomRepository,
+    private val notifier: PushNotifier,
+) {
+    operator fun invoke(chatRoomId: String) {
+        currentRoom.set(chatRoomId)
+        notifier.cancel(chatRoomId)
+    }
+}
+
+/**
+ * 방을 화면에서 내렸다. 그 사이 다른 방이 떠 있으면 그 방은 그대로 둔다.
+ *
+ * 그 방의 알림을 걷고, 그 방에 딸려 들고 있던 것(공지·책갈피)을 비운다.
+ */
+class CloseChatRoomUseCase(
+    private val currentRoom: CurrentChatRoomRepository,
+    private val notifier: PushNotifier,
+    private val repository: ChatRoomRepository,
+) {
+    operator fun invoke(chatRoomId: String) {
+        if (currentRoom.currentChatRoomId == chatRoomId) currentRoom.clear()
+        notifier.cancel(chatRoomId)
+        repository.clearCurrentRoom(chatRoomId)
+    }
+}
+
+/** 그 방의 알림을 걷는다. */
+class CancelChatRoomNotificationUseCase(private val notifier: PushNotifier) {
+    operator fun invoke(chatRoomId: String) = notifier.cancel(chatRoomId)
 }
 
 /** 그 방이 지금 화면에 떠 있는지. 떠 있는 방의 새 대화는 바로 읽은 것으로 친다. */

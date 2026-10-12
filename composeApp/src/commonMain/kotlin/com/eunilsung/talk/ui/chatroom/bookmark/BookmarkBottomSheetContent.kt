@@ -16,8 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,7 +24,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.flow.StateFlow
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.line.LineDivider
@@ -35,15 +32,20 @@ import multiplatformtalk.composeapp.generated.resources.bookmark_title
 import multiplatformtalk.composeapp.generated.resources.bookmark_empty
 import multiplatformtalk.composeapp.generated.resources.bookmark_remove
 import org.jetbrains.compose.resources.stringResource
-import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 fun BookmarkBottomSheetContent(
-    bookmarksFlow: StateFlow<List<Bookmark>>,
+    /**
+     * 지금의 책갈피 목록을 읽는다.
+     *
+     * 시트는 띄운 뒤에도 목록을 따라가야 하는데, 시트 내용은 다른 곳(시트 호스트)에서 그려져
+     * 값을 넘기면 띄운 순간의 목록에 멈춘다. 그래서 상태를 읽는 함수를 받는다.
+     */
+    bookmarks: () -> List<Bookmark>,
     onItemClick: (Bookmark) -> Unit = {},
     onRemove: (Bookmark) -> Unit = {},
 ) {
-    val bookmarks by bookmarksFlow.collectAsState()
+    val bookmarks = bookmarks()
     Column(modifier = Modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier
@@ -138,7 +140,7 @@ private fun BookmarkRow(bookmark: Bookmark, onClick: () -> Unit, onRemove: () ->
 fun BookmarkBottomSheetContentPreview() {
     MaterialTheme {
         BookmarkBottomSheetContent(
-            bookmarksFlow = MutableStateFlow(
+            bookmarks = {
                 listOf(
                     Bookmark(
                         chatId = "1",
@@ -149,7 +151,7 @@ fun BookmarkBottomSheetContentPreview() {
                         userName = "성은일",
                     )
                 )
-            )
+            }
         )
     }
 }

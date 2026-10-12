@@ -3,37 +3,31 @@ package com.eunilsung.talk.ui.chatroom
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.data.local.FilePickerProvider
-import com.eunilsung.talk.data.local.PhotoAlbum
-import com.eunilsung.talk.data.local.RecentPhoto
 import com.eunilsung.talk.data.local.RecentPhotosProvider
 import com.eunilsung.talk.data.local.RecentPhotosResult
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.PolishStyle
-import com.eunilsung.talk.domain.model.User
-import com.eunilsung.talk.domain.repository.ChatSettingsState
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 import com.eunilsung.talk.domain.usecase.ChatRoomUseCases
 import com.eunilsung.talk.util.Log
 import com.eunilsung.talk.util.chatDisplayText
 import com.eunilsung.talk.data.local.FilePickerRequestId
-import com.eunilsung.talk.domain.model.Bookmark
-import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.usecase.InviteUseCases
 import com.eunilsung.talk.domain.usecase.ChatRoomStateUseCases
 
@@ -46,10 +40,27 @@ class ChatRoomViewModel(
     private val inviteUseCases: InviteUseCases,
 ) : ViewModel() {
 
-    fun lastEmoticonTab(): Int = stateUseCases.getLastEmoticonTab()
-    fun saveEmoticonTab(index: Int) = stateUseCases.setLastEmoticonTab(index)
+    private val _uiState = MutableStateFlow(
+        ChatRoomUiState(
+            chatSettings = stateUseCases.observeChatSettings().value,
+            initialEmoticonTab = stateUseCases.getLastEmoticonTab(),
+            media = ChatMediaUiState(hasPhotoAccess = recentPhotosProvider.hasPhotoAccess()),
+        )
+    )
+    val uiState: StateFlow<ChatRoomUiState> = _uiState.asStateFlow()
 
-    val chatSettings: StateFlow<ChatSettingsState> = stateUseCases.observeChatSettings()
+    private val _entryScroll = MutableSharedFlow<String?>(replay = 1, extraBufferCapacity = 1)
+
+    /** 저장소가 밀어 주는 일회성 신호 — 대화 목록의 스크롤과 새 대화 배너가 쓴다. */
+    val signals: ChatRoomSignals = ChatRoomSignals(
+        newChat = stateUseCases.observeNewChat(),
+        mySend = stateUseCases.observeMySend(),
+        latestLoaded = stateUseCases.observeLatestLoaded(),
+        entryScroll = _entryScroll,
+    )
+
+    private val _events = Channel<ChatRoomEvent>(Channel.BUFFERED)
+    val events: Flow<ChatRoomEvent> = _events.receiveAsFlow()
 
     /** picker 결과가 싱글톤 provider 로 broadcast 되므로, 이 VM 이 띄운 요청만 소비하기 위한 태그. */
     private val filePickerRequestId =
@@ -67,36 +78,46 @@ class ChatRoomViewModel(
                 onAction(ChatRoomActions.OnSendFiles(files.map { it.uri }))
             }
         }
+        viewModelScope.launch {
+            stateUseCases.observeChatSettings().collect { settings ->
+                _uiState.update { it.copy(chatSettings = settings) }
+            }
+        }
+        viewModelScope.launch {
+            stateUseCases.observeCurrentNotice().collect { notice ->
+                _uiState.update { it.copy(notice = notice) }
+            }
+        }
+        viewModelScope.launch {
+            stateUseCases.observeBookmarks().collect { bookmarks ->
+                _uiState.update { it.copy(bookmarks = bookmarks) }
+            }
+        }
+        viewModelScope.launch {
+            stateUseCases.observeSelfLeft()
+                .filter { it == currentChatRoomId }
+                .collect { _events.send(ChatRoomEvent.SelfLeft) }
+        }
     }
 
-    fun launchFilePicker(allowMultiple: Boolean = true) {
+    private fun launchFilePicker() {
         filePickerProvider.launchFilePicker(
             requestId = filePickerRequestId,
-            allowMultiple = allowMultiple,
+            allowMultiple = true,
             mimeTypes = listOf("*/*"),
         )
     }
 
-    private val _galleryPhotos = MutableStateFlow<List<RecentPhoto>>(emptyList())
-    val galleryPhotos: StateFlow<List<RecentPhoto>> = _galleryPhotos.asStateFlow()
-
-    private val _galleryAlbums = MutableStateFlow<List<PhotoAlbum>>(emptyList())
-
-    /** 갤러리 시트 상단 필터에 뿌릴 앨범 목록. */
-    val galleryAlbums: StateFlow<List<PhotoAlbum>> = _galleryAlbums.asStateFlow()
-
-    private val _selectedAlbumId = MutableStateFlow<String?>(null)
-
-    /** 선택된 앨범. null = 전체. */
-    val selectedAlbumId: StateFlow<String?> = _selectedAlbumId.asStateFlow()
-
     private var galleryJob: Job? = null
 
+    private fun updateMedia(transform: (ChatMediaUiState) -> ChatMediaUiState) {
+        _uiState.update { it.copy(media = transform(it.media)) }
+    }
+
     /** 앨범 선택 — 해당 폴더의 사진만 다시 읽는다. */
-    fun selectGalleryAlbum(albumId: String?, limit: Int = 500) {
-        _selectedAlbumId.value = albumId
-        _galleryPhotos.value = emptyList()
-        loadGalleryPhotos(limit)
+    private fun selectGalleryAlbum(albumId: String?) {
+        updateMedia { it.copy(selectedAlbumId = albumId, galleryPhotos = emptyList()) }
+        loadGalleryPhotos()
     }
 
     /**
@@ -107,17 +128,19 @@ class ChatRoomViewModel(
      * 이전 앨범의 늦은 콜백이 새 목록을 덮어써 엉뚱한 사진이 보인다.
      * (취소는 즉시 전파되지 않아 이미 출발한 콜백이 남을 수 있어 확인이 따로 필요하다.)
      */
-    fun loadGalleryPhotos(limit: Int = 500) {
-        val albumId = _selectedAlbumId.value
+    private fun loadGalleryPhotos(limit: Int = 500) {
+        val albumId = _uiState.value.media.selectedAlbumId
+        updateMedia { it.copy(hasPhotoAccess = recentPhotosProvider.hasPhotoAccess()) }
         galleryJob?.cancel()
         galleryJob = viewModelScope.launch {
             fun apply(r: RecentPhotosResult) {
-                if (_selectedAlbumId.value != albumId) return
-                _galleryPhotos.value = when (r) {
+                if (_uiState.value.media.selectedAlbumId != albumId) return
+                val photos = when (r) {
                     is RecentPhotosResult.Granted -> r.photos
                     is RecentPhotosResult.Limited -> r.photos
                     is RecentPhotosResult.Denied -> emptyList()
                 }
+                updateMedia { it.copy(galleryPhotos = photos) }
             }
             val result = runCatching {
                 recentPhotosProvider.fetchByAlbum(
@@ -138,87 +161,49 @@ class ChatRoomViewModel(
      * 조회가 끝나므로, 뒤에 붙이면 필터 버튼이 한참 뒤에야 나타난다.
      */
     private fun loadGalleryAlbums() {
-        if (_galleryAlbums.value.isNotEmpty()) return
+        if (_uiState.value.media.galleryAlbums.isNotEmpty()) return
         viewModelScope.launch {
-            _galleryAlbums.value = runCatching { recentPhotosProvider.fetchAlbums() }
+            val albums = runCatching { recentPhotosProvider.fetchAlbums() }
                 .getOrElse { emptyList() }
+            updateMedia { it.copy(galleryAlbums = albums) }
         }
     }
-
-    val newChatPush: SharedFlow<String> = stateUseCases.observeNewChat()
-
-    val mySendPush: SharedFlow<String> = stateUseCases.observeMySend()
-
-    val latestLoadedPush: SharedFlow<String> = stateUseCases.observeLatestLoaded()
-
-    val selfLeftPush: SharedFlow<String> = stateUseCases.observeSelfLeft()
-
-    private val _entryScroll = MutableSharedFlow<String?>(replay = 1, extraBufferCapacity = 1)
-    val entryScroll: SharedFlow<String?> = _entryScroll
-
-    val currentNotice: StateFlow<Notice?> =
-        stateUseCases.observeCurrentNotice()
-
-    private val _noticeBar = MutableStateFlow(NoticeBarUiState())
-
-    /** 공지바 표시 상태 — Settings 에 영속되며 화면은 이 값만 읽는다. */
-    val noticeBar: StateFlow<NoticeBarUiState> = _noticeBar.asStateFlow()
 
     /** 공지가 바뀔 때 저장된 표시 상태를 읽어 온다. */
-    fun loadNoticeBarState(identityKey: String) {
+    private fun loadNoticeBarState(identityKey: String) {
         val saved = stateUseCases.getNoticeBarState(identityKey)
-        _noticeBar.value = NoticeBarUiState(
-            hidden = saved.hidden,
-            expanded = !saved.collapsed,
-            showDetails = saved.detailsShown,
-        )
-    }
-
-    fun setNoticeExpanded(identityKey: String, expanded: Boolean) {
-        stateUseCases.setNoticeCollapsed(identityKey, !expanded)
-        _noticeBar.update { it.copy(expanded = expanded) }
-    }
-
-    fun setNoticeDetailsShown(identityKey: String, shown: Boolean) {
-        stateUseCases.setNoticeDetailsShown(identityKey, shown)
-        _noticeBar.update { it.copy(showDetails = shown) }
-    }
-
-    fun hideNoticePermanently(identityKey: String) {
-        stateUseCases.hideNotice(identityKey)
-        _noticeBar.update { it.copy(hidden = true) }
-    }
-
-    val bookmarks: StateFlow<List<Bookmark>> =
-        stateUseCases.observeBookmarks()
-
-    private val _recentPhotos = MutableStateFlow<RecentPhotosResult>(
-        RecentPhotosResult.Granted(emptyList())
-    )
-    val recentPhotos: StateFlow<RecentPhotosResult> = _recentPhotos.asStateFlow()
-
-    fun loadRecentPhotos(limit: Int = 12) {
-        viewModelScope.launch {
-            _recentPhotos.value = runCatching { recentPhotosProvider.fetchRecent(limit) }
-                .getOrElse { RecentPhotosResult.Granted(emptyList()) }
+        _uiState.update {
+            it.copy(
+                noticeBar = NoticeBarUiState(
+                    hidden = saved.hidden,
+                    expanded = !saved.collapsed,
+                    showDetails = saved.detailsShown,
+                )
+            )
         }
     }
 
-    fun requestPhotoAccess() {
-        recentPhotosProvider.requestPhotoAccess()
+    private fun updateNoticeBar(transform: (NoticeBarUiState) -> NoticeBarUiState) {
+        _uiState.update { it.copy(noticeBar = transform(it.noticeBar)) }
     }
 
-    fun hasPhotoAccess(): Boolean = recentPhotosProvider.hasPhotoAccess()
+    private fun loadRecentPhotos(limit: Int = 12) {
+        updateMedia { it.copy(hasPhotoAccess = recentPhotosProvider.hasPhotoAccess()) }
+        viewModelScope.launch {
+            val result = runCatching { recentPhotosProvider.fetchRecent(limit) }
+                .getOrElse { RecentPhotosResult.Granted(emptyList()) }
+            updateMedia { it.copy(recentPhotos = result) }
+        }
+    }
 
     override fun onCleared() {
         stateUseCases.clearCurrentRoom(currentChatRoomId)
         super.onCleared()
     }
 
-    private val _uiState = MutableStateFlow<ChatRoomUiState>(ChatRoomUiState.Loading)
-    val uiState: StateFlow<ChatRoomUiState> = _uiState.asStateFlow()
-
     private var collectJob: Job? = null
+
+    private var roomJob: Job? = null
 
     private var usersFetchJob: Job? = null
 
@@ -234,35 +219,11 @@ class ChatRoomViewModel(
 
     private val _firstUnreadChatId = MutableStateFlow<String?>(null)
 
-    private val _translations = MutableStateFlow<Map<String, ChatTranslationUiState>>(emptyMap())
-
-    /** 대화 id 별 번역. 이 화면에서만 들고 있는다. */
-    val translations: StateFlow<Map<String, ChatTranslationUiState>> = _translations.asStateFlow()
-
-    private val _polish = MutableStateFlow<PolishUiState>(PolishUiState.Idle)
-
-    /** 보내기 전의 글 다듬기 상태. */
-    val polish: StateFlow<PolishUiState> = _polish.asStateFlow()
-
-    private val _translationFailed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-
-    /** 번역을 받지 못했다 — 화면이 안내를 한 번 띄운다. */
-    val translationFailed: SharedFlow<Unit> = _translationFailed.asSharedFlow()
-
-    private val _users = MutableStateFlow<List<User>>(emptyList())
-    val users: StateFlow<List<User>> = _users.asStateFlow()
-
-    /** 이 방의 전송 주체 — `null` 이면 나. 상단바 아이콘 강조와 선택 목록 표시에 쓴다. */
-    private val _sender = MutableStateFlow<User?>(null)
-    val sender: StateFlow<User?> = _sender.asStateFlow()
-
-    private val _searchState = MutableStateFlow(ChatSearchState())
-    val searchState: StateFlow<ChatSearchState> = _searchState.asStateFlow()
-
-    private val _replyTarget = MutableStateFlow<Chat.Item?>(null)
-    val replyTarget: StateFlow<Chat.Item?> = _replyTarget.asStateFlow()
-
     private var latestChats: List<Chat.Item> = emptyList()
+
+    private fun updateSearch(transform: (ChatSearchState) -> ChatSearchState) {
+        _uiState.update { it.copy(search = transform(it.search)) }
+    }
 
     fun onAction(action: ChatRoomActions) {
         when (action) {
@@ -271,42 +232,40 @@ class ChatRoomViewModel(
             is ChatRoomActions.OnReachEnd -> fetchMore()
             is ChatRoomActions.OnReachStart -> fetchNewer()
             is ChatRoomActions.OnEnterSearch -> {
-                _replyTarget.value = null
-                _searchState.update { ChatSearchState(isActive = true) }
+                _uiState.update { it.copy(replyTarget = null, search = ChatSearchState(isActive = true)) }
             }
-            is ChatRoomActions.OnExitSearch -> {
-                _searchState.update { ChatSearchState() }
-            }
+            is ChatRoomActions.OnExitSearch -> updateSearch { ChatSearchState() }
             is ChatRoomActions.OnSearchQueryChange -> updateSearchQuery(action.query)
             is ChatRoomActions.OnSearch -> {
-                _searchState.update { it.copy(searchedDate = null) }
+                updateSearch { it.copy(searchedDate = null) }
                 executeSearch()
             }
             is ChatRoomActions.OnSearchNext -> moveSearchIndex(+1)
             is ChatRoomActions.OnSearchPrev -> moveSearchIndex(-1)
             is ChatRoomActions.OnSearchUserSelect -> {
-                _searchState.update { it.copy(searchedUser = action.user, searchedDate = null) }
+                updateSearch { it.copy(searchedUser = action.user, searchedDate = null) }
                 executeSearch()
             }
             is ChatRoomActions.OnSelectSender -> {
                 stateUseCases.selectSender(currentChatRoomId, action.user)
-                _sender.value = stateUseCases.getSender(currentChatRoomId)
+                _uiState.update { it.copy(sender = stateUseCases.getSender(currentChatRoomId)) }
             }
             is ChatRoomActions.OnSearchUserRemove -> {
-                _searchState.update { it.copy(searchedUser = null) }
+                updateSearch { it.copy(searchedUser = null) }
                 executeSearch()
             }
             is ChatRoomActions.OnSearchByDate -> searchByDate(action.datePrefix)
             is ChatRoomActions.OnSwipeReply -> {
-                if (_searchState.value.isActive) {
-                    _searchState.update { ChatSearchState() }
+                if (_uiState.value.search.isActive) {
+                    updateSearch { ChatSearchState() }
                 }
                 viewModelScope.launch {
                     val chat = action.chat
-                    _replyTarget.value = chat.copy(chatContent = chatDisplayText(chat, forReply = true))
+                    val reply = chat.copy(chatContent = chatDisplayText(chat, forReply = true))
+                    _uiState.update { it.copy(replyTarget = reply) }
                 }
             }
-            is ChatRoomActions.OnCancelReply -> _replyTarget.value = null
+            is ChatRoomActions.OnCancelReply -> _uiState.update { it.copy(replyTarget = null) }
             is ChatRoomActions.OnSendText -> sendText(action.text, action.emoticonId)
             is ChatRoomActions.OnResendFailedChat -> resendFailedChat(action.chatId)
             is ChatRoomActions.OnDeleteFailedChat -> deleteFailedChat(action.chatId)
@@ -320,9 +279,35 @@ class ChatRoomViewModel(
             is ChatRoomActions.OnAddBookmark -> addBookmark(action.chat)
             is ChatRoomActions.OnDeleteBookmark -> deleteBookmark(action.chatId)
             is ChatRoomActions.OnTranslateChat -> translateChat(action.chatId, action.languageCode)
-            is ChatRoomActions.OnHideTranslation -> _translations.update { it - action.chatId }
+            is ChatRoomActions.OnHideTranslation ->
+                _uiState.update { it.copy(translations = it.translations - action.chatId) }
             is ChatRoomActions.OnPolishText -> polishText(action.text, action.style)
-            is ChatRoomActions.OnPolishHandled -> _polish.value = PolishUiState.Idle
+            is ChatRoomActions.OnPolishHandled -> _uiState.update { it.copy(polish = PolishUiState.Idle) }
+            is ChatRoomActions.OnEnterRoom ->
+                runCatching { stateUseCases.openChatRoom(action.chatRoomId) }
+            is ChatRoomActions.OnLeaveRoom ->
+                runCatching { stateUseCases.closeChatRoom(action.chatRoomId) }
+            is ChatRoomActions.OnResumeRoom ->
+                runCatching { stateUseCases.cancelChatRoomNotification(action.chatRoomId) }
+            is ChatRoomActions.OnLoadNoticeBar -> loadNoticeBarState(action.identityKey)
+            is ChatRoomActions.OnNoticeExpandedChange -> {
+                stateUseCases.setNoticeCollapsed(action.identityKey, !action.expanded)
+                updateNoticeBar { it.copy(expanded = action.expanded) }
+            }
+            is ChatRoomActions.OnNoticeDetailsChange -> {
+                stateUseCases.setNoticeDetailsShown(action.identityKey, action.shown)
+                updateNoticeBar { it.copy(showDetails = action.shown) }
+            }
+            is ChatRoomActions.OnHideNotice -> {
+                stateUseCases.hideNotice(action.identityKey)
+                updateNoticeBar { it.copy(hidden = true) }
+            }
+            is ChatRoomActions.OnLoadRecentPhotos -> loadRecentPhotos()
+            is ChatRoomActions.OnLoadGalleryPhotos -> loadGalleryPhotos()
+            is ChatRoomActions.OnSelectGalleryAlbum -> selectGalleryAlbum(action.albumId)
+            is ChatRoomActions.OnRequestPhotoAccess -> recentPhotosProvider.requestPhotoAccess()
+            is ChatRoomActions.OnLaunchFilePicker -> launchFilePicker()
+            is ChatRoomActions.OnEmoticonTabSelected -> stateUseCases.setLastEmoticonTab(action.index)
         }
     }
 
@@ -408,8 +393,8 @@ class ChatRoomViewModel(
         if (text.isEmpty() && !hasEmoticon) return
         if (currentChatRoomId.isBlank()) return
 
-        val reply = _replyTarget.value
-        _replyTarget.value = null
+        val reply = _uiState.value.replyTarget
+        _uiState.update { it.copy(replyTarget = null) }
 
         noMoreChats = false
         fetchingMore = false
@@ -448,7 +433,7 @@ class ChatRoomViewModel(
 
     private fun load(chatRoomId: String) {
         if (chatRoomId.isBlank()) {
-            _uiState.value = ChatRoomUiState.Error("Invalid room id")
+            _uiState.update { it.copy(messages = ChatMessagesUiState.Error("Invalid room id")) }
             return
         }
         currentChatRoomId = chatRoomId
@@ -456,12 +441,18 @@ class ChatRoomViewModel(
         fetchingMore = false
         fetchingNewer = false
         _firstUnreadChatId.value = null
-        _translations.value = emptyMap()
-        _polish.value = PolishUiState.Idle
-        _users.value = emptyList()
-        _sender.value = stateUseCases.getSender(chatRoomId)
-        _searchState.value = ChatSearchState()
-        _replyTarget.value = null
+        _uiState.update {
+            it.copy(
+                chatRoom = null,
+                users = emptyList(),
+                sender = stateUseCases.getSender(chatRoomId),
+                search = ChatSearchState(),
+                replyTarget = null,
+                translations = emptyMap(),
+                polish = PolishUiState.Idle,
+                initialEmoticonTab = stateUseCases.getLastEmoticonTab(),
+            )
+        }
         latestChats = emptyList()
 
         viewModelScope.launch {
@@ -474,8 +465,21 @@ class ChatRoomViewModel(
             chatRoomUseCases.requestNotice(chatRoomId)
         }
 
-        val isDirectRoomFlow = chatRoomListUseCases.getChatRooms()
-            .map { rooms -> rooms.firstOrNull { it.id == chatRoomId }?.isDirectRoom ?: false }
+        val roomFlow = chatRoomListUseCases.getChatRooms()
+            .map { rooms -> rooms.firstOrNull { it.id == chatRoomId } }
+            .distinctUntilChanged()
+
+        roomJob?.cancel()
+        roomJob = viewModelScope.launch {
+            roomFlow.collect { room -> _uiState.update { it.copy(chatRoom = room) } }
+        }
+
+        val isDirectRoomFlow = roomFlow
+            .map { it?.isDirectRoom ?: false }
+            .distinctUntilChanged()
+
+        val searchFlow = _uiState
+            .map { it.search }
             .distinctUntilChanged()
 
         collectJob?.cancel()
@@ -483,7 +487,7 @@ class ChatRoomViewModel(
             combine(
                 chatRoomUseCases.getChats(chatRoomId),
                 _firstUnreadChatId,
-                _searchState,
+                searchFlow,
                 isDirectRoomFlow,
             ) { chats, marker, search, isDirect ->
                 latestChats = chats
@@ -497,8 +501,8 @@ class ChatRoomViewModel(
                     currentMatchChatId = search.currentMatchChatId,
                     focusChatId = search.focusChatId
                 )
-                ChatRoomUiState.Success(grouped) as ChatRoomUiState
-            }.collect { _uiState.value = it }
+                ChatMessagesUiState.Success(grouped)
+            }.collect { messages -> _uiState.update { it.copy(messages = messages) } }
         }
 
         usersFetchJob?.cancel()
@@ -506,7 +510,7 @@ class ChatRoomViewModel(
             val result = runCatching { chatRoomUseCases.fetchChatRoomUsers(chatRoomId) }
                 .getOrNull().orEmpty()
             if (currentChatRoomId == chatRoomId) {
-                _users.value = result
+                _uiState.update { it.copy(users = result) }
             }
         }
 
@@ -518,7 +522,7 @@ class ChatRoomViewModel(
                     val result = runCatching { chatRoomUseCases.fetchChatRoomUsers(chatRoomId) }
                         .getOrNull().orEmpty()
                     if (currentChatRoomId == chatRoomId) {
-                        _users.value = result
+                        _uiState.update { it.copy(users = result) }
                     }
                 }
         }
@@ -595,8 +599,10 @@ class ChatRoomViewModel(
                     }
                 }
             }.onFailure { e ->
-                if (_uiState.value is ChatRoomUiState.Loading) {
-                    _uiState.value = ChatRoomUiState.Error(e.message ?: "Failed to load chats")
+                if (_uiState.value.messages is ChatMessagesUiState.Loading) {
+                    _uiState.update {
+                        it.copy(messages = ChatMessagesUiState.Error(e.message ?: "Failed to load chats"))
+                    }
                 }
             }
         }
@@ -642,7 +648,7 @@ class ChatRoomViewModel(
 
 
     private fun updateSearchQuery(query: String) {
-        _searchState.update { it.copy(query = query) }
+        updateSearch { it.copy(query = query) }
         if (query.isEmpty()) {
             executeSearch()
         }
@@ -651,13 +657,13 @@ class ChatRoomViewModel(
     private fun executeSearch() {
         val roomId = currentChatRoomId
         if (roomId.isBlank()) return
-        val state = _searchState.value
+        val state = _uiState.value.search
         val q = state.query
         val u = state.searchedUser
         val d = state.searchedDate
 
         if (q.isEmpty() && u == null && d.isNullOrBlank()) {
-            _searchState.update {
+            updateSearch {
                 it.copy(
                     committedQuery = "",
                     matchedChatIds = emptyList(),
@@ -668,7 +674,7 @@ class ChatRoomViewModel(
             return
         }
 
-        _searchState.update { it.copy(committedQuery = q) }
+        updateSearch { it.copy(committedQuery = q) }
 
         viewModelScope.launch {
             val dateFrom = if (d.isNullOrBlank()) "" else "$d 00:00:00:000"
@@ -687,7 +693,7 @@ class ChatRoomViewModel(
             val idsAsc = rawDesc.sortedBy { it.second }.map { it.first }
 
             if (idsAsc.isEmpty()) {
-                _searchState.update {
+                updateSearch {
                     it.copy(
                         matchedChatIds = emptyList(),
                         currentIndex = -1,
@@ -698,7 +704,7 @@ class ChatRoomViewModel(
             }
 
             val focusId = idsAsc.last()
-            _searchState.update {
+            updateSearch {
                 it.copy(
                     matchedChatIds = idsAsc,
                     currentIndex = idsAsc.lastIndex,
@@ -710,7 +716,7 @@ class ChatRoomViewModel(
 
     private fun searchByDate(datePrefix: String) {
         if (datePrefix.isBlank()) return
-        _searchState.update {
+        updateSearch {
             it.copy(
                 query = "",
                 searchedUser = null,
@@ -724,14 +730,14 @@ class ChatRoomViewModel(
     }
 
     private fun moveSearchIndex(delta: Int) {
-        val state = _searchState.value
+        val state = _uiState.value.search
         if (state.matchedChatIds.isEmpty()) return
         val newIndex = (state.currentIndex + delta)
             .coerceIn(0, state.matchedChatIds.lastIndex)
         if (newIndex == state.currentIndex) return
         val targetId = state.matchedChatIds[newIndex]
 
-        _searchState.update { it.copy(currentIndex = newIndex) }
+        updateSearch { it.copy(currentIndex = newIndex) }
         focusOnChat(targetId)
     }
 
@@ -756,28 +762,31 @@ class ChatRoomViewModel(
     /** 번역을 받는 동안에는 말풍선 아래에 진행 표시를 두고, 받지 못하면 걷어 낸 뒤 안내한다. */
     private fun translateChat(chatId: String, languageCode: String) {
         val roomId = currentChatRoomId
-        if (roomId.isBlank() || chatId.isBlank() || chatId in _translations.value) return
-        _translations.update { it + (chatId to ChatTranslationUiState.Loading) }
+        if (roomId.isBlank() || chatId.isBlank() || chatId in _uiState.value.translations) return
+        _uiState.update { it.copy(translations = it.translations + (chatId to ChatTranslationUiState.Loading)) }
         viewModelScope.launch {
             val translation = chatRoomUseCases.translateChat(roomId, chatId, languageCode)
             if (currentChatRoomId != roomId) return@launch
             if (translation == null) {
-                _translations.update { it - chatId }
-                _translationFailed.tryEmit(Unit)
+                _uiState.update { it.copy(translations = it.translations - chatId) }
+                _events.trySend(ChatRoomEvent.TranslationFailed)
             } else {
-                _translations.update { it + (chatId to ChatTranslationUiState.Ready(translation)) }
+                _uiState.update {
+                    it.copy(translations = it.translations + (chatId to ChatTranslationUiState.Ready(translation)))
+                }
             }
         }
     }
 
     private fun polishText(text: String, style: PolishStyle) {
         val roomId = currentChatRoomId
-        if (text.isBlank() || _polish.value == PolishUiState.Loading) return
-        _polish.value = PolishUiState.Loading
+        if (text.isBlank() || _uiState.value.polish == PolishUiState.Loading) return
+        _uiState.update { it.copy(polish = PolishUiState.Loading) }
         viewModelScope.launch {
             val polished = chatRoomUseCases.polishText(text, style)
             if (currentChatRoomId != roomId) return@launch
-            _polish.value = polished?.let { PolishUiState.Ready(text, it) } ?: PolishUiState.Failed
+            val result = polished?.let { PolishUiState.Ready(text, it) } ?: PolishUiState.Failed
+            _uiState.update { it.copy(polish = result) }
         }
     }
 
@@ -790,7 +799,7 @@ class ChatRoomViewModel(
                     .onFailure { Log.message("[Focus] loadChatWithContext failed: ${it.message}") }
                 if (currentChatRoomId != roomId) return@launch
             }
-            _searchState.update {
+            updateSearch {
                 it.copy(
                     focusChatId = chatId,
                     focusTriggerKey = it.focusTriggerKey + 1,

@@ -5,7 +5,7 @@ import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.ui.chatroom.GroupedChat
 import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.ui.chatroom.ChatRoomActions
-import com.eunilsung.talk.ui.chatroom.ChatRoomUiState
+import com.eunilsung.talk.ui.chatroom.ChatMessagesUiState
 import com.eunilsung.talk.ui.chatroom.ChatRoomViewModel
 import com.eunilsung.talk.ui.chatroom.ChatTranslationUiState
 import com.eunilsung.talk.ui.chatroom.PolishUiState
@@ -39,7 +39,7 @@ class ChatRoomViewModelScenarioTest {
     @Test
     fun 대화방화면() = functionalSuite("대화방화면") { harness ->
         fun ChatRoomViewModel.shown(): List<GroupedChat> =
-            (uiState.value as? ChatRoomUiState.Success)?.groupedChats.orEmpty()
+            (uiState.value.messages as? ChatMessagesUiState.Success)?.groupedChats.orEmpty()
 
         listOf(
             scenario("안읽음표시선과읽음") {
@@ -105,23 +105,23 @@ class ChatRoomViewModelScenarioTest {
 
                 step("번역을 고르면 그 말풍선에 번역이 붙는다") {
                     viewModel.onAction(ChatRoomActions.OnTranslateChat(message.id, "ko"))
-                    require(viewModel.translations.value.containsKey(message.id), "번역을 청한 직후에 진행 표시가 없다")
-                    awaitTrue("번역이 끝난다", AI_TIMEOUT_MS) { viewModel.translations.value[message.id] !is ChatTranslationUiState.Loading }
-                    val state = viewModel.translations.value[message.id]
+                    require(viewModel.uiState.value.translations.containsKey(message.id), "번역을 청한 직후에 진행 표시가 없다")
+                    awaitTrue("번역이 끝난다", AI_TIMEOUT_MS) { viewModel.uiState.value.translations[message.id] !is ChatTranslationUiState.Loading }
+                    val state = viewModel.uiState.value.translations[message.id]
                         ?: skip("서버의 AI 가 꺼져 있거나 한도에 걸려 번역이 걷혔다")
                     val text = (state as ChatTranslationUiState.Ready).text
                     require(text.isNotBlank() && text != message.content, "번역이 비었거나 원문과 같다: $text")
-                    requireEquals(setOf(message.id), viewModel.translations.value.keys, "번역이 붙은 말풍선")
+                    requireEquals(setOf(message.id), viewModel.uiState.value.translations.keys, "번역이 붙은 말풍선")
                 }
                 step("번역 숨기기를 고르면 걷힌다") {
                     viewModel.onAction(ChatRoomActions.OnHideTranslation(message.id))
-                    require(viewModel.translations.value.isEmpty(), "숨긴 번역이 남아 있다")
+                    require(viewModel.uiState.value.translations.isEmpty(), "숨긴 번역이 남아 있다")
                 }
                 step("다른 방을 열면 앞 방의 번역이 따라오지 않는다") {
                     viewModel.onAction(ChatRoomActions.OnTranslateChat(message.id, "ko"))
                     val other = harness.newRoom(RealServerHarness.PEER, RealServerHarness.THIRD)
                     viewModel.onAction(ChatRoomActions.Load(other))
-                    require(viewModel.translations.value.isEmpty(), "방을 바꿨는데 번역이 남아 있다")
+                    require(viewModel.uiState.value.translations.isEmpty(), "방을 바꿨는데 번역이 남아 있다")
                 }
             },
             scenario("다듬기상태") {
@@ -132,9 +132,9 @@ class ChatRoomViewModelScenarioTest {
 
                 step("다듬기를 고르면 받는 중이 되었다가 원문과 함께 결과가 준비된다") {
                     viewModel.onAction(ChatRoomActions.OnPolishText(draft, PolishStyle.CORRECT))
-                    requireEquals(PolishUiState.Loading, viewModel.polish.value, "청한 직후의 상태")
-                    awaitTrue("다듬기가 끝난다", AI_TIMEOUT_MS) { viewModel.polish.value != PolishUiState.Loading }
-                    val state = viewModel.polish.value
+                    requireEquals(PolishUiState.Loading, viewModel.uiState.value.polish, "청한 직후의 상태")
+                    awaitTrue("다듬기가 끝난다", AI_TIMEOUT_MS) { viewModel.uiState.value.polish != PolishUiState.Loading }
+                    val state = viewModel.uiState.value.polish
                     if (state == PolishUiState.Failed) skip("서버의 AI 가 꺼져 있거나 한도에 걸렸다")
                     val ready = state as PolishUiState.Ready
                     requireEquals(draft, ready.sourceText, "결과가 가리키는 원문")
@@ -142,11 +142,11 @@ class ChatRoomViewModelScenarioTest {
                 }
                 step("화면이 결과를 받아 가면 상태가 비워진다") {
                     viewModel.onAction(ChatRoomActions.OnPolishHandled)
-                    requireEquals(PolishUiState.Idle, viewModel.polish.value, "받아 간 뒤의 상태")
+                    requireEquals(PolishUiState.Idle, viewModel.uiState.value.polish, "받아 간 뒤의 상태")
                 }
                 step("빈 글은 서버에 묻지 않는다") {
                     viewModel.onAction(ChatRoomActions.OnPolishText("   ", PolishStyle.CORRECT))
-                    requireEquals(PolishUiState.Idle, viewModel.polish.value, "빈 글을 넣은 뒤의 상태")
+                    requireEquals(PolishUiState.Idle, viewModel.uiState.value.polish, "빈 글을 넣은 뒤의 상태")
                 }
             },
         )

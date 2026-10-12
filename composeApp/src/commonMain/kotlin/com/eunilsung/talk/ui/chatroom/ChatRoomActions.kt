@@ -75,6 +75,49 @@ sealed interface ChatRoomActions {
 
     /** 화면이 다듬기 결과를 입력창에 반영했거나 실패 안내를 띄웠다. */
     data object OnPolishHandled : ChatRoomActions
+
+    /** 화면에 이 방을 띄웠다. 이 방의 알림을 걷고, 이 방의 새 대화를 읽은 것으로 치게 한다. */
+    data class OnEnterRoom(val chatRoomId: String) : ChatRoomActions
+
+    /** 화면에서 이 방을 내렸다. 이 방에 딸려 들고 있던 공지·책갈피도 비운다. */
+    data class OnLeaveRoom(val chatRoomId: String) : ChatRoomActions
+
+    /** 앱이 다시 앞으로 나왔다. 뒤에 있는 동안 쌓인 이 방의 알림을 걷는다. */
+    data class OnResumeRoom(val chatRoomId: String) : ChatRoomActions
+
+    /** 공지가 바뀌었다. 그 공지에 기억해 둔 공지바 표시 상태를 읽어 온다. */
+    data class OnLoadNoticeBar(val identityKey: String) : ChatRoomActions
+
+    data class OnNoticeExpandedChange(val identityKey: String, val expanded: Boolean) : ChatRoomActions
+
+    data class OnNoticeDetailsChange(val identityKey: String, val shown: Boolean) : ChatRoomActions
+
+    /** 이 공지는 공지바에 다시 띄우지 않는다. */
+    data class OnHideNotice(val identityKey: String) : ChatRoomActions
+
+    /** 사진 시트를 열었다 — 최근 사진을 읽는다. */
+    data object OnLoadRecentPhotos : ChatRoomActions
+
+    /** 갤러리 시트를 열었다 — 고른 앨범의 사진을 읽는다. */
+    data object OnLoadGalleryPhotos : ChatRoomActions
+
+    /** 앨범을 골랐다 — 그 폴더의 사진만 다시 읽는다. null 이면 전체. */
+    data class OnSelectGalleryAlbum(val albumId: String?) : ChatRoomActions
+
+    data object OnRequestPhotoAccess : ChatRoomActions
+
+    /** 파일 고르기 창을 띄운다. 고른 파일은 이 방으로 보낸다. */
+    data object OnLaunchFilePicker : ChatRoomActions
+
+    data class OnEmoticonTabSelected(val index: Int) : ChatRoomActions
+}
+
+sealed interface ChatRoomEvent {
+    /** 내가 이 방에서 나가졌다. 화면을 닫는다. */
+    data object SelfLeft : ChatRoomEvent
+
+    /** 번역을 받지 못했다. 안내를 한 번 띄운다. */
+    data object TranslationFailed : ChatRoomEvent
 }
 
 
