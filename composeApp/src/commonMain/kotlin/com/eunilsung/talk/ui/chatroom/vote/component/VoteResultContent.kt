@@ -34,6 +34,8 @@ import multiplatformtalk.composeapp.generated.resources.vote_redo
 import multiplatformtalk.composeapp.generated.resources.vote_close
 import multiplatformtalk.composeapp.generated.resources.vote_rank_first
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
 
 @Composable
 fun VoteResultContent(
@@ -62,6 +64,7 @@ fun VoteResultContent(
                 if (result.isClosed) " · " + stringResource(Res.string.vote_ended) else "",
             color = AppColors.TextSub,
             fontSize = 12.sp,
+            modifier = Modifier.testTag(TestTags.VOTE_TOTAL),
         )
 
         Spacer(modifier = Modifier.size(20.dp))
@@ -101,6 +104,7 @@ fun VoteResultContent(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
                     .background(AppColors.Main)
+                    .testTag(TestTags.VOTE_CLOSE)
                     .clickable { onAction(VoteActions.OnCloseVote) }
                     .padding(vertical = 14.dp),
                 contentAlignment = Alignment.Center,

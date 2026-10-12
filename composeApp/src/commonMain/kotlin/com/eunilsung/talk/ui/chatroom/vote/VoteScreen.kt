@@ -47,6 +47,8 @@ import multiplatformtalk.composeapp.generated.resources.vote_create_action
 import multiplatformtalk.composeapp.generated.resources.vote_do
 import multiplatformtalk.composeapp.generated.resources.vote_result
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
 
 class VoteScreen(
     val chatRoomId: String = "",
@@ -113,7 +115,10 @@ fun VoteContent(
                             isRefreshing = uiState.isRefreshing,
                             onClick = { onAction(VoteActions.OnRefresh) },
                         )
-                        TextButton(onClick = { onAction(VoteActions.OnCreateClick) }) {
+                        TextButton(
+                            modifier = Modifier.testTag(TestTags.VOTE_CREATE),
+                            onClick = { onAction(VoteActions.OnCreateClick) },
+                        ) {
                             Text(stringResource(Res.string.vote_create_action), color = AppColors.Main, fontWeight = FontWeight.SemiBold)
                         }
                     }

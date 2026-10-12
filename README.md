@@ -117,6 +117,7 @@ composeApp/src/
 └── commonTest/           29 files — 로직 + DB 통합 + 서버 모드 저장소 테스트
 shared/                    3 files — 앱·서버가 함께 쓰는 요청·응답 모델
 server/                   29 files — Ktor 서버 (+ 테스트 15 files, 마이그레이션 9개)
+.maestro/                 실화면 흐름 4개 — Android·iOS 에 같은 파일을 돌린다
 ```
 
 **화면 패턴** — 10개 ViewModel 이 `sealed UiState` 를 노출하고, 9개 화면이 `sealed Actions` 로 이벤트를 단방향 전달합니다.
@@ -170,7 +171,7 @@ server/                   29 files — Ktor 서버 (+ 테스트 15 files, 마이
 
 ## 테스트
 
-**앱 193개 + 서버 112개, 그리고 진짜 서버에 붙여 도는 기능 테스트 22묶음(시나리오 51개).**
+**앱 193개 + 서버 112개, 진짜 서버에 붙여 도는 기능 테스트 22묶음(시나리오 51개), 그리고 Android·iOS 실화면 흐름 4개.**
 
 ```bash
 ./gradlew :composeApp:testDebugUnitTest   # 앱 (Android JVM)
@@ -180,6 +181,10 @@ server/                   29 files — Ktor 서버 (+ 테스트 15 files, 마이
 # 기능 테스트 — 앱의 실제 통신 코드로 서버에 붙어 돈다. 로컬 서버는 알아서 뜨고 끝나면 내려간다
 # Android Studio 에서는 실행 구성 "기능테스트 (실 서버)" 를 고르고 실행 버튼을 누른다
 ./gradlew :composeApp:testDebugUnitTest -PfunctionalTest=true --tests "*functest*"
+
+# 실화면 흐름 — 같은 Maestro 흐름을 에뮬레이터·시뮬레이터에서 실제로 눌러 본다. 로컬 서버를 먼저 띄운다
+maestro --device emulator-5556 test .maestro
+maestro --device <시뮬레이터 UDID> test .maestro
 ```
 
 | 대상 | 내용 |
@@ -190,9 +195,11 @@ server/                   29 files — Ktor 서버 (+ 테스트 15 files, 마이
 | 서버 저장소 | 실제 PostgreSQL 쿼리로 방·읽음·공감·회수·투표·그룹 규칙 |
 | 기능 테스트 | 앱의 실제 REST·WebSocket 코드로 진짜 서버에 붙어 로그인·대화방·대화·읽음·공감/회수/공지/책갈피·파일·투표·그룹·초대·AI 와 화면 7곳(대화방·대화함·로그인·투표·초대·내 그룹·프로필) ViewModel 의 상태를 끝에서 끝까지. 주소를 줬을 때만 돈다 |
 | 서버 경로 | HTTP 와 WebSocket 을 거쳐 인증·권한·알림·푸시 대상 |
+| 실화면 흐름 | Maestro 로 Android 에뮬레이터·iOS 시뮬레이터에서 로그인 실패·대화 주고받기와 공감·투표 만들고 참여하고 마감·방 나가기를 실제로 누른다. 상대는 REST 스크립트가 움직이고, 화면에서 한 일이 서버에 남았는지도 확인한다 |
 
-UI 테스트는 넣지 않았습니다. **저장소 계층은 실제 쿼리로 검증**하되,
-화면은 유지보수 비용 대비 이득이 낮다고 판단했습니다.
+화면 하나씩 그려 보는 Compose UI 테스트는 넣지 않았습니다. **화면 로직은 ViewModel 을 진짜 서버에 붙여**
+보고, 버튼과 액션의 연결은 실화면 흐름이 기기에서 직접 눌러 봅니다. 흐름은 화면 문구 대신
+`TestTags` 의 이름으로 요소를 찾아 기기 언어와 상관없이 돕니다.
 
 - 앱의 인메모리 DB는 플랫폼별로 갈립니다 — Android 는 `JdbcSqliteDriver(IN_MEMORY)`,
   iOS 는 `NativeSqliteDriver(inMemory = true)`. iOS 는 **이름이 같으면 DB가 공유돼**
@@ -277,4 +284,4 @@ OS 키보드와 이모티콘 패널이 번갈아 뜰 때 하단바가 흔들리�
 | ViewModel / Actions | 10 / 9 |
 | 기기 DB 테이블 / 서버 DB 테이블 | 11개 / 18개 |
 | 문자열 리소스 | 369개 (ko · en) |
-| 테스트 | 305개 (앱 193 · 서버 112) + 기능 테스트 22묶음 |
+| 테스트 | 305개 (앱 193 · 서버 112) + 기능 테스트 22묶음 + 실화면 흐름 4개 |

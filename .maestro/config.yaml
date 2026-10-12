@@ -1,0 +1,9 @@
+flows:
+  - flows/*
+executionOrder:
+  continueOnFailure: true
+  flowsOrder:
+    - 로그인 실패
+    - 대화 주고받기와 공감
+    - 투표 만들고 참여하고 마감
+    - 대화방 나가기

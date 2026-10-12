@@ -53,6 +53,8 @@ import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.click.clickable
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
 
 @Composable
 fun ChatInputBar(
@@ -137,6 +139,7 @@ fun ChatInputBar(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .testTag(TestTags.CHAT_INPUT)
                         .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
                         .onPreviewKeyEvent { event ->
                             if (enterToSend &&
@@ -196,7 +199,7 @@ fun ChatInputBar(
         Spacer(modifier = Modifier.width(10.dp))
 
         IconButton(
-            modifier = Modifier.size(28.dp),
+            modifier = Modifier.size(28.dp).testTag(TestTags.CHAT_SEND),
             onClick = { trySend() },
             enabled = canSend
         ) {

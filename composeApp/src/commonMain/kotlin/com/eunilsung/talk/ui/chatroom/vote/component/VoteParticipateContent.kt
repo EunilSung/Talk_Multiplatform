@@ -33,6 +33,8 @@ import multiplatformtalk.composeapp.generated.resources.vote_single_info
 import multiplatformtalk.composeapp.generated.resources.vote_see_result
 import multiplatformtalk.composeapp.generated.resources.vote_do
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
 
 @Composable
 fun VoteParticipateContent(
@@ -94,6 +96,7 @@ fun VoteParticipateContent(
                 .padding(16.dp)
                 .clip(RoundedCornerShape(10.dp))
                 .background(if (canSubmit) AppColors.Main else AppColors.Line)
+                .testTag(TestTags.VOTE_SUBMIT)
                 .clickable(enabled = canSubmit) { onAction(VoteActions.OnSubmitVote) }
                 .padding(vertical = 15.dp),
             contentAlignment = Alignment.Center,

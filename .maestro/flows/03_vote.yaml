@@ -1,0 +1,72 @@
+appId: com.eunilsung.talk
+name: 투표 만들고 참여하고 마감
+tags:
+  - smoke
+onFlowComplete:
+  - runScript:
+      file: ../scripts/peer.js
+      env:
+        ACTION: cleanup
+---
+- runScript:
+    file: ../scripts/peer.js
+    env:
+      ACTION: setup
+- runFlow: ../common/login.yaml
+- tapOn:
+    id: tab_chat
+- tapOn: ${output.title}
+- tapOn:
+    id: chat_room_menu
+- tapOn:
+    id: drawer_vote
+- tapOn:
+    id: vote_create
+- tapOn:
+    id: vote_title
+- inputText: ${output.voteTitle}
+- tapOn:
+    id: vote_option_0
+- inputText: noodle
+- tapOn:
+    id: vote_option_1
+- inputText: rice
+- runFlow:
+    file: ../common/dismiss_keyboard.yaml
+    label: 키보드를 내린다. 이 화면은 키보드가 만들기 버튼을 가린다
+- tapOn:
+    id: vote_submit_create
+- tapOn:
+    text: ${output.voteTitle}
+    label: 목록에 생긴 투표를 연다
+- tapOn: rice
+- tapOn:
+    id: vote_submit
+- assertVisible:
+    id: vote_total
+    label: 결과 화면이 뜬다
+- retry:
+    maxRetries: 3
+    commands:
+      - runScript:
+          file: ../scripts/peer.js
+          env:
+            ACTION: checkVote
+      - assertTrue:
+          condition: ${output.ok}
+          label: 내 표가 서버에 들어갔다
+- tapOn:
+    id: vote_close
+- assertVisible:
+    text: ${output.voteTitle}
+    label: 마감하면 목록으로 돌아온다
+- retry:
+    maxRetries: 3
+    commands:
+      - runScript:
+          file: ../scripts/peer.js
+          env:
+            ACTION: checkVoteClosed
+      - assertTrue:
+          condition: ${output.ok}
+          label: 서버에서도 마감됐다

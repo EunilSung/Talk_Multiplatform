@@ -1,0 +1,15 @@
+appId: com.eunilsung.talk
+name: 키보드를 내린다
+---
+- runFlow:
+    when:
+      platform: Android
+    label: Android 는 뒤로 가기를 키보드가 받아 내려간다
+    commands:
+      - hideKeyboard
+- runFlow:
+    when:
+      platform: iOS
+    label: iOS 는 바깥을 눌러도 내려가지 않아 키보드의 return 을 누른다
+    commands:
+      - pressKey: Enter

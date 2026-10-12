@@ -1,0 +1,17 @@
+appId: com.eunilsung.talk
+name: test1 로 로그인
+---
+- runFlow: launch.yaml
+- tapOn:
+    id: login_id
+- eraseText: 20
+- inputText: test1
+- tapOn:
+    id: login_pw
+- inputText: "1234"
+- tapOn:
+    id: login_submit
+- extendedWaitUntil:
+    notVisible:
+      id: login_submit
+    timeout: 15000

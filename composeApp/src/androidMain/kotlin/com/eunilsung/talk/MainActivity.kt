@@ -12,6 +12,9 @@ import androidx.fragment.app.FragmentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.ActivityCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -23,6 +26,7 @@ import com.eunilsung.talk.data.local.PickedFile
 import com.eunilsung.talk.data.local.PickedPhoto
 import com.eunilsung.talk.ui.main.MainScreen
 import com.eunilsung.talk.ui.theme.AppColors
+import com.eunilsung.talk.ui.uikit.exposeTestTags
 import com.eunilsung.talk.util.Log
 import com.eunilsung.talk.data.remote.push.AndroidPushNotifier
 import com.eunilsung.talk.data.remote.push.PendingPushNavigation
@@ -230,7 +234,9 @@ class MainActivity : FragmentActivity() {
         )
 
         setContent {
-            Navigator(MainScreen)
+            Box(modifier = Modifier.fillMaxSize().exposeTestTags()) {
+                Navigator(MainScreen)
+            }
         }
     }
 

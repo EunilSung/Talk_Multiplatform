@@ -32,6 +32,8 @@ import multiplatformtalk.composeapp.generated.resources.search_icon
 import multiplatformtalk.composeapp.generated.resources.search_user_icon
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
 
 
 
@@ -67,7 +69,7 @@ fun ChatRoomTopBar(
                 navigationIcon = {
                     if (!isSearchMode) {
                         IconButton(
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(28.dp).testTag(TestTags.CHAT_ROOM_BACK),
                             onClick = handleBack
                         ) {
                             Icon(
@@ -150,7 +152,7 @@ fun ChatRoomTopBar(
                             Spacer(modifier = Modifier.size(10.dp))
                         }
                         IconButton(
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(28.dp).testTag(TestTags.CHAT_ROOM_MENU),
                             onClick = {
                                 onDrawerOpen()
                                 hideKeyboard()

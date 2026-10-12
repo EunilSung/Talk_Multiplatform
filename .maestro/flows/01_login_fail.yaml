@@ -1,0 +1,32 @@
+appId: com.eunilsung.talk
+name: 로그인 실패
+tags:
+  - smoke
+---
+- runFlow: ../common/launch.yaml
+- tapOn:
+    id: login_id
+- eraseText: 20
+- inputText: test9
+- tapOn:
+    id: login_pw
+- inputText: wrong-password
+- tapOn:
+    id: login_submit
+- tapOn:
+    id: dialog_confirm
+    label: 오류 안내를 닫는다
+- assertVisible:
+    id: login_submit
+    label: 로그인 화면에 남아 있다
+- tapOn:
+    id: login_pw
+- eraseText: 20
+- inputText: "1234"
+- tapOn:
+    id: login_submit
+- extendedWaitUntil:
+    notVisible:
+      id: login_submit
+    timeout: 15000
+    label: 맞는 비밀번호로는 들어가 틀린 횟수가 지워진다

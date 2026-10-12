@@ -103,6 +103,7 @@ composeApp/src/
 shared/        앱·서버 공용 요청/응답 모델 (com.eunilsung.talk.shared.api)
 server/        Ktor 서버 (Netty · WebSocket · HikariCP · Flyway · PostgreSQL)
 iosApp/        Xcode 프로젝트
+.maestro/      실화면 흐름 (Android·iOS 공용 Maestro 흐름 · 상대 역할 스크립트)
 ```
 
 - Clean Architecture(data/domain/ui) + MVI 변형(Action → ViewModel → `StateFlow<UiState>`)
@@ -276,6 +277,30 @@ open iosApp/iosApp.xcodeproj           # iOS 는 Xcode 에서 시뮬레이터 �
   `STEP-SKIP` 으로 남고 실패가 아니다.
 - 배포한 서버에 돌리면 테스트 계정으로 방·대화·파일이 실제로 만들어진다. 방에서는 나가지만 대화와
   파일은 서버에 남는다.
+
+### 실화면 흐름 — Maestro
+
+기능 테스트가 비워 둔 "버튼과 액션의 연결"을 에뮬레이터·시뮬레이터에서 실제로 눌러 본다. 같은 흐름 파일을
+Android 와 iOS 에 그대로 돌린다(`.maestro`).
+
+```bash
+./gradlew :server:runLocal                                  # 로컬 서버를 먼저 띄운다
+adb -s emulator-5556 reverse tcp:8090 tcp:8090              # 에뮬레이터도 localhost:8090 으로 서버에 닿는다
+maestro --device emulator-5556 test .maestro --test-output-dir build/maestro/android
+maestro --device <시뮬레이터 UDID> test .maestro --test-output-dir build/maestro/ios
+```
+
+- **앱은 `server.baseUrl=http://localhost:8090` 으로 빌드한다.** `adb reverse` 를 걸면 Android 도 같은 주소를 쓰므로
+  플랫폼마다 `local.properties` 를 바꿔 가며 빌드하지 않아도 된다. 설치는 기기를 지정해서 한다(`installDebug` 금지).
+- **요소는 `TestTags`(`ui/uikit/TestTags.kt`)의 이름을 `id` 로 찾는다.** 화면 문구는 기기 언어마다 다르고 같은 문구가
+  여러 곳에 나온다(로그인의 "비밀번호" 라벨과 입력칸 안내). 흐름이 누르는 요소를 새로 만들면 태그를 붙이고
+  흐름 파일에도 같은 이름을 쓴다. 상대가 보낸 말·방 이름처럼 흐름이 만든 영문 글자는 글자로 찾아도 된다.
+- **다이얼로그는 Surface 에 `exposeTestTags()` 를 붙인다.** Android 는 다이얼로그가 창이 따로라 앱 루트의 설정이
+  닿지 않는다. iOS 는 testTag 가 그대로 접근성 식별자로 나간다.
+- **상대는 `scripts/peer.js` 가 REST 로 움직인다.** 흐름마다 test2 가 test1·test3 와 새 단체방(`E2E-<시각>`)을 만들고
+  말을 건다. 앱에서 한 일이 서버에 남았는지도 같은 스크립트로 확인하고, 흐름이 끝나면(`onFlowComplete`) 셋 다 나간다.
+- **Android 의 `hideKeyboard` 는 뒤로 가기를 누른다.** 키보드가 떠 있을 때만 쓴다. 떠 있지 않으면 화면이 닫힌다.
+- **입력은 영문·숫자로 한다.** iOS 시뮬레이터에서 한글 입력이 안정적이지 않다.
 
 ## 주의
 

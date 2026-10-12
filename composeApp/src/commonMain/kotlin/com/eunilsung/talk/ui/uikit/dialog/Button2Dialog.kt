@@ -30,6 +30,9 @@ import multiplatformtalk.composeapp.generated.resources.ok
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.button.ButtonV1
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
+import com.eunilsung.talk.ui.uikit.exposeTestTags
 
 @Composable
 fun Button2Dialog(
@@ -49,7 +52,7 @@ fun Button2Dialog(
         onDismissRequest = onDismissRequest
     ) {
         Surface(
-            modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+            modifier = Modifier.fillMaxWidth().wrapContentHeight().exposeTestTags(),
             shape = RoundedCornerShape(8.dp),
             color = AppColors.BgSub
         ) {
@@ -80,7 +83,7 @@ fun Button2Dialog(
                     }
 
                     ButtonV1(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).testTag(TestTags.DIALOG_CONFIRM),
                         text = confirmText,
                         containerColor = if (confirmText == stringResource(Res.string.delete)
                             || confirmText == stringResource(Res.string.leave)) AppColors.Out else AppColors.PrimaryMain,

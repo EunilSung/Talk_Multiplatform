@@ -1,0 +1,36 @@
+appId: com.eunilsung.talk
+name: 대화방 나가기
+tags:
+  - smoke
+onFlowComplete:
+  - runScript:
+      file: ../scripts/peer.js
+      env:
+        ACTION: cleanup
+---
+- runScript:
+    file: ../scripts/peer.js
+    env:
+      ACTION: setup
+- runFlow: ../common/login.yaml
+- tapOn:
+    id: tab_chat
+- longPressOn: ${output.title}
+- tapOn:
+    id: list_dialog_destructive
+    label: 메뉴에서 나가기를 고른다
+- tapOn:
+    id: dialog_confirm
+- assertNotVisible:
+    text: ${output.title}
+    label: 목록에서 사라진다
+- retry:
+    maxRetries: 3
+    commands:
+      - runScript:
+          file: ../scripts/peer.js
+          env:
+            ACTION: checkLeft
+      - assertTrue:
+          condition: ${output.ok}
+          label: 서버에서도 나갔다

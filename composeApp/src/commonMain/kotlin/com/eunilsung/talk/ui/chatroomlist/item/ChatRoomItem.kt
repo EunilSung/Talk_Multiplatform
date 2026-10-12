@@ -47,6 +47,8 @@ import com.eunilsung.talk.ui.uikit.image.ProfileImages
 import com.eunilsung.talk.ui.uikit.line.LineDot
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
 
 @Composable
 fun ChatRoomItem(
@@ -62,6 +64,7 @@ fun ChatRoomItem(
             modifier = modifier
                 .fillMaxWidth()
                 .background(if (isToggleable && isSelected) AppColors.UserSelectBg else AppColors.Transparent)
+                .testTag(TestTags.CHAT_ROOM_ITEM)
                 .itemClickable(
                     cornerRadius = 12.dp,
                     onClick = { onClick() },
@@ -194,7 +197,7 @@ fun ChatRoomItem(
 
                     val unReadCount = item.unReadCount.toIntOrNull() ?: 0
                     if (unReadCount > 0){
-                        BadgeV1(count = unReadCount)
+                        BadgeV1(count = unReadCount, modifier = Modifier.testTag(TestTags.CHAT_ROOM_UNREAD))
                     }
                 }
             }
