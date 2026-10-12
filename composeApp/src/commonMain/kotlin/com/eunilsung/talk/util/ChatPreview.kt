@@ -1,5 +1,6 @@
 package com.eunilsung.talk.util
 
+import multiplatformtalk.composeapp.generated.resources.emoticon_label
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.chat_preview_file
 import multiplatformtalk.composeapp.generated.resources.chat_preview_notice
@@ -59,12 +60,9 @@ suspend fun chatDisplayText(chat: Chat.Item, forReply: Boolean = false): String 
 
     // 타입이 아니라 이모티콘을 달고 있는지로 판정(답장+이모티콘도 표기).
     chat.chatType == Chat.Type.EMOTICON || chat.emoticon.id.isNotBlank() ->
-        if (forReply) chat.chatContent.stripMentionTags().ifBlank { EMOTICON_LABEL }
-        else if (chat.emoticon.id.isBlank()) EMOTICON_LABEL
+        if (forReply) chat.chatContent.stripMentionTags().ifBlank { getString(Res.string.emoticon_label) }
+        else if (chat.emoticon.id.isBlank()) getString(Res.string.emoticon_label)
         else buildEmoticonPreview(chat.emoticon.id, chat.chatContent.stripMentionTags())
 
     else -> chat.chatContent.stripMentionTags()
 }
-
-/** 본문 없는 이모티콘 대화의 대체 표기. */
-const val EMOTICON_LABEL = "이모티콘"

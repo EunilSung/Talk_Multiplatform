@@ -187,7 +187,7 @@ private fun UserProfileContent(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = uiState.message ?: stringResource(Res.string.profile_load_failed),
+                            text = stringResource(Res.string.profile_load_failed),
                             style = MaterialTheme.typography.bodyMedium.copy(color = AppColors.TextSub)
                         )
                         Spacer(Modifier.height(12.dp))
@@ -420,6 +420,6 @@ private fun UserProfileLoadingPreview() {
 @Composable
 private fun UserProfileErrorPreview() {
     MaterialTheme {
-        UserProfileContent(uiState = UserProfileUiState.Error("프로필을 불러오지 못했습니다."), onAction = {})
+        UserProfileContent(uiState = UserProfileUiState.Error, onAction = {})
     }
 }

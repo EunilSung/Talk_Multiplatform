@@ -24,7 +24,7 @@ class LoginUseCase(
         return try {
             loginRepository.requestLogin(input)
         } catch (e: Exception) {
-            Login.LoginResult.Error(e.message ?: "Unknown error")
+            Login.LoginResult.Error("")
         }
     }
 }
@@ -37,7 +37,7 @@ class DuplicateLoginUseCase(
         return try {
             loginRepository.duplicateLogin(input)
         } catch (e: Exception) {
-            Login.LoginResult.Error(e.message ?: "Unknown error")
+            Login.LoginResult.Error("")
         }
     }
 }

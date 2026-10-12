@@ -464,4 +464,13 @@
     <string name="notification_sound_yank_2">태엽</string>
     <string name="notification_sound_bell_little">딩~</string>
     <string name="notification_sound_dog">강아지</string>
+    <string name="emoticon_label">이모티콘</string>
+    <string name="date_picker_prev_month">과거 달로 이동</string>
+    <string name="date_picker_next_month">최신 달로 이동</string>
+    <string name="notice_expand">공지 펼치기</string>
+    <string name="notice_details_collapse">상세 접기</string>
+    <string name="notice_details_expand">상세 펼치기</string>
+    <string name="file_name_unknown">(이름 없음)</string>
+    <string name="login_id_required">아이디를 입력해 주세요</string>
+    <string name="login_pw_required">비밀번호를 입력해 주세요</string>
 </resources>

@@ -160,7 +160,7 @@ private fun ViewAllThumb(onClick: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
                 painter = painterResource(Res.drawable.arrow_right_icon),
-                contentDescription = "전체보기",
+                contentDescription = stringResource(Res.string.view_all),
                 tint = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.size(28.dp)
             )

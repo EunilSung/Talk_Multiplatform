@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.uikit.mediapicker
 
+import multiplatformtalk.composeapp.generated.resources.file_name_unknown
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -77,7 +78,7 @@ fun FileDetailBottomSheetContent(
             Spacer(Modifier.height(16.dp))
 
             Text(
-                text = fileName.ifBlank { "(이름 없음)" },
+                text = fileName.ifBlank { stringResource(Res.string.file_name_unknown) },
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,

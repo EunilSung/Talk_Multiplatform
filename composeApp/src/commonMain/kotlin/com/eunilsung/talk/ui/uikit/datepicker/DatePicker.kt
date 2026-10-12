@@ -1,5 +1,7 @@
 package com.eunilsung.talk.ui.uikit.datepicker
 
+import multiplatformtalk.composeapp.generated.resources.date_picker_next_month
+import multiplatformtalk.composeapp.generated.resources.date_picker_prev_month
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -150,7 +152,7 @@ fun DatePicker(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.arrow_left_icon),
-                        contentDescription = "과거 달로 이동"
+                        contentDescription = stringResource(Res.string.date_picker_prev_month)
                     )
                 }
 
@@ -170,7 +172,7 @@ fun DatePicker(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.arrow_right_icon),
-                        contentDescription = "최신 달로 이동"
+                        contentDescription = stringResource(Res.string.date_picker_next_month)
                     )
                 }
             }

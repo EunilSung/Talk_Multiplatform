@@ -13,6 +13,6 @@ sealed interface UserProfileUiState {
         val isMe: Boolean = false,
     ) : UserProfileUiState
 
-    /** [message] 가 null 이면 화면이 `profile_load_failed` 문구를 보인다. */
-    data class Error(val message: String? = null) : UserProfileUiState
+    /** 프로필을 받지 못했다. 화면은 `profile_load_failed` 문구를 보인다. */
+    data object Error : UserProfileUiState
 }

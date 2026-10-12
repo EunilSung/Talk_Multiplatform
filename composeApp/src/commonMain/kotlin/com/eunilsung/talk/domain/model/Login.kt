@@ -32,6 +32,7 @@ sealed class Login {
 
     sealed class LoginResult {
         data object Success : LoginResult()
+        /** [message] 는 화면에 그대로 보일 문구다. 비어 있으면 화면이 일반 실패 문구를 쓴다. */
         data class Error(val message: String) : LoginResult()
         data class Duplicate(val message: String) : LoginResult()
     }

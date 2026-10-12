@@ -31,4 +31,7 @@
         <item>Ding~</item>
         <item>Puppy</item>
     </string-array>
+    <string name="push_emoticon">(Emoticon)</string>
+    <string name="update_download_title">Talk update</string>
+    <string name="update_download_desc">Downloading the latest version…</string>
 </resources>
