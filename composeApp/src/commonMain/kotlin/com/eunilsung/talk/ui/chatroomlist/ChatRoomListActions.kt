@@ -1,7 +1,7 @@
 package com.eunilsung.talk.ui.chatroomlist
 
 import com.eunilsung.talk.domain.model.ChatRoom
-import com.eunilsung.talk.domain.model.Search
+import com.eunilsung.talk.ui.uikit.search.Search
 
 sealed interface ChatRoomListActions {
     data class OnSearchQueryChange(val query: String) : ChatRoomListActions

@@ -1,7 +1,7 @@
 package com.eunilsung.talk.ui.invite.tab.group
 
 import com.eunilsung.talk.domain.model.Group
-import com.eunilsung.talk.domain.model.Search
+import com.eunilsung.talk.ui.uikit.search.Search
 
 /** 초대 화면 그룹 탭의 상태. */
 data class InviteGroupUiState(

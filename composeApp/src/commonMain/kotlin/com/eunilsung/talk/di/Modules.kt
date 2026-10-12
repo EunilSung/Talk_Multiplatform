@@ -193,10 +193,13 @@ val appModule = module {
         if (Config.Server.IS_ENABLED) InviteRepositoryImpl(get(), get()) else LocalInviteRepositoryImpl(get(), get(), get())
     }
     singleOf(::InviteUsersUseCase)
+    singleOf(::CreateChatRoomUseCase)
+    singleOf(::StartDirectChatUseCase)
+    singleOf(::ReinviteDirectPartnerUseCase)
     singleOf(::InviteUseCases)
 
     single<SharedFileCleaner> { PlatformSharedFileCleaner() }
-    singleOf(::CleanupSharedFileUseCase)
+    singleOf(::SendSharedContentUseCase)
     viewModelOf(::ShareViewModel)
 
     viewModelOf(::UserProfileViewModel)
@@ -285,6 +288,7 @@ val appModule = module {
         ChatRoomUseCases(
             get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
             get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
+            get(),
         )
     }
 

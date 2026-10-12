@@ -1,7 +1,7 @@
 package com.eunilsung.talk.ui.group
 
 import com.eunilsung.talk.domain.model.Group
-import com.eunilsung.talk.domain.model.Search
+import com.eunilsung.talk.ui.uikit.search.Search
 
 /** 내 그룹 화면의 상태. */
 data class GroupUiState(

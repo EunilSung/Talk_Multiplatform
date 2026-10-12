@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.ChatRoom
-import com.eunilsung.talk.domain.model.Search
+import com.eunilsung.talk.ui.uikit.search.Search
 import com.eunilsung.talk.ui.chatroomlist.group.ChatRoomGroupManageScreen
 import com.eunilsung.talk.ui.chatroom.ChatRoomScreen
 import com.eunilsung.talk.ui.invite.InviteMode

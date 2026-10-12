@@ -49,6 +49,7 @@ fun RealServerHarness.chatRoomViewModel(): ChatRoomViewModel {
         fetchBookmarks = FetchBookmarksUseCase(chats),
         addBookmark = AddBookmarkUseCase(chats),
         deleteBookmark = DeleteBookmarkUseCase(chats),
+        reinviteDirectPartner = ReinviteDirectPartnerUseCase(rooms, invite),
     )
     val roomUseCases = ChatRoomListUseCases(
         getChatRooms = GetChatRoomsUseCase(rooms),
@@ -101,7 +102,6 @@ fun RealServerHarness.chatRoomViewModel(): ChatRoomViewModel {
         recentPhotosProvider = NoPhotos,
         filePickerProvider = NoFilePicker,
         chatRoomListUseCases = roomUseCases,
-        inviteUseCases = InviteUseCases(InviteUsersUseCase(invite), GetMyUserUseCase(login)),
     )
 }
 

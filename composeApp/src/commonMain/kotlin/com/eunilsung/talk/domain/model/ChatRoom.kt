@@ -43,6 +43,18 @@ sealed class ChatRoom{
         val isDirectRoom: Boolean
             get() = totalUserCount == "2"
 
+        /** 서버가 보내는 알림방. 방 id 에 [NOTIFICATION_ID_MARK] 가 들어 있다. */
+        val isNotificationRoom: Boolean
+            get() = id.contains(NOTIFICATION_ID_MARK)
+
+        /** [targetId] 와 둘이 쓰는 방인지. [targetId] 가 나면 나와의 대화방을 찾는다. 알림방은 아니다. */
+        fun isDirectRoomWith(targetId: String, myId: String): Boolean {
+            val expectedCount = if (targetId.equals(myId, ignoreCase = true)) "1" else "2"
+            return totalUserCount == expectedCount &&
+                !isNotificationRoom &&
+                UserListCodec.contains(totalUserList, targetId)
+        }
+
         /** 1:1 방의 상대 (id, name). 활성 목록에 없으면 퇴장자 목록에서 찾는다. */
         private val directPartner: Pair<String, String>?
             get() {
@@ -77,3 +89,6 @@ sealed class ChatRoom{
     }
 
 }
+
+/** 알림방·알림 보낸 사람의 id 에 들어가는 표시. */
+const val NOTIFICATION_ID_MARK = "$"

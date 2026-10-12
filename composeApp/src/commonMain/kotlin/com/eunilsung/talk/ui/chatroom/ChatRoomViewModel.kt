@@ -24,7 +24,6 @@ import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 import com.eunilsung.talk.domain.usecase.ChatRoomUseCases
 import com.eunilsung.talk.util.Log
 import com.eunilsung.talk.util.chatDisplayText
-import com.eunilsung.talk.domain.usecase.InviteUseCases
 import com.eunilsung.talk.domain.usecase.ChatRoomStateUseCases
 
 class ChatRoomViewModel(
@@ -33,7 +32,6 @@ class ChatRoomViewModel(
     recentPhotosProvider: RecentPhotosProvider,
     filePickerProvider: FilePickerProvider,
     private val chatRoomListUseCases: ChatRoomListUseCases,
-    private val inviteUseCases: InviteUseCases,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -323,17 +321,8 @@ class ChatRoomViewModel(
 
     /** 1:1 방에서 퇴장한 상대에게 메시지를 보내면 전송 전에 자동 재초대. */
     private suspend fun reinviteExitedPartnerIfNeeded() {
-        val room = chatRoomListUseCases.getChatRooms().first()
-            .firstOrNull { it.id == currentChatRoomId } ?: return
-        val partner = room.abandonedDirectPartner ?: return
-        runCatching {
-            inviteUseCases.inviteUsers(
-                chatRoomId = currentChatRoomId,
-                invitedUsers = listOf(partner),
-                existingUserCount = room.displayUserCount,
-            )
-            Log.message("[ChatRoomVM] auto re-invited exited partner ${partner.first} to $currentChatRoomId")
-        }.onFailure { Log.message("[ChatRoomVM] auto re-invite failed: ${it.message}") }
+        runCatching { chatRoomUseCases.reinviteDirectPartner(currentChatRoomId) }
+            .onFailure { Log.message("[ChatRoomVM] auto re-invite failed: ${it.message}") }
     }
 
     private fun load(chatRoomId: String) {

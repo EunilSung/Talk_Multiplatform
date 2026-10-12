@@ -118,17 +118,11 @@ class LocalInviteRepositoryImpl(
     }
 
     /** [targetId] 와의 기존 1:1 방 id. 없으면 null. */
-    private fun findDirectRoom(myId: String, targetId: String): String? {
-        val expectedCount = if (targetId.equals(myId, ignoreCase = true)) "1" else "2"
-        return dbQueries.selectChatRoomsByMyId(myId).executeAsList()
+    private fun findDirectRoom(myId: String, targetId: String): String? =
+        dbQueries.selectChatRoomsByMyId(myId).executeAsList()
             .map { mapper.toModel(it) }
-            .firstOrNull { room ->
-                room.totalUserCount == expectedCount &&
-                    !room.id.contains("$") &&
-                    UserListCodec.decode(room.totalUserList).any { it.first == targetId }
-            }
+            .firstOrNull { it.isDirectRoomWith(targetId, myId) }
             ?.id
-    }
 
     private fun myName(): String =
         Config.MyInfo.userName.ifBlank { Config.MyInfo.userId }

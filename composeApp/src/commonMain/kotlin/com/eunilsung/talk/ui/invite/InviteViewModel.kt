@@ -82,25 +82,20 @@ class InviteViewModel(
                     val myId = inviteUseCases.getMyUser().id
                     val combined = (mode.existingUsers.filter { it.first != myId } + pairs)
                         .distinctBy { it.first }
-                    submitInvite(chatRoomId = "", invitedUsers = combined, existingUserCount = 0)
+                    submitInvite { inviteUseCases.createChatRoom(combined) }
                 } else {
-                    submitInvite(mode.chatRoomId, pairs, mode.existingUserIds.size)
+                    submitInvite { inviteUseCases.inviteUsers(mode.chatRoomId, pairs, mode.existingUserIds.size) }
                 }
             is InviteMode.CreateChatRoom ->
-                submitInvite(chatRoomId = "", invitedUsers = pairs, existingUserCount = 0)
+                submitInvite { inviteUseCases.createChatRoom(pairs) }
         }
     }
 
-    private fun submitInvite(
-        chatRoomId: String,
-        invitedUsers: List<Pair<String, String>>,
-        existingUserCount: Int,
-    ) {
+    /** 초대하거나 방을 만들고 결과를 알린다. [invite] 는 방 id, 실패하면 null 을 돌려준다. */
+    private fun submitInvite(invite: suspend () -> String?) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true) }
-            val resultId = runCatching {
-                inviteUseCases.inviteUsers(chatRoomId, invitedUsers, existingUserCount)
-            }.getOrNull()
+            val resultId = runCatching { invite() }.getOrNull()
             _uiState.update { it.copy(isSubmitting = false) }
             _events.send(
                 if (!resultId.isNullOrBlank()) InviteEvent.Invited(chatRoomId = resultId)

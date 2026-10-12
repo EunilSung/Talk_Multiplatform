@@ -2,7 +2,7 @@ package com.eunilsung.talk.ui.chatroomlist
 
 import com.eunilsung.talk.domain.model.ChatGroup
 import com.eunilsung.talk.domain.model.ChatRoom
-import com.eunilsung.talk.domain.model.Search
+import com.eunilsung.talk.ui.uikit.search.Search
 
 /** 대화함 화면의 상태. */
 data class ChatRoomListUiState(

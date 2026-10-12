@@ -136,7 +136,7 @@ class GroupViewModel(
     /** 새 방을 만들어 들어가고 편집 모드를 끈다. 만들지 못하면 편집 모드와 선택은 그대로 둔다. */
     private fun startChat(users: List<Pair<String, String>>) {
         viewModelScope.launch {
-            val roomId = runCatching { inviteUseCases.inviteUsers("", users, 0) }.getOrNull()
+            val roomId = runCatching { inviteUseCases.createChatRoom(users) }.getOrNull()
             if (roomId.isNullOrBlank()) {
                 _events.send(GroupEvent.ChatStartFailed)
                 return@launch

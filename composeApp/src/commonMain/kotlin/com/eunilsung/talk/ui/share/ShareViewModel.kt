@@ -15,16 +15,14 @@ import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.model.SharedContent
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
-import com.eunilsung.talk.domain.usecase.ChatRoomUseCases
 import com.eunilsung.talk.domain.usecase.InviteUseCases
 import com.eunilsung.talk.util.Log
-import com.eunilsung.talk.domain.usecase.CleanupSharedFileUseCase
+import com.eunilsung.talk.domain.usecase.SendSharedContentUseCase
 
 class ShareViewModel(
     chatRoomListUseCases: ChatRoomListUseCases,
     private val inviteUseCases: InviteUseCases,
-    private val chatRoomUseCases: ChatRoomUseCases,
-    private val cleanupSharedFile: CleanupSharedFileUseCase,
+    private val sendSharedContent: SendSharedContentUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ShareUiState())
@@ -110,13 +108,8 @@ class ShareViewModel(
                         id to user.name
                     }
                     if (pairs.isEmpty()) null
-                    else runCatching {
-                        inviteUseCases.inviteUsers(
-                            chatRoomId = "",
-                            invitedUsers = pairs,
-                            existingUserCount = 0,
-                        )
-                    }.onFailure { Log.message("[Share] inviteUsers failed: ${it.message}") }
+                    else runCatching { inviteUseCases.createChatRoom(pairs) }
+                        .onFailure { Log.message("[Share] createChatRoom failed: ${it.message}") }
                         .getOrNull()
                 }
                 state.selectedChatRoom != null ->
@@ -135,15 +128,8 @@ class ShareViewModel(
 
             delay(300)
 
-            val content = state.sharedContent
-            if (content.hasText && !content.hasFiles) {
-                runCatching { chatRoomUseCases.sendTextChat(roomId, content.text) }
-                    .onFailure { Log.message("[Share] sendTextChat failed: ${it.message}") }
-            }
-            content.filePaths.forEach { path ->
-                runCatching { chatRoomUseCases.sendFile(roomId, path) }
-                    .onFailure { Log.message("[Share] sendFile failed path=$path: ${it.message}") }
-                runCatching { cleanupSharedFile(path) }
+            sendSharedContent(roomId, state.sharedContent).forEach {
+                Log.message("[Share] send failed: ${it.message}")
             }
 
             _uiState.update { it.copy(isSubmitting = false) }
