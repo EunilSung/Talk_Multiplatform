@@ -52,12 +52,9 @@ import multiplatformtalk.composeapp.generated.resources.pw
 import multiplatformtalk.composeapp.generated.resources.save_pw
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
-import kotlinx.coroutines.delay
 import com.eunilsung.talk.data.local.AppExiter
 import com.eunilsung.talk.data.local.ExternalUrlOpener
 import com.eunilsung.talk.domain.model.Login
-import com.eunilsung.talk.domain.model.VersionInfo
-import com.eunilsung.talk.domain.usecase.VersionCheckUseCase
 import com.eunilsung.talk.ui.main.DownloadingDialog
 import com.eunilsung.talk.ui.main.ForceUpdateOverlay
 import com.eunilsung.talk.ui.main.KeyBoardPane
@@ -80,10 +77,9 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val inputState by viewModel.inputState.collectAsState()
     var showInputs by remember { mutableStateOf(false) }
-    val versionCheckUseCase: VersionCheckUseCase = koinInject()
+    val versionInfo by viewModel.versionInfo.collectAsState()
     val externalUrlOpener: ExternalUrlOpener = koinInject()
     val appExiter: AppExiter = koinInject()
-    var versionInfo by remember { mutableStateOf<VersionInfo?>(null) }
     var updateRequested by remember { mutableStateOf(false) }
 
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
@@ -94,17 +90,7 @@ fun LoginScreen(
     }
 
     LaunchedEffect(Unit) {
-        versionInfo = runCatching { versionCheckUseCase() }.getOrNull()
-
-        if (versionInfo?.needsUpdate == true) return@LaunchedEffect
-
-        val isAutoLoginAvailable = inputState.id.isNotEmpty() && inputState.pw.isNotEmpty()
-        if (isAutoLoginAvailable) {
-            viewModel.onAction(LoginActions.OnLoginClick(inputState))
-        } else {
-            delay(1000)
-            viewModel.onAction(LoginActions.OnResetState)
-        }
+        viewModel.onAction(LoginActions.OnStart)
     }
 
     LaunchedEffect(uiState) {

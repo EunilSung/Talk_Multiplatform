@@ -41,19 +41,19 @@ class SettingNotificationSoundScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel: SettingViewModel = koinViewModel()
-        val noti by viewModel.notificationSettings.collectAsState()
+        val uiState by viewModel.uiState.collectAsState()
 
         DisposableEffect(Unit) {
-            onDispose { viewModel.stopSoundPreview() }
+            onDispose { viewModel.onAction(SettingActions.StopSoundPreview) }
         }
 
         OverlayScaffold(title = stringResource(Res.string.setting_noti_sound_title)) { padding ->
             NotificationSoundBody(
                 padding = padding,
-                selectedSoundId = noti.soundId,
+                selectedSoundId = uiState.notification.soundId,
                 onSelect = { id ->
                     viewModel.onAction(SettingActions.SetNotificationSoundId(id))
-                    viewModel.playSoundPreview(id)
+                    viewModel.onAction(SettingActions.PlaySoundPreview(id))
                 }
             )
         }

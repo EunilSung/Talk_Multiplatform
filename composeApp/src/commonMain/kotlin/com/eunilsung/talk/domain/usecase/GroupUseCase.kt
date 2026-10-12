@@ -2,6 +2,7 @@ package com.eunilsung.talk.domain.usecase
 
 import kotlinx.coroutines.flow.Flow
 import com.eunilsung.talk.domain.model.Group
+import com.eunilsung.talk.domain.repository.AddUserResult
 import com.eunilsung.talk.domain.repository.GroupRepository
 
 /** 그룹 관련 유스케이스 묶음. */
@@ -13,8 +14,17 @@ data class GroupUseCases(
     val moveUserToGroup: MoveUserToGroupUseCase,
     val renameGroup: RenameGroupUseCase,
     val deleteGroup: DeleteGroupUseCase,
-    val createGroup: CreateGroupUseCase
+    val createGroup: CreateGroupUseCase,
+    val copyUserToGroup: CopyUserToGroupUseCase,
 )
+
+/** 사용자를 다른 그룹에도 넣는다. 원래 그룹에서는 빠지지 않는다. */
+class CopyUserToGroupUseCase(
+    private val groupRepository: GroupRepository
+) {
+    suspend operator fun invoke(userId: String, targetGroupId: String): AddUserResult =
+        groupRepository.copyUserToGroup(userId, targetGroupId)
+}
 
 /** 그룹에서 사용자 삭제 */
 class RemoveUserFromGroupUseCase(

@@ -24,6 +24,7 @@ import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import com.eunilsung.talk.domain.repository.NotificationSettingsState
 import com.eunilsung.talk.ui.main.LocalFullScreenOverlay
 import com.eunilsung.talk.ui.setting.SettingActions
+import com.eunilsung.talk.ui.setting.SettingEvent
 import com.eunilsung.talk.ui.setting.SettingViewModel
 import com.eunilsung.talk.ui.setting.component.SettingItemNavigate
 import com.eunilsung.talk.ui.setting.component.SettingItemToggle
@@ -45,6 +46,8 @@ import multiplatformtalk.composeapp.generated.resources.setting_noti_vibrate
 import multiplatformtalk.composeapp.generated.resources.setting_noti_sound_item
 import multiplatformtalk.composeapp.generated.resources.setting_noti_time_setting
 import multiplatformtalk.composeapp.generated.resources.setting_noti_time_setting_desc
+import multiplatformtalk.composeapp.generated.resources.toast_setting_change_failed
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 class SettingNotificationDetailScreen : Screen {
@@ -53,7 +56,7 @@ class SettingNotificationDetailScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel: SettingViewModel = koinViewModel()
-        val noti by viewModel.notificationSettings.collectAsState()
+        val uiState by viewModel.uiState.collectAsState()
         val showOverlay = LocalFullScreenOverlay.current
         val toastManager = LocalToastManager.current
 
@@ -62,14 +65,18 @@ class SettingNotificationDetailScreen : Screen {
         }
 
         LaunchedEffect(viewModel) {
-            viewModel.toastEvents.collect { toastManager.show(it) }
+            viewModel.events.collect { event ->
+                when (event) {
+                    SettingEvent.ChangeFailed -> toastManager.show(getString(Res.string.toast_setting_change_failed))
+                }
+            }
         }
 
         SettingDetailScaffold(title = stringResource(Res.string.setting_notification)) { padding ->
             NotificationDetailBody(
                 padding = padding,
-                state = noti,
-                isAndroid = viewModel.isAndroid,
+                state = uiState.notification,
+                isAndroid = uiState.isAndroid,
                 onAction = viewModel::onAction,
                 onOpenSound = { showOverlay(SettingNotificationSoundScreen()) }
             )

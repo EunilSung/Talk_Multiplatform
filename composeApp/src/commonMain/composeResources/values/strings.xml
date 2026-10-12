@@ -183,6 +183,7 @@
     <string name="toast_chat_room_alarm_muted">Chat room notifications muted</string>
     <string name="toast_chat_room_alarm_unmuted">Chat room notifications enabled</string>
     <string name="toast_chat_room_alarm_failed">Failed to change notification setting</string>
+    <string name="toast_setting_change_failed">Failed to change the setting.</string>
 
     <!-- 대화방 상단고정 -->
     <string name="toast_chat_room_pinned">Chat room pinned to top</string>

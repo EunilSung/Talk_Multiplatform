@@ -72,15 +72,15 @@ object ChatRoomGroupManageScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel: ChatRoomGroupManageViewModel = koinViewModel()
-        val groups by viewModel.groups.collectAsState()
+        val uiState by viewModel.uiState.collectAsState()
         val showOverlay = LocalFullScreenOverlay.current
 
         ChatRoomGroupManageContent(
-            groups = groups,
+            groups = uiState.groups,
             onCreate = { showOverlay(ChatRoomGroupCreateScreen) },
             onRename = { group -> showOverlay(ChatRoomGroupEditScreen(group.id, group.name)) },
-            onDelete = { group -> viewModel.delete(group.id) },
-            onReorder = { orderedIds -> viewModel.reorder(orderedIds) }
+            onDelete = { group -> viewModel.onAction(ChatRoomGroupManageActions.DeleteGroup(group.id)) },
+            onReorder = { orderedIds -> viewModel.onAction(ChatRoomGroupManageActions.ReorderGroups(orderedIds)) }
         )
     }
 }

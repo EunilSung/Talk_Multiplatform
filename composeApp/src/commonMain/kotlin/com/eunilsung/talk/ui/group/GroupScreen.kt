@@ -13,11 +13,9 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import multiplatformtalk.composeapp.generated.resources.*
 import com.eunilsung.talk.ui.theme.AppColors
-import com.eunilsung.talk.domain.usecase.InviteUseCases
 import com.eunilsung.talk.ui.chatroom.ChatRoomScreen
 import com.eunilsung.talk.ui.main.LocalRightNavigator
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 import com.eunilsung.talk.domain.model.Group
@@ -54,7 +52,6 @@ object GroupScreen : Screen {
         val txtDefaultGroup = stringResource(Res.string.default_group)
 
         val rightNavigator = LocalRightNavigator.current
-        val inviteUseCases: InviteUseCases = koinInject()
         val scope = rememberCoroutineScope()
 
         LaunchedEffect(viewModel) {
@@ -64,6 +61,7 @@ object GroupScreen : Screen {
                     groups = viewModel.uiState.value.items,
                     defaultGroupName = txtDefaultGroup,
                     toastManager = toastManager,
+                    openChatRoom = { rightNavigator.push(ChatRoomScreen(chatRoomId = it)) },
                 )
             }
         }
@@ -76,19 +74,7 @@ object GroupScreen : Screen {
             onEmptySelection = {
                 scope.launch { toastManager.show(getString(Res.string.toast_no_user_selected)) }
             },
-            onStartChat = { userPairs ->
-                scope.launch {
-                    val roomId = runCatching {
-                        inviteUseCases.inviteUsers("", userPairs, 0)
-                    }.getOrNull()
-                    if (!roomId.isNullOrBlank()) {
-                        rightNavigator.push(ChatRoomScreen(chatRoomId = roomId))
-                        viewModel.onAction(GroupActions.SetMode(GroupMode.IDLE))
-                    } else {
-                        toastManager.show(getString(Res.string.toast_chat_create_failed))
-                    }
-                }
-            },
+            onStartChat = { userPairs -> viewModel.onAction(GroupActions.StartChat(userPairs)) },
         )
     }
 }
@@ -98,6 +84,7 @@ private suspend fun handleGroupEvent(
     groups: List<Group.Item>,
     defaultGroupName: String,
     toastManager: ToastManager,
+    openChatRoom: (chatRoomId: String) -> Unit,
 ) {
     when (event) {
         is GroupEvent.UserRemoved -> toastManager.show(
@@ -148,6 +135,8 @@ private suspend fun handleGroupEvent(
                 toastManager.show(getString(Res.string.group_name_invalid_empty))
             }
         }
+        is GroupEvent.ChatStarted -> openChatRoom(event.chatRoomId)
+        is GroupEvent.ChatStartFailed -> toastManager.show(getString(Res.string.toast_chat_create_failed))
     }
 }
 

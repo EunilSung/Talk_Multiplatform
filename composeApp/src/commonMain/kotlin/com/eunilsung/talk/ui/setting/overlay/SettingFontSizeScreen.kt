@@ -42,12 +42,12 @@ class SettingFontSizeScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel: SettingViewModel = koinViewModel()
-        val chat by viewModel.chatSettings.collectAsState()
+        val uiState by viewModel.uiState.collectAsState()
 
         OverlayScaffold(title = stringResource(Res.string.setting_font_size)) { padding ->
             FontSizeBody(
                 padding = padding,
-                selectedFontSize = chat.fontSize,
+                selectedFontSize = uiState.chat.fontSize,
                 onSelect = { viewModel.onAction(SettingActions.SetChatFontSize(it)) }
             )
         }

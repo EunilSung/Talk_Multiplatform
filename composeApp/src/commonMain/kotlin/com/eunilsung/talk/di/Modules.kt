@@ -61,6 +61,7 @@ import com.eunilsung.talk.ui.share.ShareViewModel
 import com.eunilsung.talk.ui.login.LoginViewModel
 import com.eunilsung.talk.ui.main.MainViewModel
 import com.eunilsung.talk.ui.group.GroupViewModel
+import com.eunilsung.talk.ui.quickactions.QuickActionsViewModel
 import com.eunilsung.talk.ui.userprofile.UserProfileViewModel
 import com.eunilsung.talk.ui.chatroomlist.ChatRoomListViewModel
 import com.eunilsung.talk.ui.setting.SettingViewModel
@@ -123,10 +124,25 @@ val appModule = module {
     singleOf(::LoginUseCases)
 
     viewModelOf(::MainViewModel)
+    singleOf(::ObserveConnectionUseCase)
+    singleOf(::SetForegroundUseCase)
+    singleOf(::ReconnectUseCase)
+    singleOf(::ObserveMainEventsUseCase)
+    singleOf(::ObservePendingPushUseCase)
+    singleOf(::ConsumePendingPushUseCase)
+    singleOf(::ObservePendingShareUseCase)
+    singleOf(::ConsumePendingShareUseCase)
+    singleOf(::SetAppBadgeUseCase)
+    singleOf(::IsImageCacheClearedOnUseCase)
+    singleOf(::MarkImageCacheClearedUseCase)
+    singleOf(::GetUnseenNoticeVersionUseCase)
+    singleOf(::MarkNoticeShownUseCase)
+    singleOf(::MainUseCases)
     // 강제 로그아웃은 발생하지 않는다.
     single<MainRepository> { LocalMainRepositoryImpl() }
 
     viewModelOf(::GroupViewModel)
+    viewModelOf(::QuickActionsViewModel)
     // TestAccounts / TestGroups 로 그룹 구성.
     singleOf(::UserDirectory)
     single<GroupRepository> {
@@ -153,6 +169,7 @@ val appModule = module {
     singleOf(::RenameGroupUseCase)
     singleOf(::DeleteGroupUseCase)
     singleOf(::CreateGroupUseCase)
+    singleOf(::CopyUserToGroupUseCase)
     singleOf(::GroupUseCases)
 
     viewModelOf(::InviteViewModel)
