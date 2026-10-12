@@ -1,5 +1,8 @@
 package com.eunilsung.talk.ui.chatroomlist
 
+import com.eunilsung.talk.domain.util.validateChatRoomName
+import com.eunilsung.talk.domain.util.ChatRoomNameValidation
+import com.eunilsung.talk.domain.model.ALARM_OFF
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.channels.Channel
@@ -25,7 +28,7 @@ class ChatRoomListViewModel(
     val uiState: StateFlow<ChatRoomListUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<ChatRoomListEvent>(Channel.BUFFERED)
-    val events = _events.receiveAsFlow()
+    val events: Flow<ChatRoomListEvent> = _events.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -91,7 +94,7 @@ class ChatRoomListViewModel(
 
         val typeFilteredRooms = when (filterType) {
             Search.FilterType.UNREAD ->
-                rooms.filter { it.unReadCount.isNotEmpty() && it.unReadCount != "0" }
+                rooms.filter { it.hasUnread }
             Search.FilterType.GROUP -> {
                 val groupRoomIds = state.chatGroups
                     .firstOrNull { it.id == state.search.selectedGroupId }
@@ -103,9 +106,7 @@ class ChatRoomListViewModel(
         }
 
         val displayRooms = if (query.isNotEmpty()) {
-            typeFilteredRooms.filter { room ->
-                room.title.contains(query, ignoreCase = true)
-            }
+            typeFilteredRooms.filter { it.matchesTitle(query) }
         } else {
             typeFilteredRooms
         }
@@ -129,7 +130,7 @@ class ChatRoomListViewModel(
     /** 안읽은 방을 하나라도 가진 그룹 id. */
     private fun groupsWithUnread(rooms: List<ChatRoom.Item>, groups: List<ChatGroup>): Set<String> {
         val unreadRoomIds = rooms
-            .filter { (it.unReadCount.toIntOrNull() ?: 0) > 0 }
+            .filter { it.hasUnread }
             .mapTo(HashSet()) { it.id }
         return groups.asSequence()
             .filter { group -> group.roomIds.any { it in unreadRoomIds } }
@@ -237,7 +238,7 @@ class ChatRoomListViewModel(
             is ChatRoomListActions.SetChatRoomAlarm -> {
                 viewModelScope.launch {
                     val ok = chatRoomListUseCases.setChatRoomAlarm(action.chatRoomId, action.isAlarm)
-                    val muted = action.isAlarm == "1"
+                    val muted = action.isAlarm == ALARM_OFF
                     _events.send(ChatRoomListEvent.ChatRoomAlarmChanged(success = ok, muted = muted))
                 }
             }

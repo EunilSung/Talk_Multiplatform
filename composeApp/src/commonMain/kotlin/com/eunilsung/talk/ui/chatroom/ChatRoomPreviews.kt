@@ -39,7 +39,7 @@ private fun ChatRoomSearchModePreview() {
                 chatRoom = ChatRoom.Item(),
                 messages = ChatMessagesUiState.Success(groupedChats = emptyList()),
                 users = previewUsers,
-                search = ChatSearchState(
+                search = ChatSearchUiState(
                     isActive = true,
                     query = "검색어",
                     matchedChatIds = listOf("a", "b", "c", "d", "e"),

@@ -21,7 +21,7 @@ class ScreenLockViewModel(
         ScreenLockUiState(
             config = useCases.observeConfig().value,
             biometricAvailable = useCases.isBiometricAvailable(),
-            isAndroid = platform.name == "ANDROID",
+            isAndroid = platform.isAndroid,
         )
     )
     val uiState: StateFlow<ScreenLockUiState> = _uiState.asStateFlow()

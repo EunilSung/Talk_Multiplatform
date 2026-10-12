@@ -121,7 +121,7 @@ fun ChatRoomGroupManageContent(
             LineDivider(modifier = Modifier.fillMaxWidth())
 
             // 안읽음(kind="1") 제외 커스텀 그룹이 최대치(10개)면 생성 버튼 비활성화.
-            val maxReached = groups.count { it.kind != "1" } >= 10
+            val maxReached = groups.count { !it.isUnreadGroup } >= 10
             ButtonV1(
                 text = stringResource(Res.string.chat_group_create),
                 modifier = Modifier
@@ -251,14 +251,14 @@ private fun ReorderableGroupList(
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Text(
-                        text = if (group.kind == "1") unreadName else group.name,
+                        text = if (group.isUnreadGroup) unreadName else group.name,
                         color = AppColors.Text,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.weight(1f)
                     )
 
-                    if (group.kind != "1") {
+                    if (!group.isUnreadGroup) {
                         IconButton(onClick = { onRename(group) }, modifier = Modifier.size(36.dp)) {
                             Icon(
                                 painter = painterResource(Res.drawable.edit_name_icon),
@@ -288,10 +288,10 @@ fun ChatRoomGroupManageContentPreview() {
     MaterialTheme {
         ChatRoomGroupManageContent(
             groups = listOf(
-                ChatGroup(id = "unread", name = "UNREAD", kind = "1", sort = "0", roomIds = emptyList()),
-                ChatGroup(id = "g1", name = "연구실", kind = "2", sort = "0001", roomIds = emptyList()),
-                ChatGroup(id = "g2", name = "회의실", kind = "2", sort = "0002", roomIds = emptyList()),
-                ChatGroup(id = "g3", name = "개발팀", kind = "2", sort = "0003", roomIds = emptyList()),
+                ChatGroup(id = "unread", name = "UNREAD", kind = ChatGroup.KIND_UNREAD, sort = "0", roomIds = emptyList()),
+                ChatGroup(id = "g1", name = "연구실", kind = ChatGroup.KIND_CUSTOM, sort = "0001", roomIds = emptyList()),
+                ChatGroup(id = "g2", name = "회의실", kind = ChatGroup.KIND_CUSTOM, sort = "0002", roomIds = emptyList()),
+                ChatGroup(id = "g3", name = "개발팀", kind = ChatGroup.KIND_CUSTOM, sort = "0003", roomIds = emptyList()),
             ),
             onCreate = {},
             onRename = {},

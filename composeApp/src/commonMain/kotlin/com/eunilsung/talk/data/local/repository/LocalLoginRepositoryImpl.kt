@@ -26,7 +26,12 @@ class LocalLoginRepositoryImpl(
     private val _isConnected = MutableStateFlow(true)
     override val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
-    override val isForeground: MutableStateFlow<Boolean> = MutableStateFlow(true)
+    private val _isForeground = MutableStateFlow(true)
+    override val isForeground: StateFlow<Boolean> = _isForeground.asStateFlow()
+
+    override fun setForeground(isForeground: Boolean) {
+        _isForeground.value = isForeground
+    }
 
     override suspend fun requestLogin(input: Login.LoginRequest): Login.LoginResult {
         // 로딩 상태 전환이 보이도록 최소 지연.

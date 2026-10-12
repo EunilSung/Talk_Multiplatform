@@ -32,7 +32,7 @@ fun ChatScrollController(
     listState: LazyListState,
     groupedChats: List<GroupedChat>,
     currentChatRoomId: String,
-    searchState: ChatSearchState,
+    searchState: ChatSearchUiState,
     signals: ChatRoomSignals,
     onAction: (ChatRoomActions) -> Unit,
 ) {

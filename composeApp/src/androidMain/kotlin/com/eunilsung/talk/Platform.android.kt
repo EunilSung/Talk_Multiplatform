@@ -37,7 +37,7 @@ import com.eunilsung.talk.data.local.AndroidBiometricAuthenticator
 import com.eunilsung.talk.domain.repository.BiometricAuthenticator
 
 class AndroidPlatform(private val context: Context) : Platform {
-    override val name: String = "ANDROID"
+    override val name: String = Platform.ANDROID
     override val deviceId: String = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
     override val deviceModel: String = Build.MODEL
 }

@@ -15,6 +15,9 @@ class FakeLoginRepository : LoginRepository {
     override val isLoggedIn = MutableStateFlow(false)
     override val isConnected = MutableStateFlow(false)
     override val isForeground = MutableStateFlow(true)
+    override fun setForeground(isForeground: Boolean) {
+        this.isForeground.value = isForeground
+    }
 
     override fun logout() {
         isLoggedIn.value = false

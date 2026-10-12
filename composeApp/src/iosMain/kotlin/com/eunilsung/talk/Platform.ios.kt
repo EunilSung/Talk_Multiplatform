@@ -36,7 +36,7 @@ import com.eunilsung.talk.domain.repository.BiometricAuthenticator
 import com.eunilsung.talk.data.local.IosBiometricAuthenticator
 
 class IOSPlatform : Platform {
-    override val name: String = "IPHONE"
+    override val name: String = Platform.IOS
     override val deviceId: String = UIDevice.currentDevice.identifierForVendor?.UUIDString ?: "unknown_ios"
     override val deviceModel: String = UIDevice.currentDevice.model
 }

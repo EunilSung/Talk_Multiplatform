@@ -46,7 +46,7 @@ import org.jetbrains.compose.resources.stringResource
 fun ChatRoomTopBar(
     chatRoom: ChatRoom.Item?,
     isSearchMode: Boolean,
-    searchState: ChatSearchState,
+    searchState: ChatSearchUiState,
     senderOverride: User?,
     scrollBehavior: TopAppBarScrollBehavior,
     searchFocusRequester: FocusRequester,

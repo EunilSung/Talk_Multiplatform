@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.chatroomlist.item
 
+import com.eunilsung.talk.domain.model.ALARM_OFF
 import multiplatformtalk.composeapp.generated.resources.noti_chat
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
@@ -77,7 +78,7 @@ fun ChatRoomItem(
                 Spacer(modifier = Modifier.width(12.dp))
             }
 
-            if (item.id.contains("$")) {
+            if (item.isNotificationRoom) {
                 NotificationAvatar()
             } else {
                 ProfileImages(userIds = item.displayProfileIds)
@@ -120,7 +121,7 @@ fun ChatRoomItem(
 
                         Spacer(modifier = Modifier.size(2.dp))
 
-                        if (item.isAlarm == "1"){
+                        if (item.isMuted){
                             Icon(
                                 painter = painterResource(Res.drawable.alarm_off_icon),
                                 contentDescription = "Alarm Off",
@@ -216,7 +217,7 @@ fun ChatRoomItemPreview() {
                 lastChatContent = "lastChatContent",
                 title = "title",
                 unReadCount = "9",
-                isAlarm = "1",
+                isAlarm = ALARM_OFF,
                 pinDate = "1"
             ),
             isToggleable = true

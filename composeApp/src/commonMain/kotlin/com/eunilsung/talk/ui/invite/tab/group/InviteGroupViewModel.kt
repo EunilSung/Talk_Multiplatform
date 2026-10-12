@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.model.Group
 import com.eunilsung.talk.domain.usecase.GroupUseCases
+import com.eunilsung.talk.domain.util.filterMembers
 
 @OptIn(FlowPreview::class)
 class InviteGroupViewModel(
@@ -77,19 +78,6 @@ class InviteGroupViewModel(
 
     private fun refresh() {
         val query = _uiState.value.search.query
-        val base = applyExpandedOverride(_groups.value)
-        val items = if (query.isBlank()) {
-            base
-        } else {
-            val filtered = base.mapNotNull { group ->
-                val matchingUsers = group.userData.filter { user ->
-                    user.userName?.contains(query, ignoreCase = true) == true
-                }
-                if (matchingUsers.isNotEmpty()) group.copy(userData = matchingUsers, isExpanded = true)
-                else null
-            }
-            filtered
-        }
-        _uiState.update { it.copy(items = items) }
+        _uiState.update { it.copy(items = applyExpandedOverride(_groups.value).filterMembers(query)) }
     }
 }

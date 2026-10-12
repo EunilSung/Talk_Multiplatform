@@ -1,5 +1,7 @@
 package com.eunilsung.talk.ui.chatroomlist
 
+import com.eunilsung.talk.domain.util.ChatRoomNameValidation
+import com.eunilsung.talk.domain.util.CHAT_ROOM_NAME_MAX_LENGTH
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.runtime.snapshotFlow
@@ -221,9 +223,9 @@ fun ChatRoomListContent(
                                         key = "__all__"
                                     )
                                 )
-                                if (chatGroups.none { it.kind == "1" }) add(unreadChip)
+                                if (chatGroups.none { it.isUnreadGroup }) add(unreadChip)
                                 chatGroups.forEach { group ->
-                                    if (group.kind == "1") {
+                                    if (group.isUnreadGroup) {
                                         add(unreadChip)
                                     } else {
                                         add(
@@ -293,7 +295,7 @@ fun ChatRoomListContent(
                             item = it,
                             filterType = searchState.filterType,
                             selectedGroupId = searchState.selectedGroupId,
-                            customGroups = chatGroups.filter { g -> g.kind == "2" }
+                            customGroups = chatGroups.filter { it.isCustomGroup }
                         )
                     },
                     onSelectRoom = { onAction(ChatRoomListActions.OnSelectRoom(it)) },

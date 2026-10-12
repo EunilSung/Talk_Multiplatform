@@ -128,7 +128,7 @@ fun ShareScreenContent(
     uiState: ShareUiState,
     onAction: (ShareActions) -> Unit = {},
 ) {
-    val rooms = uiState.rooms
+    val rooms = uiState.visibleRooms
     val inviteController = remember(uiState.selectedUsers) {
         InviteController(
             selectedUsers = uiState.selectedUsers,
@@ -140,11 +140,13 @@ fun ShareScreenContent(
     val roomsFlow = remember(rooms) {
         MutableStateFlow(rooms)
     }
-    val chatRoomController = remember(roomsFlow, uiState.selectedChatRoom?.id) {
+    val chatRoomController = remember(roomsFlow, uiState.selectedChatRoom?.id, uiState.roomQuery) {
         ShareChatRoomController(
             rooms = roomsFlow,
             selectedRoomId = uiState.selectedChatRoom?.id,
-            onSelect = { room -> onAction(ShareActions.OnChatRoomSelect(room)) }
+            onSelect = { room -> onAction(ShareActions.OnChatRoomSelect(room)) },
+            query = uiState.roomQuery,
+            onQueryChange = { onAction(ShareActions.OnRoomQueryChange(it)) },
         )
     }
 

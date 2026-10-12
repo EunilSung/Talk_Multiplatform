@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.userprofile
 
+import kotlinx.coroutines.flow.StateFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -13,7 +14,7 @@ class UserProfileViewModel(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UserProfileUiState>(UserProfileUiState.Idle)
-    val uiState = _uiState.asStateFlow()
+    val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
 
     private var currentUserId: String = ""
     private var loadJob: Job? = null

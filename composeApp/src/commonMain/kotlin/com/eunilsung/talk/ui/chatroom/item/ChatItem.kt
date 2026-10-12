@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.chatroom.item
 
+import com.eunilsung.talk.domain.model.isNotificationSender
 import multiplatformtalk.composeapp.generated.resources.noti_chat
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
@@ -129,7 +130,7 @@ fun ChatItem(
     ) {
         if (!isMe){
             if (groupedItem.showProfileAndName) {
-                if (chat.user.id.contains("$")) {
+                if (chat.user.isNotificationSender) {
                     NotificationAvatar()
                 }else{
                     ProfileImages(userIds = listOf(chat.user.id), onClick = {

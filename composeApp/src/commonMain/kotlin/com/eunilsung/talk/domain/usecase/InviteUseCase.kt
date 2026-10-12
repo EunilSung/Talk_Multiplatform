@@ -26,35 +26,44 @@ class InviteUsersUseCase(private val repository: InviteRepository) {
     ): String? = repository.inviteUsers(chatRoomId, invitedUsers, existingUserCount)
 }
 
-/** 고른 사람들과 새 대화방을 만든다. 한 명이면 있던 1:1 방을 돌려줄 수 있다. 만든 방 id, 못 만들면 null. */
-class CreateChatRoomUseCase(private val repository: InviteRepository) {
-    suspend operator fun invoke(users: List<Pair<String, String>>): String? =
-        repository.inviteUsers(chatRoomId = "", invitedUsers = users, existingUserCount = 0)
+/**
+ * 고른 사람들과 대화방을 연다. 한 명이면 받아 둔 방 중 그 사람과 둘이 쓰는 방을 먼저 찾고, 없을 때만 새로 만든다.
+ *
+ * 빠른 액션·내 그룹·공유·새 대화 어디서 시작해도 같은 상대면 같은 방이 열린다.
+ * @return 방 id. 만들지 못하면 null.
+ */
+class CreateChatRoomUseCase(
+    private val inviteRepository: InviteRepository,
+    private val chatRoomListRepository: ChatRoomListRepository,
+    private val loginRepository: LoginRepository,
+) {
+    suspend operator fun invoke(users: List<Pair<String, String>>): String? {
+        users.singleOrNull()?.let { (userId, _) -> existingDirectRoomId(userId)?.let { return it } }
+        return inviteRepository.inviteUsers(chatRoomId = "", invitedUsers = users, existingUserCount = 0)
+    }
+
+    /** 받아 둔 방 중 [userId] 와 둘이 쓰는 방 id. [userId] 가 나면 나와의 대화방. 없으면 null. */
+    suspend fun existingDirectRoomId(userId: String): String? {
+        val myId = loginRepository.getMyUser().id
+        return chatRoomListRepository.getChatRooms().first()
+            .firstOrNull { it.isDirectRoomWith(userId, myId) }
+            ?.id
+    }
 }
 
 /**
  * [targetUserId] 와의 1:1 방을 연다. 받아 둔 방 중에 있으면 그 방을, 없으면 새로 만든다.
  *
- * 새 방 제목에 쓸 이름은 받아 둔 프로필에서 먼저 찾고, 없으면 서버에서 받아 온다.
+ * 새 방 제목에 쓸 이름은 받아 둔 프로필에서 먼저 찾고, 없으면 서버에서 받아 온다. 있던 방을 열 때는 찾지 않는다.
  * @return 방 id. 만들지 못하면 null.
  */
 class StartDirectChatUseCase(
-    private val chatRoomListRepository: ChatRoomListRepository,
-    private val inviteRepository: InviteRepository,
+    private val createChatRoom: CreateChatRoomUseCase,
     private val userProfileRepository: UserProfileRepository,
-    private val loginRepository: LoginRepository,
 ) {
-    suspend operator fun invoke(targetUserId: String): String? {
-        val myId = loginRepository.getMyUser().id
-        chatRoomListRepository.getChatRooms().first()
-            .firstOrNull { it.isDirectRoomWith(targetUserId, myId) }
-            ?.let { return it.id }
-        return inviteRepository.inviteUsers(
-            chatRoomId = "",
-            invitedUsers = listOf(targetUserId to nameOf(targetUserId)),
-            existingUserCount = 0,
-        )
-    }
+    suspend operator fun invoke(targetUserId: String): String? =
+        createChatRoom.existingDirectRoomId(targetUserId)
+            ?: createChatRoom(listOf(targetUserId to nameOf(targetUserId)))
 
     private suspend fun nameOf(userId: String): String {
         userProfileRepository.getCachedProfile(userId)?.name?.takeIf { it.isNotBlank() }?.let { return it }

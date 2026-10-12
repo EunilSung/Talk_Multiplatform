@@ -137,6 +137,10 @@ iosApp/        Xcode 프로젝트
 - **도메인 모델은 화면을 모른다.** 선택 표시·묶음 표시처럼 화면에만 필요한 값은 ui 쪽 상태에 둔다
   (`GroupedChat`, 고른 id 집합). 화면 모양으로 바꾼 모델과 그 변환도 ui 쪽에 둔다(투표의 `VoteDetail`·
   `VoteResult` 는 `VoteUiState.kt`). 내가 보낸 대화인지(`isMe`)는 로그인한 계정을 아는 매퍼·저장소가 채운다.
+- **코드 값은 이름 붙은 판정으로 읽는다.** 알림방 `$`, 고정 그룹 `-`, 알림 끔 `"1"`, 대화그룹 종류 `"1"/"2"`,
+  기본그룹 `"0"` 을 직접 비교하지 않고 `domain/model` 의 판정을 쓴다(`isNotificationRoom`·`isSystemGroup`·
+  `isMuted`·`hasUnread`·`isUnreadGroup`·`isDefaultGroup`). 방 찾기는 보이는 이름으로 한다(`matchesTitle`),
+  사람 찾기는 이름·초성·전화번호로 한다(`filterMembers`).
 - **바깥 모양을 도메인 모델로 바꾸는 일은 매퍼가 한다**(`data/mapper`). 서버 응답·기기 DB 행·저장용 JSON·
   시연용 데이터(`SeedMapper`)가 모두 해당한다. 저장소는 주고받기·저장과 반영만 하고, 새 대화·새 공지처럼
   업무 중에 새로 생기는 도메인 객체만 직접 만든다.

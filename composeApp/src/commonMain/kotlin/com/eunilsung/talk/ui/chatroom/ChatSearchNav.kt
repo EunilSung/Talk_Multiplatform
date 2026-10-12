@@ -26,7 +26,7 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 internal fun ChatSearchNav(
-    searchState: ChatSearchState,
+    searchState: ChatSearchUiState,
     onUserClick: () -> Unit = {},
     onDateClick: () -> Unit = {},
     onPrevClick: () -> Unit,

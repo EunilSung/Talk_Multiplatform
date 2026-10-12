@@ -12,7 +12,7 @@ import com.eunilsung.talk.domain.model.Group
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.util.GroupNameValidation
 import com.eunilsung.talk.domain.util.validateGroupName
-import com.eunilsung.talk.util.UserSearch
+import com.eunilsung.talk.domain.util.filterMembers
 
 @OptIn(FlowPreview::class)
 class GroupViewModel(
@@ -26,7 +26,7 @@ class GroupViewModel(
     val uiState: StateFlow<GroupUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<GroupEvent>(Channel.BUFFERED)
-    val events = _events.receiveAsFlow()
+    val events: Flow<GroupEvent> = _events.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -165,21 +165,7 @@ class GroupViewModel(
 
     /** 검색어로 그룹을 거른다. 검색어가 없으면 전부 보인다. */
     private fun performSearch(query: String) {
-        if (query.isEmpty()) {
-            _uiState.update { it.copy(items = _groups.value) }
-            return
-        }
-
-        val filteredGroups = _groups.value.mapNotNull { group ->
-            val matchingUsers = group.userData.filter { user ->
-                UserSearch.matches(user.userName, user.phoneNumber, query)
-            }
-            if (matchingUsers.isNotEmpty()) {
-                group.copy(userData = matchingUsers, isExpanded = true)
-            } else null
-        }
-
-        _uiState.update { it.copy(items = filteredGroups) }
+        _uiState.update { it.copy(items = _groups.value.filterMembers(query)) }
     }
 
     private fun toggleGroup(groupId: String) {

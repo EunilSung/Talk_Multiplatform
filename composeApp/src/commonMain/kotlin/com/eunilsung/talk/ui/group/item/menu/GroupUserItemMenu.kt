@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.group.item.menu
 
+import com.eunilsung.talk.domain.model.isSystemGroupId
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
@@ -30,8 +31,7 @@ class GroupUserItemMenu internal constructor(
 ) {
 
     fun onLongClick(user: User, fromGroupId: String) {
-        val isRestricted = fromGroupId == MY_PROFILE_GROUP_ID ||
-                           fromGroupId.contains("-")
+        val isRestricted = fromGroupId == MY_PROFILE_GROUP_ID || isSystemGroupId(fromGroupId)
         if (isRestricted) showRestrictedMenu(user) else showFullMenu(user, fromGroupId)
     }
 

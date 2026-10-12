@@ -1,5 +1,6 @@
 package com.eunilsung.talk.domain.usecase
 
+import com.eunilsung.talk.domain.model.NoticeBarState
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.model.User
@@ -138,9 +139,6 @@ class GetSenderUseCase(private val repository: SenderOverrideRepository) {
 class SelectSenderUseCase(private val repository: SenderOverrideRepository) {
     operator fun invoke(chatRoomId: String, user: User?) = repository.select(chatRoomId, user)
 }
-
-/** 공지바를 어떻게 보이게 해 두었는지. */
-data class NoticeBarState(val hidden: Boolean, val collapsed: Boolean, val detailsShown: Boolean)
 
 class GetNoticeBarStateUseCase(private val repository: NoticeUiStateRepository) {
     operator fun invoke(identityKey: String) = NoticeBarState(

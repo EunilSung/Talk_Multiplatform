@@ -1,4 +1,6 @@
-package com.eunilsung.talk.util
+package com.eunilsung.talk.domain.util
+
+import com.eunilsung.talk.domain.model.Group
 
 /** 사용자 검색 매칭 — 이름(부분 일치 + 초성)과 전화 숫자 동시 지원. */
 object UserSearch {
@@ -52,5 +54,18 @@ object UserSearch {
         if (name != null && matchesName(name, q)) return true
         if (matchesPhone(phone, q)) return true
         return false
+    }
+}
+
+/**
+ * 그룹마다 [query] 에 맞는 사람만 남긴다. 이름(부분 일치·초성)과 전화번호 숫자로 찾는다([UserSearch]).
+ *
+ * 맞는 사람이 없는 그룹은 빼고, 남은 그룹은 펼친다. 검색어가 비어 있으면 그대로 돌려준다.
+ */
+fun List<Group.Item>.filterMembers(query: String): List<Group.Item> {
+    if (query.isBlank()) return this
+    return mapNotNull { group ->
+        val matching = group.userData.filter { UserSearch.matches(it.userName, it.phoneNumber, query) }
+        if (matching.isEmpty()) null else group.copy(userData = matching, isExpanded = true)
     }
 }

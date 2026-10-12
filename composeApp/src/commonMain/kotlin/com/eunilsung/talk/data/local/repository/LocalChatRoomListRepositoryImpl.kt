@@ -183,7 +183,7 @@ class LocalChatRoomListRepositoryImpl(
         updateChatGroups(Config.MyInfo.userId) { groups ->
             val sort = ((groups.maxOfOrNull { it.sort.toIntOrNull() ?: 0 } ?: 0) + 1).toString()
             val id = "cg_local_$sort"
-            groups + ChatGroup(id = id, name = name, kind = "2", sort = sort, roomIds = emptyList())
+            groups + ChatGroup(id = id, name = name, kind = ChatGroup.KIND_CUSTOM, sort = sort, roomIds = emptyList())
         }
         Log.message("[ChatRoomList/Local] createChatGroup '$name'")
     }

@@ -21,7 +21,7 @@ data class ChatRoomUiState(
     val sender: User? = null,
     /** 로그인한 나의 아이디. 참여자 목록의 '나' 표시와 전송 주체 기본값에 쓴다. */
     val myId: String = "",
-    val search: ChatSearchState = ChatSearchState(),
+    val search: ChatSearchUiState = ChatSearchUiState(),
     val replyTarget: Chat.Item? = null,
     /** 지금 걸린 공지. 없으면 null. */
     val notice: Notice? = null,
@@ -40,6 +40,25 @@ data class ChatRoomUiState(
     val initialEmoticonTab: Int = 0,
     val media: ChatMediaUiState = ChatMediaUiState(),
 )
+
+/** 대화 찾기의 상태 — 검색어·사람·날짜 조건과 찾은 대화 사이의 현재 위치. */
+data class ChatSearchUiState(
+    val isActive: Boolean = false,
+    val query: String = "",
+    val committedQuery: String = "",
+    val searchedUser: User? = null,
+    val searchedDate: String? = null,
+    val matchedChatIds: List<String> = emptyList(),
+    val currentIndex: Int = -1,
+    val focusChatId: String? = null,
+    val focusTriggerKey: Int = 0
+) {
+    val currentMatchChatId: String? get() = matchedChatIds.getOrNull(currentIndex)
+
+    val totalMatches: Int get() = matchedChatIds.size
+
+    val currentPosition: Int get() = if (currentIndex < 0) 0 else currentIndex + 1
+}
 
 /** 대화 목록의 상태. */
 sealed interface ChatMessagesUiState {
