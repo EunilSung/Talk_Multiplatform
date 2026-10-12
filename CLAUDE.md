@@ -195,6 +195,9 @@ iosApp/        Xcode 프로젝트
    # 서버 모드로 빌드할 때만. 비우면 로컬 모드다.
    # Android 에뮬레이터: http://10.0.2.2:8090 / iOS 시뮬레이터: http://localhost:8090
    server.baseUrl=http://10.0.2.2:8090
+   # 전체 검증(verifyAll)이 쓸 이 PC 의 기기. 다른 작업과 겹치지 않는 것을 고른다. 꺼져 있으면 켠다
+   e2e.androidAvd=<에뮬레이터 이름>
+   e2e.iosDevice=<시뮬레이터 UDID 또는 이름>
    ```
 3. **Firebase 서비스 계정 키** — 서버가 푸시를 보낼 때만 필요하다. 저장소에 없으니 Firebase 콘솔
    (`multiplatformtalk` 프로젝트)에서 받아 `FIREBASE_CREDENTIALS=<파일 경로>` 로 넘긴다.
@@ -202,6 +205,8 @@ iosApp/        Xcode 프로젝트
 4. **Gemini API 키** — AI 참여자·말풍선 번역·글 다듬기에만 필요하다. Google AI Studio 에서 받아 서버를 띄우는
    환경에 `GEMINI_API_KEY` 로 넘긴다(모델은 `AI_MODEL`, 기본 `gemini-3.5-flash-lite`).
    없으면 AI 만 꺼지고 나머지는 그대로 동작한다.
+5. **Maestro 와 Xcode** — 실화면 흐름에만 필요하다. `curl -fsSL https://get.maestro.mobile.dev | bash` 로 설치한다.
+   iOS 앱 빌드에는 Xcode 가 있어야 한다.
 
 ## 실행
 
@@ -284,14 +289,15 @@ open iosApp/iosApp.xcodeproj           # iOS 는 Xcode 에서 시뮬레이터 �
 Android 와 iOS 에 그대로 돌린다(`.maestro`).
 
 ```bash
-./gradlew :server:runLocal                                  # 로컬 서버를 먼저 띄운다
-adb -s emulator-5556 reverse tcp:8090 tcp:8090              # 에뮬레이터도 localhost:8090 으로 서버에 닿는다
-maestro --device emulator-5556 test .maestro --test-output-dir build/maestro/android
-maestro --device <시뮬레이터 UDID> test .maestro --test-output-dir build/maestro/ios
+TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:e2eAndroid   # 또는 :composeApp:e2eIos
 ```
 
-- **앱은 `server.baseUrl=http://localhost:8090` 으로 빌드한다.** `adb reverse` 를 걸면 Android 도 같은 주소를 쓰므로
-  플랫폼마다 `local.properties` 를 바꿔 가며 빌드하지 않아도 된다. 설치는 기기를 지정해서 한다(`installDebug` 금지).
+- **기기 고르기·켜기·앱 설치·Maestro 실행은 `.maestro/run.sh` 가 한다.** Gradle 작업은 APK 를 만들고 로컬 서버를 띄운 뒤
+  이 스크립트를 부른다. 서버가 떠 있으면 스크립트만 따로 돌려도 된다(`.maestro/run.sh android <apk>`, `.maestro/run.sh ios`).
+  결과는 `build/maestro/<플랫폼>/report.xml`(JUnit)과 같은 폴더의 스크린샷·로그다.
+- **앱은 로컬 서버 주소(`http://localhost:8090`)로 빌드한다.** `adb reverse` 를 걸면 Android 도 같은 주소를 쓰므로
+  플랫폼마다 `local.properties` 를 바꿔 가며 빌드하지 않아도 된다. `TALK_SERVER_BASE_URL` 이 `server.baseUrl` 보다 먼저라
+  평소 설정을 건드리지 않는다. 기기는 지정해서 설치한다(`installDebug` 금지).
 - **요소는 `TestTags`(`ui/uikit/TestTags.kt`)의 이름을 `id` 로 찾는다.** 화면 문구는 기기 언어마다 다르고 같은 문구가
   여러 곳에 나온다(로그인의 "비밀번호" 라벨과 입력칸 안내). 흐름이 누르는 요소를 새로 만들면 태그를 붙이고
   흐름 파일에도 같은 이름을 쓴다. 상대가 보낸 말·방 이름처럼 흐름이 만든 영문 글자는 글자로 찾아도 된다.
@@ -301,6 +307,27 @@ maestro --device <시뮬레이터 UDID> test .maestro --test-output-dir build/ma
   말을 건다. 앱에서 한 일이 서버에 남았는지도 같은 스크립트로 확인하고, 흐름이 끝나면(`onFlowComplete`) 셋 다 나간다.
 - **Android 의 `hideKeyboard` 는 뒤로 가기를 누른다.** 키보드가 떠 있을 때만 쓴다. 떠 있지 않으면 화면이 닫힌다.
 - **입력은 영문·숫자로 한다.** iOS 시뮬레이터에서 한글 입력이 안정적이지 않다.
+
+### 전체 검증 — 실행 구성 하나로
+
+Android Studio 에서 실행 구성 `검증 - 전체 (실화면 포함)` 을 고르고 실행하면 규칙 9 의 검증이 차례로 돈다.
+고칠 때마다는 `검증 - 빠르게 (JVM)`(서버 테스트와 앱·기능 테스트)을, 머지 전에는 전체를 돌린다. 전체는 8분쯤
+걸린다(처음 iOS 앱을 빌드할 때는 패키지를 받느라 더 걸린다).
+
+```bash
+TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:verifyAll -PfunctionalTest=true --continue
+```
+
+1. 서버 테스트 → 로컬 서버 띄우기 → 앱 테스트와 기능 테스트(JVM) → 기능 테스트(iOS 시뮬레이터)
+2. Android 앱 빌드 → 에뮬레이터에 설치 → 실화면 흐름 → iOS 앱 빌드 → 시뮬레이터에 설치 → 실화면 흐름
+3. 띄운 서버는 끝나면 내려간다. 하나가 깨져도 끝까지 돌고(`--continue`), 깨진 단계가 마지막에 모여 나온다.
+
+- **기기는 `local.properties` 의 `e2e.androidAvd`·`e2e.iosDevice` 로 고른다.** iOS 기능 테스트도 같은 시뮬레이터에서 돈다.
+  없으면 켜져 있는 에뮬레이터·iPhone 시뮬레이터 중 첫 번째를 쓰고, 실기기는 고르지 않는다.
+- **설정이 맞지 않으면 시작하자마자 멈춘다.** 기능 테스트가 꺼져 있거나(`-PfunctionalTest=true` 없음) 앱이 로컬 서버가
+  아닌 주소로 빌드되면, 오래 돈 뒤가 아니라 처음에 이유를 알려 준다.
+- **자동으로 확인하지 못하는 것** — 푸시의 실제 도착, 핀치줌 같은 멀티터치, 카메라, iOS 한글 입력. AI 단계는 키가 없는
+  서버에서 건너뛴다. 이것들은 해당 기능을 고쳤을 때 손으로 확인한다.
 
 ## 주의
 
