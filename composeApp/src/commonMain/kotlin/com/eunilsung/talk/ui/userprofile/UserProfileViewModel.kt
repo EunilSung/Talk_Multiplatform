@@ -6,7 +6,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.eunilsung.talk.domain.repository.UserProfileRepository
 import com.eunilsung.talk.domain.usecase.UserProfileUseCases
 
 class UserProfileViewModel(
@@ -50,11 +49,5 @@ class UserProfileViewModel(
                     }
                 }
         }
-    }
-
-    fun reset() {
-        loadJob?.cancel()
-        currentUserId = ""
-        _uiState.value = UserProfileUiState.Idle
     }
 }

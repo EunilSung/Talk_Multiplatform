@@ -66,13 +66,11 @@ import com.eunilsung.talk.ui.theme.AppTheme
 import com.eunilsung.talk.ui.uikit.BackHandler
 import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
 import com.eunilsung.talk.ui.uikit.line.LineDivider
-import com.eunilsung.talk.Platform
 import androidx.compose.runtime.getValue
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.screenlock.lock.ScreenLockGate
 import com.eunilsung.talk.ui.uikit.swipe.LocalSwipeDismiss
 import com.eunilsung.talk.ui.uikit.swipe.SwipeDismissController
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.runtime.CompositionLocalProvider
 import com.eunilsung.talk.ui.share.ShareScreen
@@ -235,8 +233,6 @@ fun Tablet(
 @Composable
 fun LeftPane(isLoggedIn: Boolean, chatUnreadTotal: Int) {
     val tabList = listOf(GroupTab, ChatTab, SettingTab)
-    val platform: Platform = koinInject()
-    val isIos = platform.name == "IPHONE"
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 

@@ -1,7 +1,5 @@
 package com.eunilsung.talk.ui.setting
 
-import com.eunilsung.talk.domain.repository.ChatSettingsRepository
-
 sealed interface SettingActions {
     data object Logout : SettingActions
 
