@@ -10,9 +10,3 @@ data class InviteGroupUiState(
     /** 입력 중인 검색어. [items] 는 잠시 뒤에 따라온다. */
     val search: Search.State = Search.State(),
 )
-
-sealed interface InviteGroupActions {
-    data class ToggleGroup(val groupId: String) : InviteGroupActions
-    data class OnSearchQueryChange(val query: String) : InviteGroupActions
-    data object OnClearSearch : InviteGroupActions
-}

@@ -1,9 +1,5 @@
 package com.eunilsung.talk.ui.main
 
-import multiplatformtalk.composeapp.generated.resources.toast_download_failed
-import multiplatformtalk.composeapp.generated.resources.toast_download_done
-import multiplatformtalk.composeapp.generated.resources.toast_file_open_failed
-import org.jetbrains.compose.resources.getString
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -34,17 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
-import kotlinx.coroutines.launch
+import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.User
-import com.eunilsung.talk.data.local.FileMetadataResolver
-import com.eunilsung.talk.data.local.FileOpener
 import com.eunilsung.talk.ui.quickactions.rememberGroupPicker
 import com.eunilsung.talk.ui.quickactions.rememberQuickActions
 import com.eunilsung.talk.ui.uikit.BackHandler
 import com.eunilsung.talk.ui.uikit.dialog.DialogHost
-import com.eunilsung.talk.Config
 import com.eunilsung.talk.ui.uikit.mediapicker.FileDetailBottomSheetContent
 import com.eunilsung.talk.ui.uikit.mediapicker.LocalShowFileDetail
 import com.eunilsung.talk.ui.uikit.mediapicker.MultimediaRecentPhoto
@@ -52,7 +44,6 @@ import com.eunilsung.talk.ui.uikit.mediapicker.PhotoDetailDialog
 import androidx.compose.ui.unit.dp
 import com.eunilsung.talk.ui.uikit.sheet.BottomSheetHost
 import com.eunilsung.talk.ui.uikit.sheet.LocalBottomSheetManager
-import com.eunilsung.talk.ui.uikit.toast.LocalToastManager
 import com.eunilsung.talk.ui.uikit.toast.ToastHost
 import com.eunilsung.talk.ui.uikit.pointer.blockPointerInput
 import com.eunilsung.talk.ui.uikit.watermark.Watermark
@@ -62,7 +53,6 @@ import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.connection_reconnecting
 import com.eunilsung.talk.ui.theme.AppColors
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 
 /**
  * 앱 전역 호스트 — 토스트·다이얼로그·바텀시트·전체화면 오버레이와 연결상태 띠·워터마크.
@@ -76,6 +66,7 @@ fun AppHosts(
     isReconnecting: Boolean,
     isLoggedIn: Boolean,
     me: User,
+    onAction: (MainActions) -> Unit,
     content: @Composable () -> Unit
 ) {
     var fullScreenOverlay by remember { mutableStateOf<Screen?>(null) }
@@ -98,7 +89,7 @@ fun AppHosts(
                         DialogHost {
                             BottomSheetHost {
                                 UserProfileSheetBinding {
-                                    FileDetailSheetBinding {
+                                    FileDetailSheetBinding(onAction) {
                                         content()
                                     }
                                 }
@@ -155,12 +146,8 @@ private fun ConnectionStatusBar(visible: Boolean) {
 }
 
 @Composable
-private fun FileDetailSheetBinding(content: @Composable () -> Unit) {
+private fun FileDetailSheetBinding(onAction: (MainActions) -> Unit, content: @Composable () -> Unit) {
     val sheet = LocalBottomSheetManager.current
-    val toast = LocalToastManager.current
-    val fileOpener: FileOpener = koinInject()
-    val fileMetadataResolver: FileMetadataResolver = koinInject()
-    val scope = rememberCoroutineScope()
 
     var photoDetail by remember { mutableStateOf<MultimediaRecentPhoto?>(null) }
 
@@ -173,21 +160,7 @@ private fun FileDetailSheetBinding(content: @Composable () -> Unit) {
                     fileName = displayName,
                     senderLabel = senderLabel,
                     onClose = { sheet.hide() },
-                    onDownload = {
-                        scope.launch {
-                            val saved = runCatching {
-                                saveToDownloads(
-                                    source = serverFileName,
-                                    displayName = displayName,
-                                    resolver = fileMetadataResolver,
-                                )
-                            }.getOrNull()
-                            toast.show(
-                                if (saved != null) getString(Res.string.toast_download_done, displayName)
-                                else getString(Res.string.toast_download_failed)
-                            )
-                        }
-                    },
+                    onDownload = { onAction(MainActions.OnDownloadFile(serverFileName, displayName)) },
                     onOpen = {
                         if (isImageFile(displayName) || isImageFile(serverFileName)) {
                             sheet.hide()
@@ -198,26 +171,7 @@ private fun FileDetailSheetBinding(content: @Composable () -> Unit) {
                                 originalFileName = displayName,
                             )
                         } else {
-                            scope.launch {
-                                val existing = runCatching {
-                                    fileMetadataResolver.findDownloadedFile(displayName)
-                                }.getOrNull()
-                                val downloaded = existing == null
-                                val path = existing ?: runCatching {
-                                    saveToDownloads(
-                                        source = serverFileName,
-                                        displayName = displayName,
-                                        resolver = fileMetadataResolver,
-                                    )
-                                }.getOrNull()
-                                val opened = path?.let {
-                                    runCatching { fileOpener.open(it) }.getOrDefault(false)
-                                } ?: false
-                                when {
-                                    !opened -> toast.show(getString(Res.string.toast_file_open_failed))
-                                    downloaded -> toast.show(getString(Res.string.toast_download_done, displayName))
-                                }
-                            }
+                            onAction(MainActions.OnOpenFile(serverFileName, displayName))
                         }
                     },
                 )
@@ -232,16 +186,6 @@ private fun FileDetailSheetBinding(content: @Composable () -> Unit) {
             )
         }
     }
-}
-
-/** 파일을 다운로드 폴더로 복사. 읽을 수 없으면 null. */
-private suspend fun saveToDownloads(
-    source: String,
-    displayName: String,
-    resolver: FileMetadataResolver,
-): String? {
-    val bytes = runCatching { resolver.readBytes(source) }.getOrNull() ?: return null
-    return resolver.saveDownloadedFile(displayName, bytes)
 }
 
 private fun isImageFile(name: String): Boolean {

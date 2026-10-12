@@ -2,7 +2,7 @@ package com.eunilsung.talk.domain.usecase
 
 import com.eunilsung.talk.domain.model.ScreenLockConfig
 import com.eunilsung.talk.domain.repository.BiometricAuthenticator
-import com.eunilsung.talk.domain.repository.BiometricResult
+import com.eunilsung.talk.domain.model.BiometricResult
 import com.eunilsung.talk.domain.repository.ScreenLockRepository
 import kotlinx.coroutines.flow.StateFlow
 

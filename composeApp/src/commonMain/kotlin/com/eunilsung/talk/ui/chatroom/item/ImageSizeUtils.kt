@@ -1,4 +1,4 @@
-package com.eunilsung.talk.util
+package com.eunilsung.talk.ui.chatroom.item
 
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp

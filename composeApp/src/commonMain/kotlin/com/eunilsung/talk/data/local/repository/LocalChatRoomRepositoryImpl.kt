@@ -37,7 +37,7 @@ import com.eunilsung.talk.util.formatFileSize
 import com.eunilsung.talk.util.EMOTICON_LABEL
 import com.eunilsung.talk.util.chatDisplayText
 import com.eunilsung.talk.util.stripMentionTags
-import com.eunilsung.talk.util.UserListCodec
+import com.eunilsung.talk.domain.util.UserListCodec
 import com.eunilsung.talk.data.local.seed.TestAccounts
 import com.eunilsung.talk.data.local.seed.TestChats
 

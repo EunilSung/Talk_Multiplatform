@@ -105,7 +105,7 @@ class ProfilePhotoPickerScreen(
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
-        ProfilePhotoPickerBody(
+        ProfilePhotoPickerContent(
             items = items,
             onBack = { showOverlay(null) },
             onPhotoClick = { detail = it },
@@ -167,7 +167,7 @@ class ProfilePhotoPickerScreen(
 
 /** 프로필 사진 선택 본문(상단바 + 사진 그리드/빈 상태) — 상태 없는 순수 UI (Preview 가능). */
 @Composable
-private fun ProfilePhotoPickerBody(
+private fun ProfilePhotoPickerContent(
     items: List<MultimediaRecentPhoto>,
     onBack: () -> Unit,
     onPhotoClick: (MultimediaRecentPhoto) -> Unit,
@@ -230,7 +230,7 @@ private fun ProfilePhotoPickerBody(
 @Composable
 private fun ProfilePhotoPickerBodyPreview() {
     MaterialTheme {
-        ProfilePhotoPickerBody(
+        ProfilePhotoPickerContent(
             items = List(6) { MultimediaRecentPhoto(id = "$it") },
             onBack = {},
             onPhotoClick = {},
@@ -242,6 +242,6 @@ private fun ProfilePhotoPickerBodyPreview() {
 @Composable
 private fun ProfilePhotoPickerBodyEmptyPreview() {
     MaterialTheme {
-        ProfilePhotoPickerBody(items = emptyList(), onBack = {}, onPhotoClick = {})
+        ProfilePhotoPickerContent(items = emptyList(), onBack = {}, onPhotoClick = {})
     }
 }

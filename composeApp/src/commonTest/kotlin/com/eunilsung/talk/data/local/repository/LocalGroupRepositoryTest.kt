@@ -5,7 +5,7 @@ import com.eunilsung.talk.data.mapper.SeedMapper
 import com.eunilsung.talk.data.mapper.GroupMapper
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.Group
-import com.eunilsung.talk.domain.repository.AddUserResult
+import com.eunilsung.talk.domain.model.AddUserResult
 import com.eunilsung.talk.testsupport.FakeLoginRepository
 import com.eunilsung.talk.testsupport.TestMyInfo
 import com.eunilsung.talk.testsupport.createTestDatabase

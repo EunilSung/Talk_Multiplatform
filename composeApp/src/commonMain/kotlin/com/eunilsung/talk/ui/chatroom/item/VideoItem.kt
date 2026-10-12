@@ -36,7 +36,6 @@ import com.eunilsung.talk.data.local.VideoThumbnailLoader
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.mediapicker.formatMediaDuration
-import com.eunilsung.talk.util.ImageSizeUtils
 import org.koin.compose.koinInject
 
 /** 동영상 대화 말풍선 — 첫 프레임 + 중앙 재생버튼 + 재생시간. 탭하면 전체화면 재생. */

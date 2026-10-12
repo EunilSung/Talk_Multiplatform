@@ -1,5 +1,6 @@
 package com.eunilsung.talk.ui.setting.overlay
 
+import com.eunilsung.talk.domain.model.ChatSettingsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +26,6 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
-import com.eunilsung.talk.domain.repository.ChatSettingsRepository
 import com.eunilsung.talk.ui.setting.SettingActions
 import com.eunilsung.talk.ui.setting.SettingViewModel
 import com.eunilsung.talk.ui.theme.AppColors
@@ -79,7 +79,7 @@ private fun FontSizeBody(
         }
         LineDivider(modifier = Modifier.fillMaxWidth().height(1.dp))
 
-        ChatSettingsRepository.FONT_SIZE_OPTIONS.forEach { sp ->
+        ChatSettingsState.FONT_SIZE_OPTIONS.forEach { sp ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -108,7 +108,7 @@ private fun FontSizeBodyPreview() {
     MaterialTheme {
         FontSizeBody(
             padding = PaddingValues(0.dp),
-            selectedFontSize = ChatSettingsRepository.DEFAULT_FONT_SIZE,
+            selectedFontSize = ChatSettingsState.DEFAULT_FONT_SIZE,
             onSelect = {}
         )
     }

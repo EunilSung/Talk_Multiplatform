@@ -6,7 +6,7 @@ import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.testsupport.FakeLoginRepository
 import com.eunilsung.talk.testsupport.TestMyInfo
 import com.eunilsung.talk.testsupport.createTestDatabase
-import com.eunilsung.talk.util.UserListCodec
+import com.eunilsung.talk.domain.util.UserListCodec
 import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

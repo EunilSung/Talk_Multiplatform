@@ -1,4 +1,4 @@
-package com.eunilsung.talk.util
+package com.eunilsung.talk.domain.util
 
 /** 대화방 참여자 목록의 문자열 표현 — `"id|name;id|name;…"` 인코딩/디코딩. */
 object UserListCodec {

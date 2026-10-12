@@ -12,12 +12,12 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.model.ChatRoom
-import com.eunilsung.talk.domain.repository.AddUserResult
+import com.eunilsung.talk.domain.model.AddUserResult
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 import com.eunilsung.talk.domain.usecase.GroupUseCases
 import com.eunilsung.talk.domain.usecase.InviteUseCases
 import com.eunilsung.talk.domain.usecase.UserProfileUseCases
-import com.eunilsung.talk.util.UserListCodec
+import com.eunilsung.talk.domain.util.UserListCodec
 
 /** 리스트 항목(사용자/그룹) 대상 빠른 액션 — 1:1 대화 시작, 그룹에 넣기, 그룹 고르기 목록. */
 class QuickActionsViewModel(

@@ -1,5 +1,9 @@
 package com.eunilsung.talk.ui.main
 
+import com.eunilsung.talk.ui.uikit.toast.LocalToastManager
+import multiplatformtalk.composeapp.generated.resources.toast_download_done
+import multiplatformtalk.composeapp.generated.resources.toast_download_failed
+import multiplatformtalk.composeapp.generated.resources.toast_file_open_failed
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.main_notice_message
 import org.jetbrains.compose.resources.getString
@@ -99,6 +103,7 @@ object MainScreen : Screen {
                         isReconnecting = uiState.isReconnecting,
                         isLoggedIn = uiState.isLoggedIn,
                         me = uiState.me,
+                        onAction = viewModel::onAction,
                     ) {
                         MainEventHandler(viewModel, rightNavigator)
                         MainContent(isLoggedIn = uiState.isLoggedIn, chatUnreadTotal = uiState.chatUnreadTotal)
@@ -118,6 +123,7 @@ private fun MainEventHandler(viewModel: MainViewModel, rightNavigator: Navigator
     val bottomSheet = LocalBottomSheetManager.current
     val showOverlay = LocalFullScreenOverlay.current
     val imageContext = coil3.compose.LocalPlatformContext.current
+    val toast = LocalToastManager.current
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -145,6 +151,10 @@ private fun MainEventHandler(viewModel: MainViewModel, rightNavigator: Navigator
                     routePushNavigation(rightNavigator, event.request)
                 }
                 is MainScreenEvent.OpenShare -> showOverlay(ShareScreen(event.content))
+                is MainScreenEvent.FileDownloaded ->
+                    toast.show(getString(Res.string.toast_download_done, event.displayName))
+                MainScreenEvent.FileDownloadFailed -> toast.show(getString(Res.string.toast_download_failed))
+                MainScreenEvent.FileOpenFailed -> toast.show(getString(Res.string.toast_file_open_failed))
             }
         }
     }

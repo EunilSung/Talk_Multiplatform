@@ -33,6 +33,8 @@ data class MainUseCases(
     val getUnseenNoticeVersion: GetUnseenNoticeVersionUseCase,
     val markNoticeShown: MarkNoticeShownUseCase,
     val observeProfileImages: ObserveProfileImagesUseCase,
+    val downloadFile: DownloadFileUseCase,
+    val openFile: OpenFileUseCase,
 )
 
 /** 서버와 연결돼 있는지. 끊기면 화면 위에 재연결 중 표시를 띄운다. */
