@@ -25,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,11 +62,18 @@ import multiplatformtalk.composeapp.generated.resources.connection_reconnecting
 import com.eunilsung.talk.ui.theme.AppColors
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import com.eunilsung.talk.domain.repository.LoginRepository
 
+/**
+ * 앱 전역 호스트 — 토스트·다이얼로그·바텀시트·전체화면 오버레이와 연결상태 띠·워터마크.
+ *
+ * @param isReconnecting 로그인한 채로 서버와 끊겨 다시 붙는 중이면 위에 띠를 띄운다.
+ * @param isLoggedIn 로그인했을 때만 워터마크를 그린다.
+ */
 @Composable
 fun AppHosts(
     rightNavigator: Navigator,
+    isReconnecting: Boolean,
+    isLoggedIn: Boolean,
     content: @Composable () -> Unit
 ) {
     var fullScreenOverlay by remember { mutableStateOf<Screen?>(null) }
@@ -84,7 +90,7 @@ fun AppHosts(
             )
         ) { innerPadding ->
             Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                ConnectionStatusBar()
+                ConnectionStatusBar(visible = isReconnecting)
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     ToastHost {
                         DialogHost {
@@ -111,7 +117,7 @@ fun AppHosts(
                             }
                         }
                     }
-                    Watermark()
+                    Watermark(isLoggedIn = isLoggedIn)
                 }
             }
         }
@@ -120,12 +126,8 @@ fun AppHosts(
 
 /** 상단 연결상태 배너 — 로그인 상태에서 소켓이 끊기거나 재연결 중이면 표시. */
 @Composable
-private fun ConnectionStatusBar() {
-    val loginRepository: LoginRepository = koinInject()
-    val isConnected by loginRepository.isConnected.collectAsState()
-    val isLoggedIn by loginRepository.isLoggedIn.collectAsState()
-
-    AnimatedVisibility(visible = isLoggedIn && !isConnected) {
+private fun ConnectionStatusBar(visible: Boolean) {
+    AnimatedVisibility(visible = visible) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

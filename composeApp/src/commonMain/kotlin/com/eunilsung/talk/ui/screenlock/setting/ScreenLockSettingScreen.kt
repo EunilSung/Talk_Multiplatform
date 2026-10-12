@@ -29,9 +29,9 @@ import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.eunilsung.talk.Platform
 import com.eunilsung.talk.domain.model.LockType
 import com.eunilsung.talk.domain.model.ScreenLockConfig
+import com.eunilsung.talk.ui.screenlock.ScreenLockActions
 import com.eunilsung.talk.ui.screenlock.ScreenLockViewModel
 import com.eunilsung.talk.ui.screenlock.component.PatternPad
 import com.eunilsung.talk.ui.screenlock.component.PinPad
@@ -64,7 +64,6 @@ import multiplatformtalk.composeapp.generated.resources.lock_type_pattern
 import multiplatformtalk.composeapp.generated.resources.lock_warning
 import com.eunilsung.talk.ui.setting.component.SettingItemNavigate
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 private const val MIN_PATTERN = 4
@@ -76,11 +75,10 @@ class ScreenLockSettingScreen : Screen {
     @Composable
     override fun Content() {
         val vm: ScreenLockViewModel = koinViewModel()
-        val config by vm.config.collectAsState()
-        val biometricAvailable by vm.biometricAvailable.collectAsState()
-        val platform: Platform = koinInject()
+        val uiState by vm.uiState.collectAsState()
+        val config = uiState.config
 
-        LaunchedEffect(Unit) { vm.reconcileBiometric() }
+        LaunchedEffect(Unit) { vm.onAction(ScreenLockActions.ReconcileBiometric) }
 
         var setupType by remember { mutableStateOf<LockType?>(null) }
 
@@ -91,21 +89,21 @@ class ScreenLockSettingScreen : Screen {
                     type = type,
                     patternVisible = config.patternVisible,
                     padding = padding,
-                    onPasswordSet = { vm.setPassword(it); setupType = null },
-                    onPatternSet = { vm.setPattern(it); setupType = null },
+                    onPasswordSet = { vm.onAction(ScreenLockActions.SetPassword(it)); setupType = null },
+                    onPatternSet = { vm.onAction(ScreenLockActions.SetPattern(it)); setupType = null },
                     onCancel = { setupType = null },
                 )
             } else {
                 ScreenLockSettingBody(
                     config = config,
-                    biometricAvailable = biometricAvailable,
-                    isAndroid = platform.name == "ANDROID",
+                    biometricAvailable = uiState.biometricAvailable,
+                    isAndroid = uiState.isAndroid,
                     padding = padding,
-                    onSelectNone = { if (config.type != LockType.NONE) vm.disableLock() },
+                    onSelectNone = { if (config.type != LockType.NONE) vm.onAction(ScreenLockActions.DisableLock) },
                     onSelectPassword = { if (config.type != LockType.PASSWORD) setupType = LockType.PASSWORD },
                     onSelectPattern = { if (config.type != LockType.PATTERN) setupType = LockType.PATTERN },
-                    onToggleBiometric = { vm.setBiometricEnabled(it) },
-                    onTogglePatternVisible = { vm.setPatternVisible(it) },
+                    onToggleBiometric = { vm.onAction(ScreenLockActions.SetBiometricEnabled(it)) },
+                    onTogglePatternVisible = { vm.onAction(ScreenLockActions.SetPatternVisible(it)) },
                     onChange = { setupType = config.type },
                 )
             }

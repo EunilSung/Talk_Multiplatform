@@ -73,11 +73,11 @@ class ChatRoomGroupEditScreen(
             onNameChange = { name = it },
             onBack = { showOverlay(ChatRoomGroupManageScreen) },
             onDone = {
-                viewModel.rename(groupId, name.trim())
+                viewModel.onAction(ChatRoomGroupManageActions.RenameGroup(groupId, name.trim()))
                 showOverlay(ChatRoomGroupManageScreen)
             },
             onDelete = {
-                viewModel.delete(groupId)
+                viewModel.onAction(ChatRoomGroupManageActions.DeleteGroup(groupId))
                 showOverlay(ChatRoomGroupManageScreen)
             }
         )

@@ -3,8 +3,6 @@ package com.eunilsung.talk.ui.uikit.watermark
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -16,17 +14,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.eunilsung.talk.Config
-import com.eunilsung.talk.domain.repository.LoginRepository
-import org.koin.compose.koinInject
 
 /** 화면 전역 워터마크 — 로그인 시 "내 아이디 + 내 이름" 을 대각선으로 반복 표기. */
 @Composable
-fun Watermark(modifier: Modifier = Modifier) {
+fun Watermark(isLoggedIn: Boolean, modifier: Modifier = Modifier) {
     if (!Config.Watermark.IS_ENABLED) return
-
-    val loginRepository: LoginRepository = koinInject()
-    val loggedIn by loginRepository.isLoggedIn.collectAsState()
-    if (!loggedIn) return
+    if (!isLoggedIn) return
 
     val label = listOf(Config.MyInfo.userId, Config.MyInfo.userName)
         .filter { it.isNotBlank() }

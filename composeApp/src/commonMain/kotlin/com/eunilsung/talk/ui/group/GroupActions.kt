@@ -25,6 +25,9 @@ sealed interface GroupActions {
     data class DeleteGroup(val groupId: String) : GroupActions
 
     data class CreateGroup(val name: String) : GroupActions
+
+    /** 고른 사람들과 새 대화방을 만든다. [users] 는 (아이디, 이름) 쌍. */
+    data class StartChat(val users: List<Pair<String, String>>) : GroupActions
 }
 
 sealed interface GroupEvent {
@@ -43,6 +46,10 @@ sealed interface GroupEvent {
     data class CreateInvalid(
         val reason: GroupNameValidation
     ) : GroupEvent
+
+    data class ChatStarted(val chatRoomId: String) : GroupEvent
+
+    data object ChatStartFailed : GroupEvent
 }
 
 enum class GroupMode {

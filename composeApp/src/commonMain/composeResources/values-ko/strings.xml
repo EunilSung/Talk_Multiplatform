@@ -183,6 +183,7 @@
     <string name="toast_chat_room_alarm_muted">대화방 알림이 꺼졌습니다</string>
     <string name="toast_chat_room_alarm_unmuted">대화방 알림이 켜졌습니다</string>
     <string name="toast_chat_room_alarm_failed">알림 설정 변경에 실패했습니다</string>
+    <string name="toast_setting_change_failed">설정 변경에 실패했습니다.</string>
 
     <!-- 대화방 상단고정 -->
     <string name="toast_chat_room_pinned">대화방이 상단에 고정되었습니다</string>

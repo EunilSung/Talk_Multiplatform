@@ -7,6 +7,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.usecase.GroupUseCases
+import com.eunilsung.talk.domain.usecase.InviteUseCases
 import com.eunilsung.talk.domain.model.Group
 import com.eunilsung.talk.domain.model.Search
 import com.eunilsung.talk.domain.model.User
@@ -17,6 +18,7 @@ import com.eunilsung.talk.util.UserSearch
 @OptIn(FlowPreview::class)
 class GroupViewModel(
     private val groupUseCases: GroupUseCases,
+    private val inviteUseCases: InviteUseCases,
 ) : ViewModel() {
 
     private val _groups = MutableStateFlow<List<Group.Item>>(emptyList())
@@ -143,6 +145,20 @@ class GroupViewModel(
                     }
                 }
             }
+            is GroupActions.StartChat -> startChat(action.users)
+        }
+    }
+
+    /** 새 방을 만들어 들어가고 편집 모드를 끈다. 만들지 못하면 편집 모드와 선택은 그대로 둔다. */
+    private fun startChat(users: List<Pair<String, String>>) {
+        viewModelScope.launch {
+            val roomId = runCatching { inviteUseCases.inviteUsers("", users, 0) }.getOrNull()
+            if (roomId.isNullOrBlank()) {
+                _events.send(GroupEvent.ChatStartFailed)
+                return@launch
+            }
+            changeMode(GroupMode.IDLE)
+            _events.send(GroupEvent.ChatStarted(roomId))
         }
     }
 

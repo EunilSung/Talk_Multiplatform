@@ -5,44 +5,60 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.eunilsung.talk.Platform
 import com.eunilsung.talk.domain.repository.BiometricResult
-import com.eunilsung.talk.domain.model.ScreenLockConfig
 import com.eunilsung.talk.domain.usecase.ScreenLockUseCases
 
 /** 화면 잠금 설정/검증 ViewModel — 설정 화면과 잠금 화면에서 공용. */
 class ScreenLockViewModel(
     private val useCases: ScreenLockUseCases,
+    platform: Platform,
 ) : ViewModel() {
 
-    val config: StateFlow<ScreenLockConfig> = useCases.observeConfig()
+    private val _uiState = MutableStateFlow(
+        ScreenLockUiState(
+            config = useCases.observeConfig().value,
+            biometricAvailable = useCases.isBiometricAvailable(),
+            isAndroid = platform.name == "ANDROID",
+        )
+    )
+    val uiState: StateFlow<ScreenLockUiState> = _uiState.asStateFlow()
 
-    /** 기기 생체 사용 가능 여부(등록됨). */
-    private val _biometricAvailable = MutableStateFlow(useCases.isBiometricAvailable())
-    val biometricAvailable: StateFlow<Boolean> = _biometricAvailable.asStateFlow()
+    init {
+        viewModelScope.launch {
+            useCases.observeConfig().collect { config -> _uiState.update { it.copy(config = config) } }
+        }
+    }
+
+    fun onAction(action: ScreenLockActions) {
+        when (action) {
+            is ScreenLockActions.ReconcileBiometric -> reconcileBiometric()
+            is ScreenLockActions.DisableLock -> {
+                useCases.disable()
+                ScreenLockController.reset()
+            }
+            is ScreenLockActions.SetPassword -> useCases.setPassword(action.pin)
+            is ScreenLockActions.SetPattern -> useCases.setPattern(action.dots)
+            is ScreenLockActions.SetPatternVisible -> useCases.setPatternVisible(action.visible)
+            is ScreenLockActions.SetBiometricEnabled -> setBiometricEnabled(action.enabled)
+            is ScreenLockActions.UnlockWithPassword -> unlockIf(useCases.verifyPassword(action.pin))
+            is ScreenLockActions.UnlockWithPattern -> unlockIf(useCases.verifyPattern(action.dots))
+            is ScreenLockActions.UnlockWithBiometric -> authenticateBiometric(action)
+        }
+    }
 
     /** 생체 가용성 재확인 + 불가한데 켜져 있으면 자동 해제. */
-    fun reconcileBiometric() {
+    private fun reconcileBiometric() {
         val available = useCases.isBiometricAvailable()
-        _biometricAvailable.value = available
+        _uiState.update { it.copy(biometricAvailable = available) }
         if (!available && useCases.observeConfig().value.biometricEnabled) {
             useCases.clearBiometric()
         }
     }
 
-    fun disableLock() {
-        useCases.disable()
-        ScreenLockController.reset()
-    }
-
-    fun setPassword(pin: String) = useCases.setPassword(pin)
-    fun setPattern(dots: List<Int>) = useCases.setPattern(dots)
-    fun verifyPassword(pin: String): Boolean = useCases.verifyPassword(pin)
-    fun verifyPattern(dots: List<Int>): Boolean = useCases.verifyPattern(dots)
-    fun setPatternVisible(visible: Boolean) = useCases.setPatternVisible(visible)
-
-    /** 생체 토글 — 켤 때는 실제 사용 가능한 경우에만 적용. */
-    fun setBiometricEnabled(enabled: Boolean) {
+    private fun setBiometricEnabled(enabled: Boolean) {
         if (enabled && !useCases.isBiometricAvailable()) {
             reconcileBiometric()
             return
@@ -50,23 +66,26 @@ class ScreenLockViewModel(
         useCases.setBiometricEnabled(enabled)
     }
 
-    /** 생체 프롬프트. 결과를 콜백으로 전달. */
-    fun authenticateBiometric(
-        title: String,
-        subtitle: String,
-        negativeText: String,
-        onResult: (BiometricResult) -> Unit,
-    ) {
+    private fun unlockIf(verified: Boolean) {
+        if (verified) unlock() else _uiState.update { it.copy(unlockFailCount = it.unlockFailCount + 1) }
+    }
+
+    private fun unlock() {
+        _uiState.update { it.copy(unlockFailCount = 0) }
+        ScreenLockController.unlock()
+    }
+
+    private fun authenticateBiometric(action: ScreenLockActions.UnlockWithBiometric) {
         viewModelScope.launch {
-            val result = useCases.authenticateBiometric(title, subtitle, negativeText)
+            val result = useCases.authenticateBiometric(action.title, action.subtitle, action.negativeText)
             if (result == BiometricResult.UNAVAILABLE &&
                 useCases.observeConfig().value.biometricEnabled &&
                 !useCases.isBiometricAvailable()
             ) {
                 useCases.clearBiometric()
-                _biometricAvailable.value = false
+                _uiState.update { it.copy(biometricAvailable = false) }
             }
-            onResult(result)
+            if (result == BiometricResult.SUCCESS) unlock()
         }
     }
 }

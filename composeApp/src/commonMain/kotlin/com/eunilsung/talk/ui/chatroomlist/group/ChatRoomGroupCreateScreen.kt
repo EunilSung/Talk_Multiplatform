@@ -62,7 +62,7 @@ object ChatRoomGroupCreateScreen : Screen {
             onNameChange = { name = it },
             onBack = { showOverlay(ChatRoomGroupManageScreen) },
             onConfirm = {
-                viewModel.create(name.trim())
+                viewModel.onAction(ChatRoomGroupManageActions.CreateGroup(name.trim()))
                 showOverlay(ChatRoomGroupManageScreen)
             }
         )

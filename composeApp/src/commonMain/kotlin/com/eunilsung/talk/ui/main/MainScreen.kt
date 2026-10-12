@@ -51,16 +51,10 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.stack.StackEvent
 import cafe.adriel.voyager.navigator.Navigator
-import com.eunilsung.talk.domain.model.MainEvent
-import com.eunilsung.talk.domain.repository.LoginRepository
 import com.eunilsung.talk.ui.login.LoginScreen
 import com.eunilsung.talk.ui.main.tab.ChatTab
 import com.eunilsung.talk.ui.main.tab.GroupTab
@@ -75,133 +69,80 @@ import com.eunilsung.talk.ui.uikit.line.LineDivider
 import com.eunilsung.talk.Platform
 import androidx.compose.runtime.getValue
 import com.eunilsung.talk.ui.theme.AppColors
-import kotlinx.datetime.toLocalDateTime
-import com.eunilsung.talk.Config
 import com.eunilsung.talk.ui.screenlock.lock.ScreenLockGate
 import com.eunilsung.talk.ui.uikit.swipe.LocalSwipeDismiss
 import com.eunilsung.talk.ui.uikit.swipe.SwipeDismissController
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import com.eunilsung.talk.util.Log
 import androidx.compose.runtime.CompositionLocalProvider
-import com.eunilsung.talk.domain.repository.PushNotifier
-import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
-import com.eunilsung.talk.domain.repository.PendingPushNavigationRepository
-import com.eunilsung.talk.domain.repository.PendingShareNavigationRepository
+import com.eunilsung.talk.ui.share.ShareScreen
+import com.eunilsung.talk.ui.uikit.sheet.LocalBottomSheetManager
 
 object MainScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel: MainViewModel = koinViewModel()
-        val loginRepository: LoginRepository = koinInject()
-        val pendingPush: PendingPushNavigationRepository = koinInject()
-        val pendingShare: PendingShareNavigationRepository = koinInject()
-        val isLoggedIn by loginRepository.isLoggedIn.collectAsState()
-
-        val imageContext = coil3.compose.LocalPlatformContext.current
-        LaunchedEffect(Unit) {
-            val today = kotlinx.datetime.Instant
-                .fromEpochMilliseconds(kotlin.time.Clock.System.now().toEpochMilliseconds())
-                .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
-                .date.toString()
-            if (viewModel.shouldClearImageCache(today)) {
-                coil3.SingletonImageLoader.get(imageContext).apply {
-                    memoryCache?.clear()
-                    diskCache?.clear()
-                }
-                viewModel.markImageCacheCleared(today)
-                Log.message("Image cache cleared date=$today keepDaily=${Config.UserProfile.IS_KEEP_CACHE_DAY}")
-            } else {
-                Log.message("Image cache clear skipped — already cleared today ($today)")
-            }
-        }
+        val uiState by viewModel.uiState.collectAsState()
 
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-            Log.message("Foreground")
-            loginRepository.isForeground.value = true
-            loginRepository.checkConnectionAndRelogin()
+            viewModel.onAction(MainActions.OnForeground)
         }
 
         LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
-            Log.message("Background")
-            loginRepository.isForeground.value = false
+            viewModel.onAction(MainActions.OnBackground)
         }
 
         AppTheme {
             Navigator(EmptyScreen) { rightNavigator ->
-                LaunchedEffect(Unit) {
-                    loginRepository.isLoggedIn
-                        .drop(1)
-                        .filter { !it }
-                        .collect {
-                            rightNavigator.popToEmptyRoot()
-                            pendingPush.consume()
-                            pendingShare.consume()
-                        }
-                }
-
-                AppHosts(rightNavigator) {
-                    ForcedLogoutObserver(viewModel, loginRepository)
-                    AppIconBadgeSync()
-                    MainNoticeDialog(viewModel)
-                    MainContent()
-                    if (!isLoggedIn) LoginScreen()
-                    PendingPushNavigationHandler(rightNavigator, loginRepository)
-                    PendingShareNavigationHandler(loginRepository)
-                    ScreenLockGate()
+                AppHosts(
+                    rightNavigator = rightNavigator,
+                    isReconnecting = uiState.isReconnecting,
+                    isLoggedIn = uiState.isLoggedIn,
+                ) {
+                    MainEventHandler(viewModel, rightNavigator)
+                    MainContent(isLoggedIn = uiState.isLoggedIn, chatUnreadTotal = uiState.chatUnreadTotal)
+                    if (!uiState.isLoggedIn) LoginScreen()
+                    ScreenLockGate(isLoggedIn = uiState.isLoggedIn)
                 }
             }
         }
     }
 }
 
-
-/** 앱 아이콘(런처) 배지 동기화 — 대화 안읽음 총합을 배지에 반영. */
+/** [MainViewModel] 이 보내는 일을 처리한다. 다이얼로그·시트·오버레이를 써야 해서 [AppHosts] 안에 둔다. */
 @Composable
-private fun AppIconBadgeSync() {
-    val loginRepository: LoginRepository = koinInject()
-    val chatRoomListUseCases: ChatRoomListUseCases = koinInject()
-    val notifier: PushNotifier = koinInject()
-
-    LaunchedEffect(Unit) {
-        combine(
-            loginRepository.isLoggedIn,
-            chatRoomListUseCases.observeChatRoomUnreadTotal(),
-        ) { loggedIn, chatUnread ->
-            if (loggedIn) chatUnread else 0
-        }.distinctUntilChanged().collect { total ->
-            notifier.setBadge(total)
-        }
-    }
-}
-
-/** 로그인 후 메인 진입 시 버전명 기준 1회 공지. */
-@Composable
-private fun MainNoticeDialog(viewModel: MainViewModel) {
-    val loginRepository: LoginRepository = koinInject()
+private fun MainEventHandler(viewModel: MainViewModel, rightNavigator: Navigator) {
     val dialog = LocalDialogManager.current
-    val isLoggedIn by loginRepository.isLoggedIn.collectAsState()
+    val bottomSheet = LocalBottomSheetManager.current
+    val showOverlay = LocalFullScreenOverlay.current
+    val imageContext = coil3.compose.LocalPlatformContext.current
 
-    LaunchedEffect(isLoggedIn) {
-        if (!isLoggedIn) return@LaunchedEffect
-        val version = viewModel.pendingNoticeVersion() ?: return@LaunchedEffect
-        dialog.alert(
-            message = getString(Res.string.main_notice_message),
-            onConfirm = { viewModel.markNoticeShown(version) },
-        )
-    }
-}
-
-@Composable
-private fun ForcedLogoutObserver(viewModel: MainViewModel, loginRepository: LoginRepository) {
-    val dialog = LocalDialogManager.current
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                is MainEvent.ForcedLogout -> dialog.alert(
-                    message = event.message,
-                    onConfirm = { loginRepository.logout() }
+                is MainScreenEvent.ClearImageCache -> {
+                    coil3.SingletonImageLoader.get(imageContext).apply {
+                        memoryCache?.clear()
+                        diskCache?.clear()
+                    }
+                    viewModel.onAction(MainActions.OnImageCacheCleared(event.date))
+                }
+                is MainScreenEvent.ShowNotice -> dialog.alert(
+                    message = getString(Res.string.main_notice_message),
+                    onConfirm = { viewModel.onAction(MainActions.OnNoticeConfirmed(event.version)) },
                 )
+                is MainScreenEvent.ForcedLogout -> dialog.alert(
+                    message = event.message,
+                    onConfirm = { viewModel.onAction(MainActions.Logout) },
+                )
+                is MainScreenEvent.LoggedOut -> rightNavigator.popToEmptyRoot()
+                is MainScreenEvent.OpenPush -> {
+                    dialog.dismiss()
+                    bottomSheet.hide()
+                    showOverlay(null)
+                    routePushNavigation(rightNavigator, event.request)
+                }
+                is MainScreenEvent.OpenShare -> showOverlay(ShareScreen(event.content))
             }
         }
     }
@@ -216,7 +157,7 @@ fun rememberImeHeight(): Dp {
 }
 
 @Composable
-fun MainContent() {
+fun MainContent(isLoggedIn: Boolean, chatUnreadTotal: Int) {
     val imeHeight = rememberImeHeight()
     val isKeyboardVisible = imeHeight > 0.dp
     val rightNavigator = LocalRightNavigator.current
@@ -228,9 +169,9 @@ fun MainContent() {
 
         CompositionLocalProvider(LocalRightPaneOpen provides rightPaneOpen) {
             if (isTablet) {
-                Tablet(rightNavigator, isKeyboardVisible, imeHeight)
+                Tablet(rightNavigator, isKeyboardVisible, imeHeight, isLoggedIn, chatUnreadTotal)
             } else {
-                Phone(rightNavigator, isKeyboardVisible, imeHeight)
+                Phone(rightNavigator, isKeyboardVisible, imeHeight, isLoggedIn, chatUnreadTotal)
             }
         }
     }
@@ -250,11 +191,13 @@ fun Tablet(
     rightNavigator: Navigator,
     isKeyboardVisible: Boolean,
     imeHeight: Dp,
+    isLoggedIn: Boolean,
+    chatUnreadTotal: Int,
 ) {
     TabletLayout(
         main = {
             Column(modifier = Modifier.fillMaxSize()) {
-                Box(modifier = Modifier.weight(1f)) { LeftPane() }
+                Box(modifier = Modifier.weight(1f)) { LeftPane(isLoggedIn, chatUnreadTotal) }
                 KeyBoardPane(
                     modifier = Modifier.background(AppColors.Gray50Bg),
                     isKeyboardVisible = isKeyboardVisible,
@@ -283,19 +226,19 @@ fun Tablet(
     )
 }
 
+/**
+ * 하단 탭과 탭 본문.
+ *
+ * @param isLoggedIn 바뀌면 탭 선택을 처음으로 되돌린다.
+ * @param chatUnreadTotal 대화 탭 배지.
+ */
 @Composable
-fun LeftPane() {
+fun LeftPane(isLoggedIn: Boolean, chatUnreadTotal: Int) {
     val tabList = listOf(GroupTab, ChatTab, SettingTab)
     val platform: Platform = koinInject()
     val isIos = platform.name == "IPHONE"
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    val loginRepository: LoginRepository = koinInject()
-    val isLoggedIn by loginRepository.isLoggedIn.collectAsState()
-
-    val chatRoomListUseCases: ChatRoomListUseCases = koinInject()
-    val chatUnreadTotal by chatRoomListUseCases.observeChatRoomUnreadTotal().collectAsState()
 
     key(isLoggedIn) {
         val tabState = rememberAppTabState(tabList, GroupTab)
@@ -352,6 +295,8 @@ fun Phone(
     rightNavigator: Navigator,
     isKeyboardVisible: Boolean,
     imeHeight: Dp,
+    isLoggedIn: Boolean,
+    chatUnreadTotal: Int,
 ) {
     val current = rightNavigator.lastItem
     val hasOverlay = current !is EmptyScreen
@@ -416,7 +361,7 @@ fun Phone(
                 }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                Box(modifier = Modifier.weight(1f)) { LeftPane() }
+                Box(modifier = Modifier.weight(1f)) { LeftPane(isLoggedIn, chatUnreadTotal) }
                 KeyBoardPane(
                     modifier = Modifier.background(AppColors.Gray50Bg),
                     isKeyboardVisible = isKeyboardVisible,

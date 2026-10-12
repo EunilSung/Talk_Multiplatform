@@ -14,6 +14,9 @@ sealed interface SettingActions {
     data class SetNotificationSound(val enabled: Boolean) : SettingActions
     data class SetNotificationVibrate(val enabled: Boolean) : SettingActions
     data class SetNotificationSoundId(val id: Int) : SettingActions
+    /** 고른 알림음을 미리 들려준다. */
+    data class PlaySoundPreview(val soundId: Int) : SettingActions
+    data object StopSoundPreview : SettingActions
 
     data class SetChatEnterSend(val enabled: Boolean) : SettingActions
     data class SetChatFontSize(val size: Int) : SettingActions

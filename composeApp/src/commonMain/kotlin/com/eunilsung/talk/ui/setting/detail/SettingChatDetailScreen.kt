@@ -39,13 +39,13 @@ class SettingChatDetailScreen : Screen {
     @Composable
     override fun Content() {
         val viewModel: SettingViewModel = koinViewModel()
-        val chat by viewModel.chatSettings.collectAsState()
+        val uiState by viewModel.uiState.collectAsState()
         val showOverlay = LocalFullScreenOverlay.current
 
         SettingDetailScaffold(title = stringResource(Res.string.setting_chat)) { padding ->
             ChatDetailBody(
                 padding = padding,
-                state = chat,
+                state = uiState.chat,
                 onAction = viewModel::onAction,
                 onOpenFontSize = { showOverlay(SettingFontSizeScreen()) }
             )

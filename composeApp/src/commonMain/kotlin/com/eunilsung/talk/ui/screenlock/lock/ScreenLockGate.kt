@@ -25,12 +25,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
-import com.eunilsung.talk.Platform
-import com.eunilsung.talk.domain.repository.BiometricResult
 import com.eunilsung.talk.domain.model.LockType
-import com.eunilsung.talk.domain.repository.LoginRepository
-import com.eunilsung.talk.domain.repository.ScreenLockRepository
 import com.eunilsung.talk.ui.screenlock.ScreenLockController
+import com.eunilsung.talk.ui.screenlock.ScreenLockActions
+import com.eunilsung.talk.ui.screenlock.ScreenLockUiState
 import com.eunilsung.talk.ui.screenlock.ScreenLockViewModel
 import com.eunilsung.talk.ui.screenlock.component.PatternPad
 import com.eunilsung.talk.ui.screenlock.component.PinPad
@@ -51,42 +49,37 @@ import multiplatformtalk.composeapp.generated.resources.lock_unlock_with_faceid
 import multiplatformtalk.composeapp.generated.resources.lock_unlock_with_fingerprint
 import com.eunilsung.talk.ui.uikit.BackHandler
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import com.eunilsung.talk.ui.uikit.rememberMoveToBackground
 
-/** 앱 전역 화면 잠금 게이트 — 잠금 사용 중 + 로그인 + locked 이면 전체화면 잠금 표시. */
+/**
+ * 앱 전역 화면 잠금 게이트 — 잠금 사용 중 + 로그인 + locked 이면 전체화면 잠금 표시.
+ *
+ * @param isLoggedIn 로그인 상태. 로그아웃하면 잠금도 처음 상태로 돌아간다.
+ */
 @Composable
-fun ScreenLockGate() {
-    val repo: ScreenLockRepository = koinInject()
-    val loginRepository: LoginRepository = koinInject()
-    val config by repo.config.collectAsState()
+fun ScreenLockGate(isLoggedIn: Boolean) {
+    val vm: ScreenLockViewModel = koinViewModel()
+    val uiState by vm.uiState.collectAsState()
     val locked by ScreenLockController.locked.collectAsState()
-    val isLoggedIn by loginRepository.isLoggedIn.collectAsState()
+    val isEnabled = uiState.config.isEnabled
 
-    LaunchedEffect(config.isEnabled, isLoggedIn) {
-        if (isLoggedIn) ScreenLockController.ensureInitialLock(config.isEnabled)
+    LaunchedEffect(isEnabled, isLoggedIn) {
+        if (isLoggedIn) ScreenLockController.ensureInitialLock(isEnabled)
         else ScreenLockController.reset()
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-        ScreenLockController.onBackground(config.isEnabled && isLoggedIn)
+        ScreenLockController.onBackground(isEnabled && isLoggedIn)
     }
 
-    if (config.isEnabled && isLoggedIn && locked) {
-        LockScreenHost(onUnlocked = { ScreenLockController.unlock() })
+    if (isEnabled && isLoggedIn && locked) {
+        LockScreenHost(vm = vm, uiState = uiState)
     }
 }
 
 @Composable
-private fun LockScreenHost(onUnlocked: () -> Unit) {
-    val vm: ScreenLockViewModel = koinViewModel()
-    val config by vm.config.collectAsState()
-    val biometricAvailable by vm.biometricAvailable.collectAsState()
-    val platform: Platform = koinInject()
-    val isAndroid = platform.name == "ANDROID"
-
-    var errorKey by remember { mutableStateOf(0) }
-    var isError by remember { mutableStateOf(false) }
+private fun LockScreenHost(vm: ScreenLockViewModel, uiState: ScreenLockUiState) {
+    val isAndroid = uiState.isAndroid
 
     val moveToBackground = rememberMoveToBackground()
     BackHandler(enabled = true) { moveToBackground() }
@@ -99,13 +92,13 @@ private fun LockScreenHost(onUnlocked: () -> Unit) {
     val bioNegative = stringResource(Res.string.cancel)
 
     fun runBiometric() {
-        vm.authenticateBiometric(
-            title = bioTitle,
-            subtitle = bioSubtitle,
-            negativeText = bioNegative,
-        ) { result ->
-            if (result == BiometricResult.SUCCESS) onUnlocked()
-        }
+        vm.onAction(
+            ScreenLockActions.UnlockWithBiometric(
+                title = bioTitle,
+                subtitle = bioSubtitle,
+                negativeText = bioNegative,
+            )
+        )
     }
 
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
@@ -113,14 +106,15 @@ private fun LockScreenHost(onUnlocked: () -> Unit) {
 
     fun tryAutoPromptBiometric() {
         if (promptFired) return
-        if (vm.config.value.biometricEnabled && vm.biometricAvailable.value) {
+        val current = vm.uiState.value
+        if (current.config.biometricEnabled && current.biometricAvailable) {
             promptFired = true
             runBiometric()
         }
     }
 
     LaunchedEffect(Unit) {
-        vm.reconcileBiometric()
+        vm.onAction(ScreenLockActions.ReconcileBiometric)
         if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) tryAutoPromptBiometric()
     }
 
@@ -140,18 +134,14 @@ private fun LockScreenHost(onUnlocked: () -> Unit) {
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { promptFired = false }
 
     LockScreenContent(
-        type = config.type,
-        patternVisible = config.patternVisible,
-        isError = isError,
-        errorKey = errorKey,
-        biometricVisible = config.biometricEnabled && biometricAvailable,
+        type = uiState.config.type,
+        patternVisible = uiState.config.patternVisible,
+        isError = uiState.unlockFailCount > 0,
+        errorKey = uiState.unlockFailCount,
+        biometricVisible = uiState.config.biometricEnabled && uiState.biometricAvailable,
         isAndroid = isAndroid,
-        onPinEntered = { pin ->
-            if (vm.verifyPassword(pin)) onUnlocked() else { isError = true; errorKey++ }
-        },
-        onPatternEntered = { dots ->
-            if (vm.verifyPattern(dots)) onUnlocked() else { isError = true; errorKey++ }
-        },
+        onPinEntered = { pin -> vm.onAction(ScreenLockActions.UnlockWithPassword(pin)) },
+        onPatternEntered = { dots -> vm.onAction(ScreenLockActions.UnlockWithPattern(dots)) },
         onBiometricClick = { runBiometric() },
     )
 }
