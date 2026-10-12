@@ -8,7 +8,7 @@
  * - checkLeft: 내가 방에서 나갔는지
  * - cleanup: 셋 모두 방에서 나가고 이번에 받은 토큰을 지운다
  */
-const BASE = typeof SERVER_URL !== 'undefined' ? SERVER_URL : 'http://localhost:8090'
+const BASE = 'http://localhost:8090'
 const PASSWORD = '1234'
 const ME = 'test1'
 const PEER = 'test2'
