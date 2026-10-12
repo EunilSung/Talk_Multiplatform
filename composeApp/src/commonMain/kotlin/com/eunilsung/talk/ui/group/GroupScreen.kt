@@ -19,7 +19,6 @@ import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 import com.eunilsung.talk.domain.model.Group
-import com.eunilsung.talk.domain.model.Search
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.model.isDefaultGroup
 import com.eunilsung.talk.domain.util.GROUP_NAME_MAX_LENGTH
@@ -46,8 +45,6 @@ object GroupScreen : Screen {
     override fun Content() {
         val viewModel: GroupViewModel = koinViewModel()
         val uiState by viewModel.uiState.collectAsState()
-        val searchState by viewModel.searchState.collectAsState()
-        val selectedUserIds by viewModel.selectedUserIds.collectAsState()
         val toastManager = LocalToastManager.current
         val txtDefaultGroup = stringResource(Res.string.default_group)
 
@@ -68,8 +65,6 @@ object GroupScreen : Screen {
 
         GroupContent(
             uiState = uiState,
-            searchState = searchState,
-            selectedUserIds = selectedUserIds,
             onAction = viewModel::onAction,
             onEmptySelection = {
                 scope.launch { toastManager.show(getString(Res.string.toast_no_user_selected)) }
@@ -159,12 +154,12 @@ private fun GroupBackHandler(
 @Composable
 fun GroupContent(
     uiState: GroupUiState,
-    searchState: Search.State,
-    selectedUserIds: Set<String>,
     onAction: (GroupActions) -> Unit,
     onStartChat: (List<Pair<String, String>>) -> Unit = {},
     onEmptySelection: () -> Unit = {},
 ) {
+    val searchState = uiState.search
+    val selectedUserIds = uiState.selectedUserIds
     val listState = rememberLazyListState()
     val showUserProfile = LocalShowUserProfile.current
 
@@ -388,9 +383,7 @@ private fun sampleGroup() = Group.Item(
 fun GroupScreenPreview() {
     MaterialTheme {
         GroupContent(
-            uiState = GroupUiState.Idle(items = listOf(sampleGroup()), isEditMode = true),
-            searchState = Search.State(),
-            selectedUserIds = emptySet(),
+            uiState = GroupUiState(items = listOf(sampleGroup()), isEditMode = true),
             onAction = {}
         )
     }

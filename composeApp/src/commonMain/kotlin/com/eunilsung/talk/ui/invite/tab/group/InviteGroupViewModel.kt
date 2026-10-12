@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.model.Group
-import com.eunilsung.talk.domain.model.Search
 import com.eunilsung.talk.domain.usecase.GroupUseCases
 
 @OptIn(FlowPreview::class)
@@ -25,10 +24,7 @@ class InviteGroupViewModel(
 
     private val _groups = MutableStateFlow<List<Group.Item>>(emptyList())
 
-    private val _searchState = MutableStateFlow(Search.State())
-    val searchState: StateFlow<Search.State> = _searchState.asStateFlow()
-
-    private val _uiState = MutableStateFlow<InviteGroupUiState>(InviteGroupUiState.Idle())
+    private val _uiState = MutableStateFlow(InviteGroupUiState())
     val uiState: StateFlow<InviteGroupUiState> = _uiState.asStateFlow()
 
     init {
@@ -42,8 +38,8 @@ class InviteGroupViewModel(
         }
 
         viewModelScope.launch {
-            _searchState
-                .map { it.query }
+            _uiState
+                .map { it.search.query }
                 .distinctUntilChanged()
                 .debounce(200)
                 .collectLatest { _ -> refresh() }
@@ -58,10 +54,10 @@ class InviteGroupViewModel(
         when (action) {
             is InviteGroupActions.ToggleGroup -> toggleGroup(action.groupId)
             is InviteGroupActions.OnSearchQueryChange -> {
-                _searchState.update { it.copy(query = action.query) }
+                _uiState.update { it.copy(search = it.search.copy(query = action.query)) }
             }
             is InviteGroupActions.OnClearSearch -> {
-                _searchState.update { it.copy(query = "") }
+                _uiState.update { it.copy(search = it.search.copy(query = "")) }
             }
         }
     }
@@ -80,10 +76,10 @@ class InviteGroupViewModel(
     }
 
     private fun refresh() {
-        val query = _searchState.value.query
+        val query = _uiState.value.search.query
         val base = applyExpandedOverride(_groups.value)
-        _uiState.value = if (query.isBlank()) {
-            InviteGroupUiState.Idle(items = base)
+        val items = if (query.isBlank()) {
+            base
         } else {
             val filtered = base.mapNotNull { group ->
                 val matchingUsers = group.userData.filter { user ->
@@ -92,7 +88,8 @@ class InviteGroupViewModel(
                 if (matchingUsers.isNotEmpty()) group.copy(userData = matchingUsers, isExpanded = true)
                 else null
             }
-            InviteGroupUiState.Search(items = filtered)
+            filtered
         }
+        _uiState.update { it.copy(items = items) }
     }
 }

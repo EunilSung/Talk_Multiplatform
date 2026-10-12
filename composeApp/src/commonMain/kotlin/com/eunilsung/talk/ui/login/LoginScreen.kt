@@ -75,9 +75,8 @@ fun LoginScreen(
     viewModel: LoginViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val inputState by viewModel.inputState.collectAsState()
     var showInputs by remember { mutableStateOf(false) }
-    val versionInfo by viewModel.versionInfo.collectAsState()
+    val versionInfo = uiState.versionInfo
     val externalUrlOpener: ExternalUrlOpener = koinInject()
     val appExiter: AppExiter = koinInject()
     var updateRequested by remember { mutableStateOf(false) }
@@ -93,13 +92,13 @@ fun LoginScreen(
         viewModel.onAction(LoginActions.OnStart)
     }
 
-    LaunchedEffect(uiState) {
-        when (uiState) {
-            is LoginUiState.Loading -> {
+    LaunchedEffect(uiState.status) {
+        when (uiState.status) {
+            is LoginStatus.Loading -> {
                 showInputs = false
             }
-            is LoginUiState.Idle,
-            is LoginUiState.Error -> {
+            is LoginStatus.Idle,
+            is LoginStatus.Error -> {
                 showInputs = true
             }
             else -> {}
@@ -108,7 +107,6 @@ fun LoginScreen(
 
     LoginContent(
         uiState = uiState,
-        inputState = inputState,
         onAction = viewModel::onAction,
         showInputs = showInputs
     )
@@ -132,10 +130,11 @@ fun LoginScreen(
 @Composable
 fun LoginContent(
     uiState: LoginUiState,
-    inputState: Login.LoginRequest,
     onAction: (LoginActions) -> Unit,
     showInputs: Boolean
 ){
+    val status = uiState.status
+    val inputState = uiState.input
     val focusManager = LocalFocusManager.current
     val dialog = LocalDialogManager.current
     val imeHeight = rememberImeHeight()
@@ -147,15 +146,15 @@ fun LoginContent(
         scrollState.scrollTo(scrollState.maxValue)
     }
 
-    LaunchedEffect(uiState) {
-        when (uiState) {
-            is LoginUiState.Error -> dialog.alert(
-                message = uiState.message,
+    LaunchedEffect(status) {
+        when (status) {
+            is LoginStatus.Error -> dialog.alert(
+                message = status.message,
                 onConfirm = { onAction(LoginActions.OnResetState) }
             )
-            is LoginUiState.Duplicate -> dialog.confirm(
+            is LoginStatus.Duplicate -> dialog.confirm(
                 title = loginTitle,
-                message = uiState.message,
+                message = status.message,
                 onConfirm = { onAction(LoginActions.OnDuplicateLoginConfirm(inputState)) },
                 onCancel = { onAction(LoginActions.OnResetState) }
             )
@@ -199,7 +198,7 @@ fun LoginContent(
             }
 
             AnimatedVisibility(
-                visible = showInputs && uiState !is LoginUiState.Success,
+                visible = showInputs && status !is LoginStatus.Success,
                 enter = fadeIn(animationSpec = tween(1000)) +
                         slideInVertically(initialOffsetY = { it / 2 }, animationSpec = tween(1000)) +
                         expandVertically(animationSpec = tween(1000)),
@@ -303,8 +302,10 @@ private fun LoginInputForm(
 fun LoginScreenPreview() {
     MaterialTheme {
         LoginContent(
-            uiState = LoginUiState.Idle,
-            inputState = Login.LoginRequest(id = "test1", pw = "1234", isSavePw = true),
+            uiState = LoginUiState(
+                status = LoginStatus.Idle,
+                input = Login.LoginRequest(id = "test1", pw = "1234", isSavePw = true),
+            ),
             onAction = {},
             showInputs = true
         )
@@ -316,8 +317,7 @@ fun LoginScreenPreview() {
 private fun LoginLoadingPreview() {
     MaterialTheme {
         LoginContent(
-            uiState = LoginUiState.Loading,
-            inputState = Login.LoginRequest(),
+            uiState = LoginUiState(status = LoginStatus.Loading),
             onAction = {},
             showInputs = false
         )

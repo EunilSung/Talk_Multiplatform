@@ -9,7 +9,6 @@ import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.usecase.GroupUseCases
 import com.eunilsung.talk.domain.usecase.InviteUseCases
 import com.eunilsung.talk.domain.model.Group
-import com.eunilsung.talk.domain.model.Search
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.util.GroupNameValidation
 import com.eunilsung.talk.domain.util.validateGroupName
@@ -23,14 +22,8 @@ class GroupViewModel(
 
     private val _groups = MutableStateFlow<List<Group.Item>>(emptyList())
 
-    private val _searchState = MutableStateFlow(Search.State())
-    val searchState = _searchState.asStateFlow()
-    
-    private val _uiState = MutableStateFlow<GroupUiState>(GroupUiState.Idle())
+    private val _uiState = MutableStateFlow(GroupUiState())
     val uiState: StateFlow<GroupUiState> = _uiState.asStateFlow()
-
-    private val _selectedUserIds = MutableStateFlow<Set<String>>(emptySet())
-    val selectedUserIds: StateFlow<Set<String>> = _selectedUserIds.asStateFlow()
 
     private val _events = Channel<GroupEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
@@ -41,27 +34,18 @@ class GroupViewModel(
                 .distinctUntilChanged()
                 .collectLatest { groups ->
                     _groups.value = groups
-                    updateStateWithGroups(groups)
+                    performSearch(_uiState.value.search.query)
                 }
         }
 
         viewModelScope.launch {
-            _searchState
-                .map { it.query }
+            _uiState
+                .map { it.search.query }
                 .distinctUntilChanged()
                 .debounce(200)
                 .collectLatest { query ->
                     performSearch(query)
                 }
-        }
-    }
-
-    private fun updateStateWithGroups(items: List<Group.Item>) {
-        when (val current = _uiState.value) {
-            is GroupUiState.Idle -> _uiState.value = current.copy(items = items)
-            is GroupUiState.Search -> {
-                performSearch(_searchState.value.query)
-            }
         }
     }
 
@@ -74,10 +58,10 @@ class GroupViewModel(
                 }
             }
             is GroupActions.OnSearchQueryChange -> {
-                _searchState.update { it.copy(query = action.query) }
+                _uiState.update { it.copy(search = it.search.copy(query = action.query)) }
             }
             is GroupActions.OnClearSearch -> {
-                _searchState.update { it.copy(query = "") }
+                _uiState.update { it.copy(search = it.search.copy(query = "")) }
             }
             is GroupActions.SetMode -> changeMode(action.mode)
             is GroupActions.OnSelectUser -> toggleUserSelection(action.user)
@@ -163,36 +147,26 @@ class GroupViewModel(
     }
 
     private fun toggleUserSelection(user: User) {
-        val currentSelected = _selectedUserIds.value.toMutableSet()
-        if (currentSelected.contains(user.id)) {
-            currentSelected.remove(user.id)
-        } else {
-            currentSelected.add(user.id)
+        _uiState.update { state ->
+            val current = state.selectedUserIds
+            state.copy(selectedUserIds = if (user.id in current) current - user.id else current + user.id)
         }
-        _selectedUserIds.value = currentSelected
     }
 
     private fun changeMode(mode: GroupMode) {
         val isEdit = mode == GroupMode.EDIT
-        val current = _uiState.value
-        
-        if (!isEdit) {
-            _selectedUserIds.value = emptySet()
-        }
-
-        _uiState.value = when (current) {
-            is GroupUiState.Idle -> current.copy(isEditMode = isEdit)
-            is GroupUiState.Search -> current.copy(isEditMode = isEdit)
+        _uiState.update {
+            it.copy(
+                isEditMode = isEdit,
+                selectedUserIds = if (isEdit) it.selectedUserIds else emptySet(),
+            )
         }
     }
 
+    /** 검색어로 그룹을 거른다. 검색어가 없으면 전부 보인다. */
     private fun performSearch(query: String) {
         if (query.isEmpty()) {
-            val current = _uiState.value
-            _uiState.value = GroupUiState.Search(
-                items = _groups.value,
-                isEditMode = current.isEditMode
-            )
+            _uiState.update { it.copy(items = _groups.value) }
             return
         }
 
@@ -205,11 +179,7 @@ class GroupViewModel(
             } else null
         }
 
-        val current = _uiState.value
-        _uiState.value = GroupUiState.Search(
-            items = filteredGroups,
-            isEditMode = current.isEditMode
-        )
+        _uiState.update { it.copy(items = filteredGroups) }
     }
 
     private fun toggleGroup(groupId: String) {
@@ -221,6 +191,6 @@ class GroupViewModel(
             if (it.id == group.id) it.copy(isExpanded = newIsExpanded) else it
         }
         _groups.value = updatedAllGroups
-        updateStateWithGroups(updatedAllGroups)
+        performSearch(_uiState.value.search.query)
     }
 }

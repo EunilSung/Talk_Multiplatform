@@ -23,8 +23,8 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import multiplatformtalk.composeapp.generated.resources.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.model.Search
@@ -41,7 +41,6 @@ import com.eunilsung.talk.ui.uikit.BackHandler
 import com.eunilsung.talk.ui.uikit.EditModeIconButton
 import com.eunilsung.talk.ui.uikit.RefreshIconButton
 import com.eunilsung.talk.ui.uikit.button.ButtonV1
-import com.eunilsung.talk.domain.model.ChatGroup
 import com.eunilsung.talk.ui.uikit.chip.ChipItem
 import com.eunilsung.talk.ui.uikit.chip.ChipRow
 import com.eunilsung.talk.ui.uikit.line.LineDivider
@@ -62,31 +61,11 @@ object ChatRoomListScreen : Screen {
     override fun Content() {
         val viewModel: ChatRoomListViewModel = koinViewModel()
         val uiState by viewModel.uiState.collectAsState()
-        val searchState by viewModel.searchState.collectAsState()
-        val selectedRoomIds by viewModel.selectedRoomIds.collectAsState()
-        val unreadTotal by viewModel.unreadTotal.collectAsState()
-        val chatGroups by viewModel.chatGroups.collectAsState()
-        val groupsWithUnread by viewModel.groupsWithUnread.collectAsState()
-        val isRefreshing by viewModel.isRefreshing.collectAsState()
         val rightNavigator = LocalRightNavigator.current
-        val toastManager = LocalToastManager.current
-
-        LaunchedEffect(viewModel) {
-            viewModel.events.collect { event ->
-                handleChatRoomListEvent(event, toastManager)
-            }
-        }
 
         ChatRoomListContent(
             uiState = uiState,
-            searchState = searchState,
-            selectedRoomIds = selectedRoomIds,
-            unreadTotal = unreadTotal,
-            chatGroups = chatGroups,
-            groupsWithUnread = groupsWithUnread,
-            isRefreshing = isRefreshing,
-            scrollToTop = viewModel.scrollToTop,
-            newChatRoomPush = viewModel.newChatRoomPush,
+            events = viewModel.events,
             onAction = viewModel::onAction,
             onChatRoomClick = { item ->
                 val current = rightNavigator.lastItem
@@ -107,20 +86,20 @@ object ChatRoomListScreen : Screen {
 @Composable
 fun ChatRoomListContent(
     uiState: ChatRoomListUiState,
-    searchState: Search.State,
-    selectedRoomIds: Set<String>,
-    unreadTotal: Int = 0,
-    chatGroups: List<ChatGroup> = emptyList(),
-    groupsWithUnread: Set<String> = emptySet(),
-    isRefreshing: Boolean = false,
-    scrollToTop: SharedFlow<Unit>? = null,
     onAction: (ChatRoomListActions) -> Unit,
+    events: Flow<ChatRoomListEvent> = emptyFlow(),
     onChatRoomClick: (ChatRoom.Item) -> Unit = {},
-    newChatRoomPush: SharedFlow<String>? = null,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val keyboardController = LocalSoftwareKeyboardController.current
     val showOverlay = LocalFullScreenOverlay.current
+    val toastManager = LocalToastManager.current
+    val searchState = uiState.search
+    val selectedRoomIds = uiState.selectedRoomIds
+    val unreadTotal = uiState.unreadTotal
+    val chatGroups = uiState.chatGroups
+    val groupsWithUnread = uiState.groupsWithUnread
+    val isRefreshing = uiState.isRefreshing
 
     // 필터/그룹 칩마다 스크롤 위치 보존 — 칩 전환 시 각 탭의 LazyListState 복원.
     val scrollKey = if (searchState.filterType == Search.FilterType.GROUP) {
@@ -155,19 +134,17 @@ fun ChatRoomListContent(
         }
     }
 
-    if (scrollToTop != null) {
-        LaunchedEffect(scrollToTop, listState) {
-            scrollToTop.collect { listState.animateScrollToItem(0) }
-        }
-    }
-
-    if (newChatRoomPush != null) {
-        LaunchedEffect(newChatRoomPush, listState) {
-            newChatRoomPush.collectLatest {
-                if (listState.firstVisibleItemIndex < 3) {
-                    delay(300)
-                    listState.animateScrollToItem(0)
+    LaunchedEffect(events, listState) {
+        events.collect { event ->
+            when (event) {
+                ChatRoomListEvent.ScrollToTop -> listState.animateScrollToItem(0)
+                ChatRoomListEvent.NewChatRoomArrived -> {
+                    if (listState.firstVisibleItemIndex < 3) {
+                        delay(300)
+                        listState.animateScrollToItem(0)
+                    }
                 }
+                else -> handleChatRoomListEvent(event, toastManager)
             }
         }
     }
@@ -295,10 +272,10 @@ fun ChatRoomListContent(
                 .background(AppColors.Bg)
                 .padding(paddingValues)
         ) {
-            if (uiState is ChatRoomListUiState.Unread && displayChatRooms.isEmpty()) {
+            if (uiState.kind == ChatRoomListKind.UNREAD && displayChatRooms.isEmpty()) {
                 UnreadEmptyState(modifier = Modifier.weight(1f))
             } else if (
-                uiState is ChatRoomListUiState.Idle &&
+                uiState.kind == ChatRoomListKind.IDLE &&
                 searchState.filterType == Search.FilterType.GROUP &&
                 displayChatRooms.isEmpty()
             ) {
@@ -486,6 +463,7 @@ private suspend fun handleChatRoomListEvent(
         is ChatRoomListEvent.ChatRoomRemovedFromGroup -> {
             toastManager.show(getString(Res.string.toast_chat_room_removed_from_group))
         }
+        ChatRoomListEvent.ScrollToTop, ChatRoomListEvent.NewChatRoomArrived -> Unit
     }
 }
 
@@ -494,13 +472,12 @@ private suspend fun handleChatRoomListEvent(
 fun ChatRoomListScreenPreview() {
     MaterialTheme {
         ChatRoomListContent(
-            uiState = ChatRoomListUiState.Idle(
+            uiState = ChatRoomListUiState(
                 chatItems = listOf(
                     ChatRoom.Item()
-                )
-            ).copy(isEditMode = true),
-            searchState = Search.State(),
-            selectedRoomIds = emptySet(),
+                ),
+                isEditMode = true,
+            ),
             onAction = {}
         )
     }

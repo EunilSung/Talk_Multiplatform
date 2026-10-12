@@ -2,12 +2,12 @@ package com.eunilsung.talk.ui.invite
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.model.User
@@ -21,17 +21,8 @@ class InviteViewModel(
     private val _uiState = MutableStateFlow(InviteUiState())
     val uiState: StateFlow<InviteUiState> = _uiState.asStateFlow()
 
-    private val _submitResult = MutableSharedFlow<SubmitResult>(extraBufferCapacity = 4)
-    val submitResult: SharedFlow<SubmitResult> = _submitResult.asSharedFlow()
-
-    sealed class SubmitResult {
-        data class Success(
-            val chatRoomId: String,
-            val selectedUserIds: List<String>,
-            val selectedUsers: List<User> = emptyList(),
-        ) : SubmitResult()
-        data object Failure : SubmitResult()
-    }
+    private val _events = Channel<InviteEvent>(Channel.BUFFERED)
+    val events: Flow<InviteEvent> = _events.receiveAsFlow()
 
     fun onAction(action: InviteActions) {
         when (action) {
@@ -111,11 +102,9 @@ class InviteViewModel(
                 inviteUseCases.inviteUsers(chatRoomId, invitedUsers, existingUserCount)
             }.getOrNull()
             _uiState.update { it.copy(isSubmitting = false) }
-            val userIds = invitedUsers.map { it.first }
-            _submitResult.tryEmit(
-                if (!resultId.isNullOrBlank())
-                    SubmitResult.Success(chatRoomId = resultId, selectedUserIds = userIds)
-                else SubmitResult.Failure
+            _events.send(
+                if (!resultId.isNullOrBlank()) InviteEvent.Invited(chatRoomId = resultId)
+                else InviteEvent.InviteFailed
             )
         }
     }

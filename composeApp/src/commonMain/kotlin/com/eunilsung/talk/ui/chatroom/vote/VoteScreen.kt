@@ -65,8 +65,12 @@ class VoteScreen(
             viewModel.onAction(VoteActions.Load(initialMode, voteId, chatRoomId))
         }
 
-        LaunchedEffect(Unit) {
-            viewModel.closeScreen.collect { showOverlay(null) }
+        LaunchedEffect(viewModel) {
+            viewModel.events.collect { event ->
+                when (event) {
+                    VoteEvent.Close -> showOverlay(null)
+                }
+            }
         }
 
         VoteContent(

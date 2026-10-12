@@ -3,12 +3,12 @@ package com.eunilsung.talk.ui.share
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.model.User
@@ -30,22 +30,15 @@ class ShareViewModel(
     private val _uiState = MutableStateFlow(ShareUiState())
     val uiState: StateFlow<ShareUiState> = _uiState.asStateFlow()
 
-    val chatRooms: StateFlow<List<ChatRoom.Item>> = run {
-        val flow = MutableStateFlow<List<ChatRoom.Item>>(emptyList())
+    private val _events = Channel<ShareEvent>(Channel.BUFFERED)
+    val events: Flow<ShareEvent> = _events.receiveAsFlow()
+
+    init {
         viewModelScope.launch {
             chatRoomListUseCases.getChatRooms().collect { rooms ->
-                flow.value = rooms.filter { it.enableMode != "1" }
+                _uiState.update { it.copy(rooms = rooms.filter { room -> room.enableMode != "1" }) }
             }
         }
-        flow.asStateFlow()
-    }
-
-    private val _submitResult = MutableSharedFlow<SubmitResult>(extraBufferCapacity = 4)
-    val submitResult: SharedFlow<SubmitResult> = _submitResult.asSharedFlow()
-
-    sealed class SubmitResult {
-        data class NavigateToRoom(val chatRoomId: String) : SubmitResult()
-        data object Failure : SubmitResult()
     }
 
     fun onAction(action: ShareActions) {
@@ -58,7 +51,7 @@ class ShareViewModel(
                 _uiState.update { it.copy(selectedChatRoom = null) }
             is ShareActions.OnSubmit -> submit()
             is ShareActions.OnClose -> Unit
-            is ShareActions.Reset -> _uiState.value = ShareUiState()
+            is ShareActions.Reset -> _uiState.update { ShareUiState(rooms = it.rooms) }
         }
     }
 
@@ -133,12 +126,12 @@ class ShareViewModel(
 
             if (roomId.isNullOrBlank()) {
                 _uiState.update { it.copy(isSubmitting = false) }
-                _submitResult.tryEmit(SubmitResult.Failure)
+                _events.send(ShareEvent.SendFailed)
                 return@launch
             }
 
             Log.message("[Share] navigate to room=$roomId text=${state.sharedContent.text.length} files=${state.sharedContent.filePaths.size}")
-            _submitResult.tryEmit(SubmitResult.NavigateToRoom(roomId))
+            _events.send(ShareEvent.OpenChatRoom(roomId))
 
             delay(300)
 
