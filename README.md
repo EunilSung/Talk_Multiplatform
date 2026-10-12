@@ -223,8 +223,25 @@ TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:verifyAll -Pfun
 | [Maestro](https://maestro.mobile.dev) | 실화면 흐름. `curl -fsSL https://get.maestro.mobile.dev \| bash` 로 설치 |
 | Gemini API 키 (선택) | AI 단계. 없으면 그 단계만 건너뛰고 실패로 치지 않습니다 |
 
-`local.properties` 에는 검증에 쓸 기기를 적어 둡니다. 꺼져 있으면 켜서 씁니다. 적지 않으면 실화면 흐름은 켜져 있는
-에뮬레이터·iPhone 시뮬레이터 중 첫 번째를, iOS 테스트는 Kotlin 이 고른 시뮬레이터를 씁니다. 실기기는 고르지 않습니다.
+새 Mac 에서는 이 순서로 준비합니다. 저장소에 없는 파일은 `local.properties` 하나뿐입니다(Firebase 설정 파일은 저장소에
+들어 있습니다).
+
+1. **클론** — `git clone https://github.com/EunilSung/Talk_Multiplatform.git`
+2. **JDK 17** — Android Studio 에서 Settings → Build Tools → Gradle → Gradle JDK 를 17 로 고릅니다. 터미널에서 돌릴 때는
+   `export JAVA_HOME=$(/usr/libexec/java_home -v 17)`.
+3. **Android Studio 로 열기** — 처음 동기화하면 `local.properties` 에 `sdk.dir` 이 생깁니다. SDK Manager 에서
+   Android Emulator·Platform-Tools 를 설치하고, Device Manager 에서 에뮬레이터(AVD)를 하나 만듭니다.
+   이름은 `<sdk.dir>/emulator/emulator -list-avds` 로 확인합니다.
+4. **Xcode** — 설치하고 한 번 실행해 추가 구성 요소와 iOS 시뮬레이터 런타임을 받습니다. 명령줄 도구가 Xcode 를 가리키게
+   `sudo xcode-select -s /Applications/Xcode.app` 을 해 둡니다(명령줄 도구만 잡혀 있으면 iOS 빌드가 실패합니다).
+   시뮬레이터 UDID 는 `xcrun simctl list devices available` 로 확인합니다.
+5. **Maestro** — 위 표의 명령으로 설치하고, PATH 가 반영되도록 터미널을 새로 엽니다.
+6. **`local.properties`** — 검증에 쓸 기기를 아래처럼 적습니다.
+7. **첫 실행** — 실행 구성 `검증 - 전체 (실화면 포함)`. 처음에는 Gradle 의존성, 내장 PostgreSQL, iOS 패키지(Firebase)를
+   내려받느라 평소(8분쯤)보다 오래 걸립니다.
+
+기기는 꺼져 있으면 켜서 씁니다. 적지 않으면 실화면 흐름은 켜져 있는 에뮬레이터·iPhone 시뮬레이터 중 첫 번째를,
+iOS 테스트는 Kotlin 이 고른 시뮬레이터를 씁니다. 실기기는 고르지 않습니다.
 
 ```properties
 sdk.dir=<Android SDK 경로>

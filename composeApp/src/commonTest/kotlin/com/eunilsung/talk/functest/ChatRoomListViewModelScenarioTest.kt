@@ -68,8 +68,10 @@ class ChatRoomListViewModelScenarioTest {
                 step("검색어를 넣으면 이름이 맞는 방만 남는다") {
                     require(harness.rooms.renameChatRoom(second, "$tag 나"), "둘째 방 이름 바꾸기가 실패했다")
                     viewModel.onAction(ChatRoomListActions.OnSearchQueryChange(tag))
-                    awaitTrue("두 방만 남는다") { viewModel.shownIds().toSet() == setOf(first, second) }
-                    requireEquals(ChatRoomListKind.SEARCH, viewModel.uiState.value.kind, "목록 종류")
+                    awaitTrue("검색 결과로 두 방만 남는다") {
+                        viewModel.uiState.value.kind == ChatRoomListKind.SEARCH &&
+                            viewModel.shownIds().toSet() == setOf(first, second)
+                    }
                     viewModel.onAction(ChatRoomListActions.OnSearchQueryChange("$tag 나"))
                     awaitTrue("둘째 방만 남는다") { viewModel.shownIds() == listOf(second) }
                 }
