@@ -7,6 +7,7 @@ import com.eunilsung.talk.domain.repository.UserProfileRepository
 data class UserProfileUseCases(
     val getCachedProfile: GetCachedProfileUseCase,
     val fetchProfile: FetchProfileUseCase,
+    val getMyUser: GetMyUserUseCase,
 )
 
 /** 받아 둔 프로필. 없으면 null. */

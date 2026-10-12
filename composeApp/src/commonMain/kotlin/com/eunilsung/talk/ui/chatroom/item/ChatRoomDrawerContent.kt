@@ -48,12 +48,12 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun ChatRoomDrawerContent(
     users: List<User>,
+    myId: String,
     onVoteClick: () -> Unit,
     onNoticeClick: () -> Unit,
     onInviteClick: () -> Unit,
     onUserClick: (String) -> Unit,
 ) {
-    val myId = Config.MyInfo.userId
     Column(
         modifier = Modifier
             .width(300.dp)
@@ -156,6 +156,7 @@ private fun ChatRoomDrawerContentPreview() {
                 User(id = "2", name = "윤상희", departmentName = "연구팀", positionName = "프로"),
                 User(id = "3", name = "이연진", departmentName = "연구팀", positionName = "프로"),
             ),
+            myId = "1",
             onVoteClick = {},
             onNoticeClick = {},
             onInviteClick = {},

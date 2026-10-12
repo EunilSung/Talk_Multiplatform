@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.repository.AddUserResult
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
@@ -49,7 +48,7 @@ class QuickActionsViewModel(
             return
         }
         val targetId = cleaned.first()
-        val myId = Config.MyInfo.userId
+        val myId = inviteUseCases.getMyUser().id
 
         viewModelScope.launch {
             val existing = findOneToOneChatRoom(targetUserId = targetId, myId = myId)

@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.VoteForm
 import com.eunilsung.talk.domain.model.VoteFormItem
 import com.eunilsung.talk.domain.model.VoteSummary
@@ -126,7 +125,7 @@ class VoteViewModel(
                 onFail()
                 return@launch
             }
-            val myId = Config.MyInfo.userId
+            val myId = voteUseCases.getMyUser().id
             _uiState.value = if (forceResult || data.isClosed || data.hasVoted(myId)) {
                 VoteUiState.Result(result = data.toResult(myId))
             } else {
@@ -213,7 +212,7 @@ class VoteViewModel(
                 _uiState.value = current
                 return@launch
             }
-            _uiState.value = VoteUiState.Result(result = data.toResult(Config.MyInfo.userId))
+            _uiState.value = VoteUiState.Result(result = data.toResult(voteUseCases.getMyUser().id))
         }
     }
 
@@ -230,7 +229,7 @@ class VoteViewModel(
                 _uiState.value = current
                 return@launch
             }
-            val myId = Config.MyInfo.userId
+            val myId = voteUseCases.getMyUser().id
             _uiState.value = if (data.isClosed) {
                 VoteUiState.Result(result = data.toResult(myId))
             } else {

@@ -351,6 +351,7 @@ class ChatRoomViewModel(
                 chatRoom = null,
                 users = emptyList(),
                 sender = stateUseCases.getSender(chatRoomId),
+                myId = stateUseCases.getMyUser().id,
                 search = ChatSearchState(),
                 replyTarget = null,
                 translations = emptyMap(),

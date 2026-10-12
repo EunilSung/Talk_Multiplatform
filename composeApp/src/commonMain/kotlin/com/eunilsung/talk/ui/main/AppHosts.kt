@@ -37,6 +37,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import kotlinx.coroutines.launch
+import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.data.local.FileMetadataResolver
 import com.eunilsung.talk.data.local.FileOpener
 import com.eunilsung.talk.ui.quickactions.rememberGroupPicker
@@ -74,6 +75,7 @@ fun AppHosts(
     rightNavigator: Navigator,
     isReconnecting: Boolean,
     isLoggedIn: Boolean,
+    me: User,
     content: @Composable () -> Unit
 ) {
     var fullScreenOverlay by remember { mutableStateOf<Screen?>(null) }
@@ -117,7 +119,7 @@ fun AppHosts(
                             }
                         }
                     }
-                    Watermark(isLoggedIn = isLoggedIn)
+                    Watermark(isLoggedIn = isLoggedIn, userId = me.id, userName = me.name)
                 }
             }
         }

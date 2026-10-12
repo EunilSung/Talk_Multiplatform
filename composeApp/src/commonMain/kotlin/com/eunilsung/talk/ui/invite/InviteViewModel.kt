@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.model.User
-import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.usecase.InviteUseCases
 import com.eunilsung.talk.util.Log
 
@@ -89,7 +88,7 @@ class InviteViewModel(
         when (val mode = state.mode) {
             is InviteMode.InviteToChatRoom ->
                 if (mode.createNewRoom) {
-                    val myId = Config.MyInfo.userId
+                    val myId = inviteUseCases.getMyUser().id
                     val combined = (mode.existingUsers.filter { it.first != myId } + pairs)
                         .distinctBy { it.first }
                     submitInvite(chatRoomId = "", invitedUsers = combined, existingUserCount = 0)

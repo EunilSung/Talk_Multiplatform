@@ -1,6 +1,8 @@
 package com.eunilsung.talk.testsupport
 
+import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.Login
+import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.repository.LoginRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -29,4 +31,5 @@ class FakeLoginRepository : LoginRepository {
     override fun isSavePw(): Boolean = false
     override fun setSavePw(isSave: Boolean) = Unit
     override fun checkConnectionAndRelogin() = Unit
+    override fun getMyUser(): User = User(id = Config.MyInfo.userId, name = Config.MyInfo.userName)
 }

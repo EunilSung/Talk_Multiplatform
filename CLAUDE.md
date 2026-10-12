@@ -121,6 +121,8 @@ iosApp/        Xcode 프로젝트
 - **ViewModel 은 유스케이스만 쓴다.** 저장소·`TalkServer`·`ServerEvents` 를 받지 않는다. 기기 기능 추상화
   (사진첩·파일 고르기)는 받아도 된다. 유스케이스는 `domain/usecase` 에 두고 `di/Modules.kt` 에 등록한다.
   여러 개를 쓰는 화면은 `XUseCases` 묶음으로 받는다.
+- **내 아이디·이름은 `GetMyUserUseCase` 로 얻는다.** ViewModel·화면은 `Config.MyInfo` 를 읽지 않는다.
+  화면이 알아야 하면 ViewModel 이 상태에 실어 준다(대화방 `myId`, 프로필 `isMe`, 워터마크 `MainUiState.me`).
 - **화면은 `onAction` 으로만 ViewModel 에 일을 시킨다.** ViewModel 마다 `XActions`(sealed)·`XUiState`·
   `onAction` 을 둔다. 다이얼로그·이동·토스트처럼 한 번만 처리할 일은 `XEvent` 를 `Channel` 로 내보낸다
   (`events`). 액션은 `XActions.kt`, 상태는 `XUiState.kt` 에 둔다. 화면의 `LaunchedEffect`·`DisposableEffect`

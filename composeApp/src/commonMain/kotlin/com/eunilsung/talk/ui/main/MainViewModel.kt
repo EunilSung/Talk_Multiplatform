@@ -20,6 +20,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import com.eunilsung.talk.domain.model.MainEvent
+import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 import com.eunilsung.talk.domain.usecase.GroupUseCases
 import com.eunilsung.talk.domain.usecase.LoginUseCases
@@ -45,6 +46,7 @@ class MainViewModel(
                 isConnected = isConnected,
                 chatUnreadTotal = unreadTotal,
                 profileImages = profileImages,
+                me = if (isLoggedIn) loginUseCases.getMyUser() else User(),
             )
         }.stateIn(
             viewModelScope,
@@ -54,6 +56,7 @@ class MainViewModel(
                 isConnected = mainUseCases.observeConnection().value,
                 chatUnreadTotal = chatRoomListUseCases.observeChatRoomUnreadTotal().value,
                 profileImages = mainUseCases.observeProfileImages().value,
+                me = loginUseCases.getMyUser(),
             ),
         )
 

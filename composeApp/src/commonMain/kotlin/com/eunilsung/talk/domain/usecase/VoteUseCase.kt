@@ -12,6 +12,7 @@ data class VoteUseCases(
     val submitVote: SubmitVoteUseCase,
     val reVote: ReVoteUseCase,
     val closeVote: CloseVoteUseCase,
+    val getMyUser: GetMyUserUseCase,
 )
 
 class GetVotesUseCase(private val repository: VoteRepository) {

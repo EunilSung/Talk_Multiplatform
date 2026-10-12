@@ -98,6 +98,7 @@ object MainScreen : Screen {
                         rightNavigator = rightNavigator,
                         isReconnecting = uiState.isReconnecting,
                         isLoggedIn = uiState.isLoggedIn,
+                        me = uiState.me,
                     ) {
                         MainEventHandler(viewModel, rightNavigator)
                         MainContent(isLoggedIn = uiState.isLoggedIn, chatUnreadTotal = uiState.chatUnreadTotal)

@@ -5,6 +5,7 @@ import com.eunilsung.talk.domain.repository.InviteRepository
 /** Invite 도메인 UseCase 번들. */
 data class InviteUseCases(
     val inviteUsers: InviteUsersUseCase,
+    val getMyUser: GetMyUserUseCase,
 )
 
 /**
