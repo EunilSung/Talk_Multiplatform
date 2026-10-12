@@ -23,7 +23,6 @@ import com.eunilsung.talk.ui.chatroom.item.ChatRoomSearchBar
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.sheet.LocalBottomSheetManager
 import com.eunilsung.talk.ui.uikit.topbar.TopBarV1
-import kotlinx.coroutines.flow.StateFlow
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.arrow_left_icon
 import multiplatformtalk.composeapp.generated.resources.bookmark_icon
@@ -54,7 +53,8 @@ fun ChatRoomTopBar(
     hideKeyboard: () -> Unit,
     handleBack: () -> Unit,
     isDrawerOpen: Boolean,
-    bookmarksFlow: StateFlow<List<Bookmark>>,
+    /** 책갈피 시트가 띄운 뒤에도 목록을 따라가도록 상태를 읽는 함수로 받는다. */
+    bookmarks: () -> List<Bookmark>,
     onSenderPick: () -> Unit,
     onDrawerOpen: () -> Unit,
     onAction: (ChatRoomActions) -> Unit,
@@ -114,7 +114,7 @@ fun ChatRoomTopBar(
                                     hideKeyboard()
                                     bottomSheet.custom {
                                         BookmarkBottomSheetContent(
-                                            bookmarksFlow = bookmarksFlow,
+                                            bookmarks = bookmarks,
                                             onItemClick = { bookmark ->
                                                 onAction(ChatRoomActions.OnFocusChat(bookmark.chatId))
                                                 bottomSheet.hide()

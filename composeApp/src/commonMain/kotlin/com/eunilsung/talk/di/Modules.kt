@@ -54,6 +54,7 @@ import com.eunilsung.talk.domain.repository.GroupRepository
 import com.eunilsung.talk.domain.repository.UserProfileRepository
 import com.eunilsung.talk.domain.usecase.*
 import com.eunilsung.talk.ui.chatroom.ChatRoomViewModel
+import com.eunilsung.talk.ui.chatroom.linkpreview.LinkPreviewViewModel
 import com.eunilsung.talk.ui.chatroomlist.group.ChatRoomGroupManageViewModel
 import com.eunilsung.talk.ui.invite.InviteViewModel
 import com.eunilsung.talk.ui.invite.tab.group.InviteGroupViewModel
@@ -100,6 +101,8 @@ val appModule = module {
     single { PushPayloadParser() }
 
     single<LinkPreviewRepository> { LinkPreviewRepositoryImpl(get()) }
+    singleOf(::GetLinkPreviewUseCase)
+    viewModelOf(::LinkPreviewViewModel)
 
     // 원격 XML 대신 즉시 "업데이트 불필요" 반환.
     single<VersionCheckRepository> { LocalVersionCheckRepositoryImpl() }
@@ -208,6 +211,9 @@ val appModule = module {
     singleOf(::SetNoticeCollapsedUseCase)
     singleOf(::SetNoticeDetailsShownUseCase)
     singleOf(::HideNoticeUseCase)
+    singleOf(::OpenChatRoomUseCase)
+    singleOf(::CloseChatRoomUseCase)
+    singleOf(::CancelChatRoomNotificationUseCase)
     singleOf(::ChatRoomStateUseCases)
     viewModelOf(::ChatRoomViewModel)
     single<NoticeUiStateRepository> { NoticeUiStateStore(get()) }

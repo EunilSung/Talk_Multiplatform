@@ -38,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,11 +55,7 @@ import multiplatformtalk.composeapp.generated.resources.search_user_icon
 import multiplatformtalk.composeapp.generated.resources.cancel
 import multiplatformtalk.composeapp.generated.resources.delete
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
 import com.eunilsung.talk.data.local.RecentPhotosResult
-import com.eunilsung.talk.domain.repository.PushNotifier
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.model.User
@@ -96,9 +91,6 @@ import com.eunilsung.talk.util.chatDisplayText
 import com.eunilsung.talk.util.splitLeadingToken
 import org.jetbrains.compose.resources.painterResource
 import com.eunilsung.talk.domain.model.ChatRoom
-import com.eunilsung.talk.domain.repository.ChatRoomListRepository
-import kotlinx.coroutines.flow.map
-import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.ui.uikit.emoticon.EmoticonPreview
 import com.eunilsung.talk.ui.uikit.emoticon.StaticEmoticonImage
 import com.eunilsung.talk.ui.uikit.emoticon.emoticonResourceNameForId
@@ -106,12 +98,10 @@ import com.eunilsung.talk.ui.uikit.emoticon.EmoticonItem
 import com.eunilsung.talk.ui.uikit.emoticon.EmoticonPanelController
 import com.eunilsung.talk.ui.uikit.emoticon.rememberStableImeHeight
 import com.eunilsung.talk.ui.uikit.mediapicker.LocalShowFileDetail
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import org.koin.mp.KoinPlatform
-import com.eunilsung.talk.domain.repository.ChatRoomRepository
 import androidx.compose.runtime.rememberUpdatedState
-import com.eunilsung.talk.domain.repository.CurrentChatRoomRepository
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 
 class ChatRoomScreen(
     val chatRoomId: String
@@ -120,105 +110,55 @@ class ChatRoomScreen(
 
     @Composable
     override fun Content() {
-        val roomTracker: CurrentChatRoomRepository = koinInject()
-        DisposableEffect(chatRoomId) {
-            roomTracker.set(chatRoomId)
-
-            runCatching {
-                KoinPlatform.getKoin()
-                    .get<PushNotifier>()
-                    .cancel(chatRoomId)
-            }
-
-            onDispose {
-                if (roomTracker.currentChatRoomId == chatRoomId) {
-                    roomTracker.clear()
-                }
-
-                runCatching {
-                    KoinPlatform.getKoin()
-                        .get<PushNotifier>()
-                        .cancel(chatRoomId)
-                }
-
-                runCatching {
-                    KoinPlatform.getKoin()
-                        .get<ChatRoomRepository>()
-                        .clearCurrentRoom(chatRoomId)
-                }
-            }
-        }
-
-        androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-            runCatching {
-                KoinPlatform.getKoin()
-                    .get<PushNotifier>()
-                    .cancel(chatRoomId)
-            }
-        }
-
-        val chatRoomListRepository: ChatRoomListRepository = koinInject()
         val viewModel: ChatRoomViewModel = koinViewModel()
         val uiState by viewModel.uiState.collectAsState()
-        val users by viewModel.users.collectAsState()
-        val senderOverride by viewModel.sender.collectAsState()
-        val searchState by viewModel.searchState.collectAsState()
-        val replyTarget by viewModel.replyTarget.collectAsState()
-        val currentNotice by viewModel.currentNotice.collectAsState()
-        val noticeBar by viewModel.noticeBar.collectAsState()
-        val translations by viewModel.translations.collectAsState()
-        val polish by viewModel.polish.collectAsState()
-        val signals = remember(viewModel) {
-            ChatRoomSignals(
-                newChat = viewModel.newChatPush,
-                mySend = viewModel.mySendPush,
-                latestLoaded = viewModel.latestLoadedPush,
-                entryScroll = viewModel.entryScroll,
-            )
-        }
-        val noticeBindings = remember(viewModel, currentNotice, noticeBar) {
-            NoticeBindings(
-                notice = currentNotice,
-                barState = noticeBar,
-                onLoad = { viewModel.loadNoticeBarState(it) },
-                onExpandedChange = { id, v -> viewModel.setNoticeExpanded(id, v) },
-                onDetailsChange = { id, v -> viewModel.setNoticeDetailsShown(id, v) },
-                onHide = { viewModel.hideNoticePermanently(it) },
-            )
-        }
-        val chatSettings by viewModel.chatSettings.collectAsState()
-        val recentPhotosResult by viewModel.recentPhotos.collectAsState()
-        val galleryPhotos by viewModel.galleryPhotos.collectAsState()
-        val galleryAlbums by viewModel.galleryAlbums.collectAsState()
-        val selectedAlbumId by viewModel.selectedAlbumId.collectAsState()
         val rightNavigator = LocalRightNavigator.current
+        val toastManager = LocalToastManager.current
+        val strings = rememberChatRoomStrings()
 
-        val mediaPickerBindings = remember(
-            viewModel,
-            galleryPhotos,
-            recentPhotosResult,
-            galleryAlbums,
-            selectedAlbumId,
-        ) {
+        DisposableEffect(chatRoomId) {
+            viewModel.onAction(ChatRoomActions.OnEnterRoom(chatRoomId))
+            onDispose { viewModel.onAction(ChatRoomActions.OnLeaveRoom(chatRoomId)) }
+        }
+
+        LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+            viewModel.onAction(ChatRoomActions.OnResumeRoom(chatRoomId))
+        }
+
+        LaunchedEffect(chatRoomId) {
+            viewModel.onAction(ChatRoomActions.Load(chatRoomId))
+        }
+
+        LaunchedEffect(viewModel, chatRoomId) {
+            viewModel.events.collect { event ->
+                when (event) {
+                    ChatRoomEvent.SelfLeft -> rightNavigator.popToEmptyRoot()
+                    ChatRoomEvent.TranslationFailed -> toastManager.show(strings.translateUnavailable)
+                }
+            }
+        }
+
+        val media = uiState.media
+        val mediaPickerBindings = remember(viewModel, media) {
             MediaPickerBindings(
-                recentPhotosFlow = viewModel.recentPhotos,
-                galleryPhotos = galleryPhotos,
-                galleryAlbums = galleryAlbums,
-                selectedAlbumId = selectedAlbumId,
-                onSelectGalleryAlbum = { viewModel.selectGalleryAlbum(it) },
-                hasPhotoAccess = { viewModel.hasPhotoAccess() },
-                onLoadRecentPhotos = { viewModel.loadRecentPhotos() },
-                onLoadGalleryPhotos = { viewModel.loadGalleryPhotos() },
-                onRequestPhotoAccess = { viewModel.requestPhotoAccess() },
-                onLaunchFilePicker = { viewModel.launchFilePicker() },
+                recentPhotos = media.recentPhotos,
+                galleryPhotos = media.galleryPhotos,
+                galleryAlbums = media.galleryAlbums,
+                selectedAlbumId = media.selectedAlbumId,
+                onSelectGalleryAlbum = { viewModel.onAction(ChatRoomActions.OnSelectGalleryAlbum(it)) },
+                hasPhotoAccess = media.hasPhotoAccess,
+                onLoadRecentPhotos = { viewModel.onAction(ChatRoomActions.OnLoadRecentPhotos) },
+                onLoadGalleryPhotos = { viewModel.onAction(ChatRoomActions.OnLoadGalleryPhotos) },
+                onRequestPhotoAccess = { viewModel.onAction(ChatRoomActions.OnRequestPhotoAccess) },
+                onLaunchFilePicker = { viewModel.onAction(ChatRoomActions.OnLaunchFilePicker) },
                 onSendPhotos = { ids ->
                     val recentList =
-                        when (val r = recentPhotosResult) {
+                        when (val r = media.recentPhotos) {
                             is RecentPhotosResult.Granted -> r.photos
                             is RecentPhotosResult.Limited -> r.photos
                             is RecentPhotosResult.Denied -> emptyList()
                         }
-                    val byId = (recentList + galleryPhotos).associateBy { it.id }
+                    val byId = (recentList + media.galleryPhotos).associateBy { it.id }
                     val paths = ids.mapNotNull { byId[it]?.uri?.takeIf { uri -> uri.isNotBlank() } }
                     if (paths.isNotEmpty()) {
                         viewModel.onAction(ChatRoomActions.OnSendFiles(paths))
@@ -232,46 +172,15 @@ class ChatRoomScreen(
             )
         }
 
-        val currentChatRoom: ChatRoom.Item? by remember(chatRoomId) {
-            chatRoomListRepository.getChatRooms()
-                .map { rooms -> rooms.firstOrNull { it.id == chatRoomId } }
-        }.collectAsState(initial = null)
-
-        LaunchedEffect(chatRoomId) {
-            viewModel.onAction(ChatRoomActions.Load(chatRoomId))
-        }
-
-        LaunchedEffect(viewModel, chatRoomId) {
-            viewModel.selfLeftPush.collect { leftRoomId ->
-                if (leftRoomId == chatRoomId) {
-                    rightNavigator.popToEmptyRoot()
-                }
-            }
-        }
-
         ChatRoomContent(
-            chatRoom = currentChatRoom,
             uiState = uiState,
-            users = users,
-            senderOverride = senderOverride,
-            searchState = searchState,
-            replyTarget = replyTarget,
             mediaPickerBindings = mediaPickerBindings,
             currentChatRoomId = chatRoomId,
-            signals = signals,
-            enterToSend = chatSettings.enterToSend,
-            chatFontSize = chatSettings.fontSize.sp,
-            noticeBindings = noticeBindings,
-            translations = translations,
-            translationFailed = viewModel.translationFailed,
-            polish = polish,
-            bookmarksFlow = viewModel.bookmarks,
-            initialEmoticonTab = remember { viewModel.lastEmoticonTab() },
-            onEmoticonTabSelected = { viewModel.saveEmoticonTab(it) },
+            signals = viewModel.signals,
             onAction = { action ->
                 when (action) {
                     is ChatRoomActions.OnClose -> {
-                        if (searchState.isActive) viewModel.onAction(ChatRoomActions.OnExitSearch)
+                        if (uiState.search.isActive) viewModel.onAction(ChatRoomActions.OnExitSearch)
                         else rightNavigator.popToEmptyRoot()
                     }
                     else -> viewModel.onAction(action)
@@ -285,31 +194,31 @@ class ChatRoomScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatRoomContent(
-    chatRoom: ChatRoom.Item?,
     uiState: ChatRoomUiState,
-    users: List<User> = emptyList(),
-    /** 전송 주체(샘플 전용). null 이면 나. */
-    senderOverride: User? = null,
-    searchState: ChatSearchState = ChatSearchState(),
-    replyTarget: Chat.Item? = null,
     mediaPickerBindings: MediaPickerBindings = MediaPickerBindings.Preview,
     currentChatRoomId: String = "",
     signals: ChatRoomSignals = ChatRoomSignals(),
-    enterToSend: Boolean = false,
-    chatFontSize: TextUnit = 13.sp,
-    noticeBindings: NoticeBindings = NoticeBindings(),
-    translations: Map<String, ChatTranslationUiState> = emptyMap(),
-    translationFailed: SharedFlow<Unit>? = null,
-    polish: PolishUiState = PolishUiState.Idle,
-    bookmarksFlow: StateFlow<List<Bookmark>> = MutableStateFlow(emptyList()),
-    initialEmoticonTab: Int = 0,
-    onEmoticonTabSelected: (Int) -> Unit = {},
     initialSelectedEmoticon: EmoticonItem? = null,
     initialDrawerOpen: Boolean = false,
     onAction: (ChatRoomActions) -> Unit = {},
 ) {
-    val bookmarks by bookmarksFlow.collectAsState()
+    val chatRoom = uiState.chatRoom
+    val messages = uiState.messages
+    val users = uiState.users
+    val senderOverride = uiState.sender
+    val searchState = uiState.search
+    val replyTarget = uiState.replyTarget
+    val translations = uiState.translations
+    val polish = uiState.polish
+    val enterToSend = uiState.chatSettings.enterToSend
+    val chatFontSize = uiState.chatSettings.fontSize.sp
+    val notice = uiState.notice
+    val noticeBar = uiState.noticeBar
+    val onEmoticonTabSelected: (Int) -> Unit = { onAction(ChatRoomActions.OnEmoticonTabSelected(it)) }
+
+    val bookmarks = uiState.bookmarks
     val bookmarkedChatIds = remember(bookmarks) { bookmarks.map { it.chatId }.toSet() }
+    val bookmarksState = rememberUpdatedState(bookmarks)
 
     val fullScreenOverlay = LocalFullScreenOverlay.current
     val toastManager = LocalToastManager.current
@@ -330,7 +239,7 @@ fun ChatRoomContent(
 
     val chatInputFocusRequester = remember { FocusRequester() }
     val searchFocusRequester = remember { FocusRequester() }
-    var lastEmoticonTab by remember { mutableStateOf(initialEmoticonTab) }
+    var lastEmoticonTab by remember(uiState.initialEmoticonTab) { mutableStateOf(uiState.initialEmoticonTab) }
 
     var selectedEmoticon by remember { mutableStateOf(initialSelectedEmoticon) }
 
@@ -401,9 +310,6 @@ fun ChatRoomContent(
         mentionState.text.trim().length >= MIN_POLISH_LENGTH -> PolishButtonState.POLISH
         else -> PolishButtonState.HIDDEN
     }
-    LaunchedEffect(translationFailed) {
-        translationFailed?.collect { toastManager.show(strings.translateUnavailable) }
-    }
     LaunchedEffect(replyTarget?.chatID) {
         if (replyTarget != null) {
             runCatching { chatInputFocusRequester.requestFocus() }
@@ -430,7 +336,7 @@ fun ChatRoomContent(
         if (isAtBottom) newChatBanner = null
     }
 
-    val latestChat = (uiState as? ChatRoomUiState.Success)?.groupedChats
+    val latestChat = (messages as? ChatMessagesUiState.Success)?.groupedChats
         ?.firstOrNull { it.chat.chatStatus != Chat.Status.SENDING && it.chat.chatStatus != Chat.Status.FAIL }?.chat
     val latestChatState = rememberUpdatedState(latestChat)
     val newChatPush = signals.newChat
@@ -489,7 +395,7 @@ fun ChatRoomContent(
                     hideKeyboard = hideKeyboard,
                     handleBack = handleBack,
                     isDrawerOpen = isDrawerOpen,
-                    bookmarksFlow = bookmarksFlow,
+                    bookmarks = { bookmarksState.value },
                     onSenderPick = { isSenderBoxVisible = true },
                     onDrawerOpen = { isDrawerOpen = true },
                     onAction = onAction,
@@ -548,18 +454,18 @@ fun ChatRoomContent(
                         bottom = padding.calculateBottomPadding()
                     )
             ) {
-                when (uiState) {
-                    is ChatRoomUiState.Loading -> {
+                when (messages) {
+                    is ChatMessagesUiState.Loading -> {
                         CircularProgressIndicator(
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
-                    is ChatRoomUiState.Error -> {}
-                    is ChatRoomUiState.Success -> {
-                        if (uiState.groupedChats.isNotEmpty()) {
+                    is ChatMessagesUiState.Error -> {}
+                    is ChatMessagesUiState.Success -> {
+                        if (messages.groupedChats.isNotEmpty()) {
                             ChatScrollController(
                                 listState = listState,
-                                groupedChats = uiState.groupedChats,
+                                groupedChats = messages.groupedChats,
                                 currentChatRoomId = currentChatRoomId,
                                 searchState = searchState,
                                 signals = signals,
@@ -568,7 +474,7 @@ fun ChatRoomContent(
                             var lastShakenFocusKey by remember { mutableStateOf(-1) }
 
                             ChatMessageList(
-                                groupedChats = uiState.groupedChats,
+                                groupedChats = messages.groupedChats,
                                 listState = listState,
                                 searchState = searchState,
                                 chatFontSize = chatFontSize,
@@ -679,21 +585,20 @@ fun ChatRoomContent(
                     }
                 }
 
-                val notice = noticeBindings.notice
                 if (notice != null) {
                     val id = notice.identityKey
-                    LaunchedEffect(id) { noticeBindings.onLoad(id) }
+                    LaunchedEffect(id) { onAction(ChatRoomActions.OnLoadNoticeBar(id)) }
 
-                    if (!noticeBindings.barState.hidden) {
+                    if (!noticeBar.hidden) {
                         NoticeBarCard(
                             notice = notice,
-                            expanded = noticeBindings.barState.expanded,
-                            showDetails = noticeBindings.barState.showDetails,
+                            expanded = noticeBar.expanded,
+                            showDetails = noticeBar.showDetails,
                             modifier = Modifier.align(Alignment.TopCenter),
-                            onShowDetailsChange = { v -> noticeBindings.onDetailsChange(id, v) },
-                            onToggle = { noticeBindings.onExpandedChange(id, !noticeBindings.barState.expanded) },
-                            onHideToFab = { noticeBindings.onExpandedChange(id, false) },
-                            onHidePermanently = { noticeBindings.onHide(id) },
+                            onShowDetailsChange = { v -> onAction(ChatRoomActions.OnNoticeDetailsChange(id, v)) },
+                            onToggle = { onAction(ChatRoomActions.OnNoticeExpandedChange(id, !noticeBar.expanded)) },
+                            onHideToFab = { onAction(ChatRoomActions.OnNoticeExpandedChange(id, false)) },
+                            onHidePermanently = { onAction(ChatRoomActions.OnHideNotice(id)) },
                             onDelete = {
                                 dialog.confirm(
                                     title = strings.noticeDeleteTitle,
@@ -715,9 +620,9 @@ fun ChatRoomContent(
             }
         }
 
-        if (isSearchMode && isSearchDateBoxVisible && uiState is ChatRoomUiState.Success) {
-            val availableDates = remember(uiState.groupedChats) {
-                uiState.groupedChats
+        if (isSearchMode && isSearchDateBoxVisible && messages is ChatMessagesUiState.Success) {
+            val availableDates = remember(messages.groupedChats) {
+                messages.groupedChats
                     .filter { it.showDate }
                     .map { it.chat.date.take(10) }
                     .distinct()
@@ -750,7 +655,7 @@ fun ChatRoomContent(
                 },
                 onNoticeClick = {
                     isDrawerOpen = false
-                    val content = noticeBindings.notice?.content
+                    val content = notice?.content
                     if (content?.isNotBlank() == true) {
                         noticeDialogText = content
                     } else {
@@ -914,9 +819,9 @@ internal fun ChatSearchNav(
 fun ChatRoomScreenPreview() {
     MaterialTheme {
         ChatRoomContent(
-            chatRoom = ChatRoom.Item(),
-            uiState = ChatRoomUiState.Success(
-                groupedChats = emptyList(),
+            uiState = ChatRoomUiState(
+                chatRoom = ChatRoom.Item(),
+                messages = ChatMessagesUiState.Success(groupedChats = emptyList()),
             ),
             onAction = {}
         )
@@ -934,14 +839,16 @@ private val previewUsers = listOf(
 private fun ChatRoomSearchModePreview() {
     MaterialTheme {
         ChatRoomContent(
-            chatRoom = ChatRoom.Item(),
-            uiState = ChatRoomUiState.Success(groupedChats = emptyList()),
-            users = previewUsers,
-            searchState = ChatSearchState(
-                isActive = true,
-                query = "검색어",
-                matchedChatIds = listOf("a", "b", "c", "d", "e"),
-                currentIndex = 1,
+            uiState = ChatRoomUiState(
+                chatRoom = ChatRoom.Item(),
+                messages = ChatMessagesUiState.Success(groupedChats = emptyList()),
+                users = previewUsers,
+                search = ChatSearchState(
+                    isActive = true,
+                    query = "검색어",
+                    matchedChatIds = listOf("a", "b", "c", "d", "e"),
+                    currentIndex = 1,
+                ),
             ),
             onAction = {},
         )
@@ -953,12 +860,14 @@ private fun ChatRoomSearchModePreview() {
 private fun ChatRoomReplyModePreview() {
     MaterialTheme {
         ChatRoomContent(
-            chatRoom = ChatRoom.Item(),
-            uiState = ChatRoomUiState.Success(groupedChats = emptyList()),
-            users = previewUsers,
-            replyTarget = Chat.Item(
-                user = User(name = "성은일"),
-                chatContent = "답장 대상 본문입니다.",
+            uiState = ChatRoomUiState(
+                chatRoom = ChatRoom.Item(),
+                messages = ChatMessagesUiState.Success(groupedChats = emptyList()),
+                users = previewUsers,
+                replyTarget = Chat.Item(
+                    user = User(name = "성은일"),
+                    chatContent = "답장 대상 본문입니다.",
+                ),
             ),
             onAction = {},
         )
@@ -970,9 +879,11 @@ private fun ChatRoomReplyModePreview() {
 private fun ChatRoomEmoticonPreviewPreview() {
     MaterialTheme {
         ChatRoomContent(
-            chatRoom = ChatRoom.Item(),
-            uiState = ChatRoomUiState.Success(groupedChats = emptyList()),
-            users = previewUsers,
+            uiState = ChatRoomUiState(
+                chatRoom = ChatRoom.Item(),
+                messages = ChatMessagesUiState.Success(groupedChats = emptyList()),
+                users = previewUsers,
+            ),
             initialSelectedEmoticon = EmoticonItem(
                 id = "sample",
                 resource = Res.drawable.emoticon_tab_face_human_down,
@@ -988,9 +899,11 @@ private fun ChatRoomEmoticonPreviewPreview() {
 private fun ChatRoomDrawerPreview() {
     MaterialTheme {
         ChatRoomContent(
-            chatRoom = ChatRoom.Item(),
-            uiState = ChatRoomUiState.Success(groupedChats = emptyList()),
-            users = previewUsers,
+            uiState = ChatRoomUiState(
+                chatRoom = ChatRoom.Item(),
+                messages = ChatMessagesUiState.Success(groupedChats = emptyList()),
+                users = previewUsers,
+            ),
             initialDrawerOpen = true,
             onAction = {},
         )

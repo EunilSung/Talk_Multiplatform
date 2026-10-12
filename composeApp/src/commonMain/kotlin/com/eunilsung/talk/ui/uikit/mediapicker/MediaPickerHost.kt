@@ -3,7 +3,6 @@ package com.eunilsung.talk.ui.uikit.mediapicker
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -115,8 +114,7 @@ fun MediaPickerHost(
         val txtPermMsg = stringResource(Res.string.photo_permission_message)
         val txtOk = stringResource(Res.string.ok)
         val txtCancel = stringResource(Res.string.cancel)
-        val recentPhotosResult by bindings.recentPhotosFlow.collectAsState()
-        val photos = when (val r = recentPhotosResult) {
+        val photos = when (val r = bindings.recentPhotos) {
             is RecentPhotosResult.Granted -> r.photos
             is RecentPhotosResult.Limited -> r.photos
             is RecentPhotosResult.Denied -> emptyList()
@@ -145,7 +143,7 @@ fun MediaPickerHost(
                 state.showMultimediaSheet = false
             },
             onViewAllPhotos = {
-                if (!bindings.hasPhotoAccess()) {
+                if (!bindings.hasPhotoAccess) {
                     dialog.confirm(
                         title = txtPermTitle,
                         message = txtPermMsg,

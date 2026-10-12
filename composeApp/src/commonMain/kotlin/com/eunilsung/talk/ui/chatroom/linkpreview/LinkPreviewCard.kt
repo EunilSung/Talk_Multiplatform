@@ -1,4 +1,4 @@
-package com.eunilsung.talk.ui.chatroom.item
+package com.eunilsung.talk.ui.chatroom.linkpreview
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,9 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -31,13 +28,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.flow.StateFlow
 import com.eunilsung.talk.data.local.ExternalUrlOpener
 import com.eunilsung.talk.domain.model.LinkPreview
-import com.eunilsung.talk.domain.repository.LinkPreviewRepository
 import com.eunilsung.talk.domain.model.LinkPreviewState
 import com.eunilsung.talk.ui.theme.AppColors
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import com.eunilsung.talk.util.Log
 
 @Composable
@@ -45,22 +41,16 @@ fun LinkPreviewCard(
     url: String,
     modifier: Modifier = Modifier,
 ) {
-    val repository: LinkPreviewRepository = koinInject()
+    val viewModel: LinkPreviewViewModel = koinViewModel()
+    val uiState by viewModel.uiState.collectAsState()
     val urlOpener: ExternalUrlOpener = koinInject()
 
-    var stateFlow by remember(url) { mutableStateOf<StateFlow<LinkPreviewState>?>(null) }
     LaunchedEffect(url) {
         Log.message("[LinkPreview] LinkPreviewCard launchedEffect url=$url")
-        stateFlow = repository.getState(url)
+        viewModel.onAction(LinkPreviewActions.Load(url))
     }
-    val flow = stateFlow
-    if (flow == null) {
-        LinkPreviewSkeleton(modifier = modifier)
-        return
-    }
-    val state by flow.collectAsState()
-    when (val s = state) {
-        is LinkPreviewState.Loading -> LinkPreviewSkeleton(modifier = modifier)
+    when (val s = uiState.previews[url]) {
+        null, is LinkPreviewState.Loading -> LinkPreviewSkeleton(modifier = modifier)
         is LinkPreviewState.Success -> LinkPreviewContent(
             data = s.data,
             onClick = { urlOpener.open(url) },
