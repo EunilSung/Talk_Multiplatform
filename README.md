@@ -182,9 +182,11 @@ server/                   29 files — Ktor 서버 (+ 테스트 15 files, 마이
 # Android Studio 에서는 실행 구성 "기능테스트 (실 서버)" 를 고르고 실행 버튼을 누른다
 ./gradlew :composeApp:testDebugUnitTest -PfunctionalTest=true --tests "*functest*"
 
-# 실화면 흐름 — 같은 Maestro 흐름을 에뮬레이터·시뮬레이터에서 실제로 눌러 본다. 로컬 서버를 먼저 띄운다
-maestro --device emulator-5556 test .maestro
-maestro --device <시뮬레이터 UDID> test .maestro
+# 실화면 흐름 — 같은 Maestro 흐름을 에뮬레이터·시뮬레이터에서 실제로 눌러 본다. 기기 고르기·설치는 .maestro/run.sh
+TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:e2eAndroid :composeApp:e2eIos
+
+# 전체 검증 — 위 전부를 한 번에. Android Studio 실행 구성 "검증 - 전체 (실화면 포함)" 과 같다
+TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:verifyAll -PfunctionalTest=true --continue
 ```
 
 | 대상 | 내용 |
