@@ -127,9 +127,10 @@ iosApp/        Xcode 프로젝트
   `onAction` 을 둔다. 다이얼로그·이동·토스트처럼 한 번만 처리할 일은 `XEvent` 를 `Channel` 로 내보낸다
   (`events`). 액션은 `XActions.kt`, 상태는 `XUiState.kt` 에 둔다. 화면의 `LaunchedEffect`·`DisposableEffect`
   에서 할 일도 액션으로 보낸다(대화방의 `OnEnterRoom`·`OnLeaveRoom`).
-- **상태는 `uiState` 하나로 모은다.** 새로 만드는 ViewModel 은 `StateFlow<XUiState>` 하나만 내놓는다
-  (대화방 `ChatRoomUiState` 참고). 대화함·내 그룹·로그인·공유·초대(그룹 탭)는 아직 상태 흐름을 여럿
-  내놓는다. 고칠 때 하나로 모으고, 새 코드는 따라 하지 않는다.
+- **상태는 `uiState` 하나로 모은다.** ViewModel 은 `StateFlow<XUiState>` 하나와 `events` 만 내놓는다
+  (대화방 `ChatRoomUiState` 참고). 검색어·선택·배지처럼 화면이 보는 값은 모두 `XUiState` 의 칸이다.
+  대화방의 스크롤 신호(`ChatRoomSignals`)만 예외다 — 여러 곳이 같은 신호를 받고, 진입 스크롤은 마지막 값을
+  다시 받아야 한다.
 - **도메인 모델은 화면을 모른다.** 선택 표시·묶음 표시처럼 화면에만 필요한 값은 ui 쪽 상태에 둔다
   (`GroupedChat`, 고른 id 집합). 화면 모양으로 바꾼 모델과 그 변환도 ui 쪽에 둔다(투표의 `VoteDetail`·
   `VoteResult` 는 `VoteUiState.kt`). 내가 보낸 대화인지(`isMe`)는 로그인한 계정을 아는 매퍼·저장소가 채운다.

@@ -15,44 +15,17 @@ class ChatRoomListViewModel(
 ) : ViewModel() {
 
     private val _chatRooms = MutableStateFlow<List<ChatRoom.Item>>(emptyList())
-    private val _searchState = MutableStateFlow(Search.State(filterType = Search.FilterType.ALL))
-    val searchState = _searchState.asStateFlow()
 
-    private val _uiState = MutableStateFlow<ChatRoomListUiState>(ChatRoomListUiState.Idle())
+    private val _uiState = MutableStateFlow(
+        ChatRoomListUiState(
+            unreadTotal = chatRoomListUseCases.observeChatRoomUnreadTotal().value,
+            isRefreshing = chatRoomListUseCases.observeIsFetching().value,
+        )
+    )
     val uiState: StateFlow<ChatRoomListUiState> = _uiState.asStateFlow()
-
-    private val _selectedRoomIds = MutableStateFlow<Set<String>>(emptySet())
-    val selectedRoomIds: StateFlow<Set<String>> = _selectedRoomIds.asStateFlow()
 
     private val _events = Channel<ChatRoomListEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
-
-    val isRefreshing: StateFlow<Boolean> = chatRoomListUseCases.observeIsFetching()
-
-    private val _scrollToTop = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val scrollToTop: SharedFlow<Unit> = _scrollToTop.asSharedFlow()
-
-    val newChatRoomPush: SharedFlow<String> =
-        chatRoomListUseCases.observeNewChatRoomPush()
-
-    val unreadTotal: StateFlow<Int> = chatRoomListUseCases.observeChatRoomUnreadTotal()
-
-    /** 전체 그룹 (kind 1/2), 정렬 순. */
-    private val _chatGroups = MutableStateFlow<List<ChatGroup>>(emptyList())
-
-    /** 그룹 칩용 — 안읽음·커스텀 모두 SORTID 순으로 노출. */
-    val chatGroups: StateFlow<List<ChatGroup>> = _chatGroups.asStateFlow()
-
-    /** 안읽음 방을 하나라도 가진 그룹 id 집합 — 그룹 칩 배지용. */
-    val groupsWithUnread: StateFlow<Set<String>> =
-        combine(_chatRooms, _chatGroups) { rooms, groups ->
-            val unreadRoomIds = rooms
-                .filter { (it.unReadCount.toIntOrNull() ?: 0) > 0 }
-                .mapTo(HashSet()) { it.id }
-            groups.asSequence()
-                .filter { group -> group.roomIds.any { it in unreadRoomIds } }
-                .mapTo(HashSet()) { it.id }
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
     init {
         viewModelScope.launch {
@@ -68,47 +41,65 @@ class ChatRoomListViewModel(
             chatRoomListUseCases.observeChatGroups()
                 .distinctUntilChanged()
                 .collectLatest { groups ->
-                    _chatGroups.value = groups
-                    val st = _searchState.value
-                    if (st.filterType == Search.FilterType.GROUP) {
-                        if (groups.none { it.id == st.selectedGroupId }) {
-                            _searchState.update {
-                                it.copy(filterType = Search.FilterType.ALL, selectedGroupId = null)
-                            }
-                        }
-                        updateUiState()
+                    _uiState.update { it.copy(chatGroups = groups) }
+                    val st = _uiState.value.search
+                    if (st.filterType == Search.FilterType.GROUP && groups.none { it.id == st.selectedGroupId }) {
+                        updateSearch { it.copy(filterType = Search.FilterType.ALL, selectedGroupId = null) }
                     }
+                    updateUiState()
                 }
         }
 
         viewModelScope.launch {
-            _searchState
-                .map { it.query }
+            _uiState
+                .map { it.search.query }
                 .distinctUntilChanged()
                 .debounce(200)
                 .collectLatest {
                     updateUiState()
                 }
         }
+
+        viewModelScope.launch {
+            chatRoomListUseCases.observeChatRoomUnreadTotal().collect { total ->
+                _uiState.update { it.copy(unreadTotal = total) }
+            }
+        }
+
+        viewModelScope.launch {
+            chatRoomListUseCases.observeIsFetching().collect { fetching ->
+                _uiState.update { it.copy(isRefreshing = fetching) }
+            }
+        }
+
+        viewModelScope.launch {
+            chatRoomListUseCases.observeNewChatRoomPush().collect {
+                _events.send(ChatRoomListEvent.NewChatRoomArrived)
+            }
+        }
+    }
+
+    private fun updateSearch(transform: (Search.State) -> Search.State) {
+        _uiState.update { it.copy(search = transform(it.search)) }
     }
 
     private fun updateUiState(isEditMode: Boolean = _uiState.value.isEditMode) {
-        val query = _searchState.value.query
-        val filterType = _searchState.value.filterType
-
-        val mappedRooms = _chatRooms.value
+        val state = _uiState.value
+        val query = state.search.query
+        val filterType = state.search.filterType
+        val rooms = _chatRooms.value
 
         val typeFilteredRooms = when (filterType) {
             Search.FilterType.UNREAD ->
-                mappedRooms.filter { it.unReadCount.isNotEmpty() && it.unReadCount != "0" }
+                rooms.filter { it.unReadCount.isNotEmpty() && it.unReadCount != "0" }
             Search.FilterType.GROUP -> {
-                val groupRoomIds = _chatGroups.value
-                    .firstOrNull { it.id == _searchState.value.selectedGroupId }
+                val groupRoomIds = state.chatGroups
+                    .firstOrNull { it.id == state.search.selectedGroupId }
                     ?.roomIds?.toHashSet()
                     ?: emptySet()
-                mappedRooms.filter { it.id in groupRoomIds }
+                rooms.filter { it.id in groupRoomIds }
             }
-            else -> mappedRooms
+            else -> rooms
         }
 
         val displayRooms = if (query.isNotEmpty()) {
@@ -119,13 +110,30 @@ class ChatRoomListViewModel(
             typeFilteredRooms
         }
 
-        _uiState.value = if (query.isNotEmpty()) {
-            ChatRoomListUiState.Search(chatItems = displayRooms, isEditMode = isEditMode)
-        } else if (filterType == Search.FilterType.UNREAD) {
-            ChatRoomListUiState.Unread(chatItems = displayRooms, isEditMode = isEditMode)
-        } else {
-            ChatRoomListUiState.Idle(chatItems = displayRooms, isEditMode = isEditMode)
+        val kind = when {
+            query.isNotEmpty() -> ChatRoomListKind.SEARCH
+            filterType == Search.FilterType.UNREAD -> ChatRoomListKind.UNREAD
+            else -> ChatRoomListKind.IDLE
         }
+
+        _uiState.update {
+            it.copy(
+                chatItems = displayRooms,
+                kind = kind,
+                isEditMode = isEditMode,
+                groupsWithUnread = groupsWithUnread(rooms, it.chatGroups),
+            )
+        }
+    }
+
+    /** 안읽은 방을 하나라도 가진 그룹 id. */
+    private fun groupsWithUnread(rooms: List<ChatRoom.Item>, groups: List<ChatGroup>): Set<String> {
+        val unreadRoomIds = rooms
+            .filter { (it.unReadCount.toIntOrNull() ?: 0) > 0 }
+            .mapTo(HashSet()) { it.id }
+        return groups.asSequence()
+            .filter { group -> group.roomIds.any { it in unreadRoomIds } }
+            .mapTo(HashSet()) { it.id }
     }
 
     /**
@@ -133,7 +141,7 @@ class ChatRoomListViewModel(
      * 고른 방이 없으면 편집 모드만 끈다.
      */
     private fun leaveSelectedChatRooms() {
-        val roomIds = chatRoomsToLeave(_uiState.value.chatItems, _selectedRoomIds.value)
+        val roomIds = chatRoomsToLeave(_uiState.value.chatItems, _uiState.value.selectedRoomIds)
         if (roomIds.isEmpty()) {
             onAction(ChatRoomListActions.SetMode(ChatRoomListMode.IDLE))
             return
@@ -144,7 +152,7 @@ class ChatRoomListViewModel(
             roomIds.forEach { roomId ->
                 if (chatRoomListUseCases.leaveChatRoom(roomId)) left++ else failed++
             }
-            _selectedRoomIds.value = emptySet()
+            _uiState.update { it.copy(selectedRoomIds = emptySet()) }
             updateUiState(isEditMode = false)
             _events.send(ChatRoomListEvent.ChatRoomsBulkLeft(left = left, failed = failed))
         }
@@ -153,34 +161,35 @@ class ChatRoomListViewModel(
     fun onAction(action: ChatRoomListActions) {
         when (action) {
             is ChatRoomListActions.OnSearchQueryChange -> {
-                _searchState.update { it.copy(query = action.query) }
+                updateSearch { it.copy(query = action.query) }
             }
             is ChatRoomListActions.OnClearSearch -> {
-                _searchState.update { it.copy(query = "") }
+                updateSearch { it.copy(query = "") }
                 updateUiState()
             }
             is ChatRoomListActions.SetMode -> {
                 val isEdit = action.mode == ChatRoomListMode.EDIT
                 if (!isEdit) {
-                    _selectedRoomIds.value = emptySet()
+                    _uiState.update { it.copy(selectedRoomIds = emptySet()) }
                 }
                 updateUiState(isEditMode = isEdit)
             }
             is ChatRoomListActions.OnSelectRoom -> {
                 val roomId = action.item.id
-                _selectedRoomIds.update { current ->
-                    if (current.contains(roomId)) current - roomId else current + roomId
+                _uiState.update { state ->
+                    val current = state.selectedRoomIds
+                    state.copy(selectedRoomIds = if (current.contains(roomId)) current - roomId else current + roomId)
                 }
                 updateUiState()
             }
             is ChatRoomListActions.OnFilterTypeChange -> {
-                _searchState.update {
+                updateSearch {
                     it.copy(filterType = action.filterType, selectedGroupId = null)
                 }
                 updateUiState()
             }
             is ChatRoomListActions.OnGroupFilterChange -> {
-                _searchState.update {
+                updateSearch {
                     it.copy(filterType = Search.FilterType.GROUP, selectedGroupId = action.groupId)
                 }
                 updateUiState()
@@ -190,7 +199,7 @@ class ChatRoomListViewModel(
                     runCatching {
                         chatRoomListUseCases.addRoomToGroup(action.groupId, action.chatRoomId)
                     }
-                    val groupName = _chatGroups.value
+                    val groupName = _uiState.value.chatGroups
                         .firstOrNull { it.id == action.groupId }?.name.orEmpty()
                     _events.send(ChatRoomListEvent.ChatRoomAddedToGroup(groupName))
                 }
@@ -204,10 +213,10 @@ class ChatRoomListViewModel(
                 }
             }
             is ChatRoomListActions.OnRefresh -> {
-                if (isRefreshing.value) return
+                if (chatRoomListUseCases.observeIsFetching().value) return
                 viewModelScope.launch {
                     runCatching { chatRoomListUseCases.fetchChatRooms() }
-                    _scrollToTop.tryEmit(Unit)
+                    _events.send(ChatRoomListEvent.ScrollToTop)
                 }
             }
             is ChatRoomListActions.LeaveSelectedChatRooms -> leaveSelectedChatRooms()

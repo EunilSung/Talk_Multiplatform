@@ -41,7 +41,6 @@ import com.eunilsung.talk.ui.main.tab.CurrentAppTab
 import com.eunilsung.talk.ui.main.tab.rememberAppTabState
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.model.SharedContent
-import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.ui.chatroom.ChatRoomScreen
 import com.eunilsung.talk.ui.invite.InviteController
 import com.eunilsung.talk.ui.invite.LocalInviteController
@@ -73,7 +72,6 @@ class ShareScreen(
     override fun Content() {
         val viewModel: ShareViewModel = koinViewModel()
         val uiState by viewModel.uiState.collectAsState()
-        val rooms by viewModel.chatRooms.collectAsState()
         val showOverlay = LocalFullScreenOverlay.current
         val rightNavigator = LocalRightNavigator.current
         val toastManager = LocalToastManager.current
@@ -84,16 +82,16 @@ class ShareScreen(
         }
 
         LaunchedEffect(viewModel) {
-            viewModel.submitResult.collect { result ->
-                when (result) {
-                    is ShareViewModel.SubmitResult.NavigateToRoom -> {
+            viewModel.events.collect { event ->
+                when (event) {
+                    is ShareEvent.OpenChatRoom -> {
                         showOverlay(null)
                         val current = rightNavigator.lastItem
                         val alreadyOpen = current is ChatRoomScreen &&
-                            current.chatRoomId == result.chatRoomId
+                            current.chatRoomId == event.chatRoomId
                         if (!alreadyOpen) {
                             val newScreen = ChatRoomScreen(
-                                chatRoomId = result.chatRoomId
+                                chatRoomId = event.chatRoomId
                             )
                             if (current is EmptyScreen) {
                                 rightNavigator.push(newScreen)
@@ -102,7 +100,7 @@ class ShareScreen(
                             }
                         }
                     }
-                    is ShareViewModel.SubmitResult.Failure ->
+                    ShareEvent.SendFailed ->
                         toastManager.show(txtSendFailed)
                 }
             }
@@ -114,7 +112,6 @@ class ShareScreen(
 
         ShareScreenContent(
             uiState = uiState,
-            rooms = rooms,
             onAction = { action ->
                 when (action) {
                     is ShareActions.OnClose -> showOverlay(null)
@@ -129,9 +126,9 @@ class ShareScreen(
 @Composable
 fun ShareScreenContent(
     uiState: ShareUiState,
-    rooms: List<ChatRoom.Item>,
     onAction: (ShareActions) -> Unit = {},
 ) {
+    val rooms = uiState.rooms
     val inviteController = remember(uiState.selectedUsers) {
         InviteController(
             selectedUsers = uiState.selectedUsers,
@@ -245,7 +242,6 @@ fun ShareScreenPreview() {
                     User(id = "u3", name = "김철수"),
                 ),
             ),
-            rooms = emptyList(),
         )
     }
 }

@@ -25,13 +25,12 @@ fun InviteGroupTabContent() {
     if (LocalInspectionMode.current) return
     val viewModel: InviteGroupViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
-    val searchState by viewModel.searchState.collectAsState()
     val controller = LocalInviteController.current
     val listState = rememberLazyListState()
 
     GroupSearchScaffold(
         listState = listState,
-        searchQuery = searchState.query,
+        searchQuery = uiState.search.query,
         onSearchChange = { viewModel.onAction(InviteGroupActions.OnSearchQueryChange(it)) },
         onClearSearch = { viewModel.onAction(InviteGroupActions.OnClearSearch) },
         isShowTitle = false,

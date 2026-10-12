@@ -75,14 +75,14 @@ class InviteScreen(
         }
 
         LaunchedEffect(viewModel) {
-            viewModel.submitResult.collect { result ->
-                when (result) {
-                    is InviteViewModel.SubmitResult.Success -> {
+            viewModel.events.collect { event ->
+                when (event) {
+                    is InviteEvent.Invited -> {
                         showOverlay(null)
                         val createdNewRoom = mode is InviteMode.CreateChatRoom ||
                             (mode is InviteMode.InviteToChatRoom && mode.createNewRoom)
-                        if (createdNewRoom && result.chatRoomId.isNotBlank()) {
-                            val newScreen = ChatRoomScreen(chatRoomId = result.chatRoomId)
+                        if (createdNewRoom && event.chatRoomId.isNotBlank()) {
+                            val newScreen = ChatRoomScreen(chatRoomId = event.chatRoomId)
                             if (rightNavigator.lastItem is EmptyScreen) {
                                 rightNavigator.push(newScreen)
                             } else {
@@ -90,7 +90,7 @@ class InviteScreen(
                             }
                         }
                     }
-                    is InviteViewModel.SubmitResult.Failure ->
+                    InviteEvent.InviteFailed ->
                         toastManager.show(txtInviteFailed)
                 }
             }

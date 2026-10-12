@@ -16,3 +16,10 @@ sealed interface InviteActions {
 
     data object Reset : InviteActions
 }
+
+sealed interface InviteEvent {
+    /** 초대가 끝났다. 새로 만든 방이면 [chatRoomId] 로 그 방을 연다. */
+    data class Invited(val chatRoomId: String) : InviteEvent
+
+    data object InviteFailed : InviteEvent
+}

@@ -1,17 +1,28 @@
 package com.eunilsung.talk.ui.login
 
 import com.eunilsung.talk.domain.model.Login
+import com.eunilsung.talk.domain.model.VersionInfo
 
-sealed interface LoginUiState {
-    data object Idle : LoginUiState
-    data object Loading : LoginUiState
-    data object Success : LoginUiState
-    data class Error(val message: String) : LoginUiState
-    data class Duplicate(val message: String) : LoginUiState
+/** 로그인 화면의 상태. */
+data class LoginUiState(
+    val status: LoginStatus = LoginStatus.Loading,
+    /** 입력 중인 아이디·비밀번호와 비밀번호 저장 여부. */
+    val input: Login.LoginRequest = Login.LoginRequest(),
+    /** 버전 확인 결과. 확인 전이거나 확인하지 못했으면 null. */
+    val versionInfo: VersionInfo? = null,
+)
+
+/** 로그인 진행 단계. */
+sealed interface LoginStatus {
+    data object Idle : LoginStatus
+    data object Loading : LoginStatus
+    data object Success : LoginStatus
+    data class Error(val message: String) : LoginStatus
+    data class Duplicate(val message: String) : LoginStatus
 }
 
-fun Login.LoginResult.toUiState(): LoginUiState = when (this) {
-    is Login.LoginResult.Success -> LoginUiState.Success
-    is Login.LoginResult.Error -> LoginUiState.Error(message)
-    is Login.LoginResult.Duplicate -> LoginUiState.Duplicate(message)
+fun Login.LoginResult.toStatus(): LoginStatus = when (this) {
+    is Login.LoginResult.Success -> LoginStatus.Success
+    is Login.LoginResult.Error -> LoginStatus.Error(message)
+    is Login.LoginResult.Duplicate -> LoginStatus.Duplicate(message)
 }

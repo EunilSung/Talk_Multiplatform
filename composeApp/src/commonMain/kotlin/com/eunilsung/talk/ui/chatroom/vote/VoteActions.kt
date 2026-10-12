@@ -37,3 +37,8 @@ sealed interface VoteActions {
 
     data object OnCloseVote : VoteActions
 }
+
+sealed interface VoteEvent {
+    /** 첫 화면에서 뒤로 갔다. 투표 화면을 닫는다. */
+    data object Close : VoteEvent
+}

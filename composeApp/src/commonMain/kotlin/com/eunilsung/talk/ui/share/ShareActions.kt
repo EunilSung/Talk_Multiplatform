@@ -21,3 +21,10 @@ sealed interface ShareActions {
 
     data object Reset : ShareActions
 }
+
+sealed interface ShareEvent {
+    /** 보낼 방이 정해졌다. 공유 화면을 닫고 그 방을 연다. */
+    data class OpenChatRoom(val chatRoomId: String) : ShareEvent
+
+    data object SendFailed : ShareEvent
+}

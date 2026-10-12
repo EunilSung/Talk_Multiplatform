@@ -54,6 +54,12 @@ sealed interface ChatRoomListEvent {
     data class ChatRoomAddedToGroup(val groupName: String) : ChatRoomListEvent
 
     data object ChatRoomRemovedFromGroup : ChatRoomListEvent
+
+    /** 새로고침이 끝났다. 목록을 맨 위로 올린다. */
+    data object ScrollToTop : ChatRoomListEvent
+
+    /** 새 대화방이 생겼다. 맨 위 근처를 보고 있었으면 맨 위로 올린다. */
+    data object NewChatRoomArrived : ChatRoomListEvent
 }
 
 enum class ChatRoomNameValidation {

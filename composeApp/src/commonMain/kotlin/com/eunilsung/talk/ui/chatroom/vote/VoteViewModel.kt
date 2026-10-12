@@ -2,12 +2,12 @@ package com.eunilsung.talk.ui.chatroom.vote
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.domain.model.VoteForm
@@ -23,8 +23,8 @@ class VoteViewModel(
     private val _uiState = MutableStateFlow<VoteUiState>(VoteUiState.Loading)
     val uiState: StateFlow<VoteUiState> = _uiState.asStateFlow()
 
-    private val _closeScreen = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val closeScreen: SharedFlow<Unit> = _closeScreen.asSharedFlow()
+    private val _events = Channel<VoteEvent>(Channel.BUFFERED)
+    val events: Flow<VoteEvent> = _events.receiveAsFlow()
 
     private val backStack = ArrayDeque<VoteUiState>()
 
@@ -89,7 +89,7 @@ class VoteViewModel(
     private fun back() {
         val prev = backStack.removeLastOrNull()
         if (prev == null) {
-            _closeScreen.tryEmit(Unit)
+            _events.trySend(VoteEvent.Close)
         } else {
             _uiState.value = prev
         }
