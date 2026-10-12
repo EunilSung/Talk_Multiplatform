@@ -1,5 +1,6 @@
 package com.eunilsung.talk.data.local
 
+import com.eunilsung.talk.R
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -60,8 +61,8 @@ class AndroidExternalUrlOpener(
             }
 
             val request = DownloadManager.Request(Uri.parse(url))
-                .setTitle("Talk 업데이트")
-                .setDescription("최신 버전 다운로드 중...")
+                .setTitle(context.getString(R.string.update_download_title))
+                .setDescription(context.getString(R.string.update_download_desc))
                 .setNotificationVisibility(
                     DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
                 )

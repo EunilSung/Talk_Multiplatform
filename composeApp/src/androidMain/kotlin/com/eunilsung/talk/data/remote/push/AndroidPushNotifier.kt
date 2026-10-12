@@ -173,7 +173,10 @@ class AndroidPushNotifier(
             return title to context.getString(R.string.push_preview_hidden)
         }
         return when (payload.kind) {
-            PushPayload.Kind.CHAT -> title to payload.msg.ifBlank { context.getString(R.string.push_new_message) }
+            PushPayload.Kind.CHAT -> title to when {
+                payload.isEmoticonOnly -> context.getString(R.string.push_emoticon)
+                else -> payload.msg.ifBlank { context.getString(R.string.push_new_message) }
+            }
             else -> appName to (payload.msg.ifBlank { context.getString(R.string.push_new_notification) })
         }
     }

@@ -43,11 +43,11 @@ class UserProfileViewModel(
                 .onSuccess { fresh ->
                     _uiState.value = UserProfileUiState.Success(profile = fresh, isStale = false, isMe = isMe)
                 }
-                .onFailure { err ->
+                .onFailure {
                     _uiState.value = if (cached != null) {
                         UserProfileUiState.Success(profile = cached, isStale = true, isMe = isMe)
                     } else {
-                        UserProfileUiState.Error(err.message)
+                        UserProfileUiState.Error
                     }
                 }
         }

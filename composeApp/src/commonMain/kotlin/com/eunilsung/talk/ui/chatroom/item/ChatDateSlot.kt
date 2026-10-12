@@ -1,5 +1,7 @@
 package com.eunilsung.talk.ui.chatroom.item
 
+import org.jetbrains.compose.resources.stringResource
+import multiplatformtalk.composeapp.generated.resources.bookmark_title
 import com.eunilsung.talk.ui.util.chatTimeText
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -71,7 +73,7 @@ fun ChatDateSlot(
 private fun BookmarkBubbleIcon() {
     Icon(
         painter = painterResource(Res.drawable.bookmark_bubble_icon),
-        contentDescription = "책갈피",
+        contentDescription = stringResource(Res.string.bookmark_title),
         tint = AppColors.TextSub,
         modifier = Modifier.size(16.dp),
     )

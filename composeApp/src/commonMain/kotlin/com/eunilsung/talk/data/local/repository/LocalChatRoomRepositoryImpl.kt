@@ -34,7 +34,6 @@ import com.eunilsung.talk.domain.repository.ChatRoomRepository
 import com.eunilsung.talk.util.ChatIdUtils
 import com.eunilsung.talk.util.Log
 import com.eunilsung.talk.util.formatFileSize
-import com.eunilsung.talk.util.EMOTICON_LABEL
 import com.eunilsung.talk.util.chatDisplayText
 import com.eunilsung.talk.util.stripMentionTags
 import com.eunilsung.talk.domain.util.UserListCodec
@@ -200,10 +199,7 @@ class LocalChatRoomRepositoryImpl(
                 ReplyChat(
                     chatID = it.chatID,
                     chatType = it.chatType,
-                    // 인용문은 멘션 태그를 벗기고, 이모티콘 전용 대화는 대체 문구를 쓴다.
-                    chatContent = it.chatContent.ifBlank {
-                        if (it.chatType == Chat.Type.EMOTICON) EMOTICON_LABEL else ""
-                    }.stripMentionTags(),
+                    chatContent = it.chatContent.stripMentionTags(),
                     user = it.user,
                     emoticon = it.emoticon,
                     imagePath = it.imagePath,
@@ -257,14 +253,7 @@ class LocalChatRoomRepositoryImpl(
             Chat.Item(
                 chatID = chatId,
                 chatType = chatType,
-                // title 은 요약 자리.
-                title = when (chatType) {
-                    Chat.Type.IMAGE -> "(사진)"
-                    Chat.Type.VIDEO -> "(동영상)"
-                    else -> "(파일)"
-                },
-                // 파일 말풍선 부제 — 이미지는 "(사진)", 그 외는 파일 크기.
-                chatContent = if (chatType == Chat.Type.IMAGE) "(사진)" else formatFileSize(meta.sizeBytes),
+                chatContent = if (chatType == Chat.Type.IMAGE) "" else formatFileSize(meta.sizeBytes),
                 chatStatus = status,
                 date = nowChatDate(),
                 unReadCount = "0",

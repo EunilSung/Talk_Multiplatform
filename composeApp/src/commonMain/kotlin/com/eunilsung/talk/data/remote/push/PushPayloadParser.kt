@@ -9,15 +9,11 @@ class PushPayloadParser {
     fun parse(data: Map<String, String>): PushPayload {
         fun get(key: String): String = data[key]?.let { decode(it) } ?: ""
 
-        val msg = get(KEY_MSG)
-        val msgType = get(KEY_MSGTYPE)
-        val body = if (msgType == PushPayload.CHAT_TYPE_EMOTICON && msg.isEmpty()) "(이모티콘)" else msg
-
         return PushPayload(
-            msg = body,
+            msg = get(KEY_MSG),
             msgKey = get(KEY_MSG_KEY),
             kind = PushPayload.Kind.from(get(KEY_MSG_KIND).ifEmpty { null }),
-            msgType = msgType,
+            msgType = get(KEY_MSGTYPE),
             senderName = get(KEY_SENDER_NAME),
             unreadCount = get(KEY_UNREAD_COUNT).toIntOrNull() ?: 0,
             categoryId = get(KEY_CATEGORY_ID),

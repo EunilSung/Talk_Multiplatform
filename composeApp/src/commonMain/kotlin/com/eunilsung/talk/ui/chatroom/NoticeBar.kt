@@ -1,5 +1,8 @@
 package com.eunilsung.talk.ui.chatroom
 
+import multiplatformtalk.composeapp.generated.resources.notice_details_expand
+import multiplatformtalk.composeapp.generated.resources.notice_details_collapse
+import multiplatformtalk.composeapp.generated.resources.notice_expand
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -77,7 +80,7 @@ fun NoticeBarCard(
             ) {
                 Icon(
                     painter = painterResource(Res.drawable.chat_notice_icon),
-                    contentDescription = "공지 펼치기",
+                    contentDescription = stringResource(Res.string.notice_expand),
                     tint = Color.Unspecified,
                     modifier = Modifier.size(24.dp),
                 )
@@ -132,7 +135,7 @@ fun NoticeBarCard(
                         if (showDetails) Res.drawable.arrow_up_icon
                         else Res.drawable.arrow_down_icon
                     ),
-                    contentDescription = if (showDetails) "상세 접기" else "상세 펼치기",
+                    contentDescription = stringResource(if (showDetails) Res.string.notice_details_collapse else Res.string.notice_details_expand),
                     tint = AppColors.TextSub,
                     modifier = Modifier
                         .size(24.dp)

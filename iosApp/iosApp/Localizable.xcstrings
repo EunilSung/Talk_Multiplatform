@@ -51,6 +51,23 @@
           }
         }
       }
+    },
+    "push_emoticon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(Emoticon)"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(이모티콘)"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -31,4 +31,7 @@
         <item>딩~</item>
         <item>강아지</item>
     </string-array>
+    <string name="push_emoticon">(이모티콘)</string>
+    <string name="update_download_title">Talk 업데이트</string>
+    <string name="update_download_desc">최신 버전 다운로드 중...</string>
 </resources>

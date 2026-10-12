@@ -1,5 +1,7 @@
 package com.eunilsung.talk.ui.login
 
+import org.jetbrains.compose.resources.getString
+import multiplatformtalk.composeapp.generated.resources.login_fail
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -149,7 +151,7 @@ fun LoginContent(
     LaunchedEffect(status) {
         when (status) {
             is LoginStatus.Error -> dialog.alert(
-                message = status.message,
+                message = status.message.ifBlank { getString(Res.string.login_fail) },
                 onConfirm = { onAction(LoginActions.OnResetState) }
             )
             is LoginStatus.Duplicate -> dialog.confirm(

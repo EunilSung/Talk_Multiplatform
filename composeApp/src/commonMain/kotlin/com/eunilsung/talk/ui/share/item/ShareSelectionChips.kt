@@ -1,5 +1,7 @@
 package com.eunilsung.talk.ui.share.item
 
+import org.jetbrains.compose.resources.stringResource
+import multiplatformtalk.composeapp.generated.resources.no_chat_partner
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -66,7 +68,7 @@ fun SelectedChatRoomChip(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Chip(
-            label = room.displayTitle.ifBlank { "대화방" },
+            label = room.displayTitle.ifBlank { stringResource(Res.string.no_chat_partner) },
             onRemove = onRemove
         )
     }

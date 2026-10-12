@@ -464,4 +464,13 @@
     <string name="notification_sound_yank_2">Wind-up</string>
     <string name="notification_sound_bell_little">Ding~</string>
     <string name="notification_sound_dog">Puppy</string>
+    <string name="emoticon_label">Emoticon</string>
+    <string name="date_picker_prev_month">Previous month</string>
+    <string name="date_picker_next_month">Next month</string>
+    <string name="notice_expand">Expand notice</string>
+    <string name="notice_details_collapse">Hide details</string>
+    <string name="notice_details_expand">Show details</string>
+    <string name="file_name_unknown">(No name)</string>
+    <string name="login_id_required">Please enter your ID</string>
+    <string name="login_pw_required">Please enter your password</string>
 </resources>

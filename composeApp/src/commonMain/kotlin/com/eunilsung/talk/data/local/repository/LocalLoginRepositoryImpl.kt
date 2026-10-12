@@ -1,5 +1,11 @@
 package com.eunilsung.talk.data.local.repository
 
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.StringResource
+import multiplatformtalk.composeapp.generated.resources.login_invalid_credentials
+import multiplatformtalk.composeapp.generated.resources.login_pw_required
+import multiplatformtalk.composeapp.generated.resources.login_id_required
+import multiplatformtalk.composeapp.generated.resources.Res
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,14 +43,12 @@ class LocalLoginRepositoryImpl(
         // 로딩 상태 전환이 보이도록 최소 지연.
         delay(LOGIN_DELAY_MS)
 
-        if (input.id.isBlank()) return Login.LoginResult.Error("아이디를 입력해 주세요")
-        if (input.pw.isBlank()) return Login.LoginResult.Error("비밀번호를 입력해 주세요")
+        if (input.id.isBlank()) return Login.LoginResult.Error(text(Res.string.login_id_required))
+        if (input.pw.isBlank()) return Login.LoginResult.Error(text(Res.string.login_pw_required))
 
         val account = TestAccounts.find(input.id)
-            ?: return Login.LoginResult.Error("가입되지 않은 아이디입니다")
-
-        if (input.pw != TestAccounts.PASSWORD) {
-            return Login.LoginResult.Error("비밀번호가 일치하지 않습니다")
+        if (account == null || input.pw != TestAccounts.PASSWORD) {
+            return Login.LoginResult.Error(text(Res.string.login_invalid_credentials))
         }
 
         applyToMyInfo(account, input.pw)
@@ -127,4 +131,8 @@ class LocalLoginRepositoryImpl(
     private companion object {
         const val LOGIN_DELAY_MS = 400L
     }
+
+    /** 화면에 보여 줄 문구. 리소스를 읽을 수 없는 환경(JVM 단위 테스트)에서는 빈 문자열이 된다. */
+    private suspend fun text(resource: StringResource): String =
+        runCatching { getString(resource) }.getOrDefault("")
 }
