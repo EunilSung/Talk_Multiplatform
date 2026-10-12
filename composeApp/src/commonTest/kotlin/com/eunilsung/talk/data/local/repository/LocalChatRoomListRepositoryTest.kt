@@ -60,7 +60,8 @@ class LocalChatRoomListRepositoryTest {
         val repo = newRepository()
         repo.fetchChatRooms()
 
-        assertEquals("room_group_dev", repo.rooms().first().id)   // 시드에서 고정된 방
+        /** 시드에서 고정된 방 */
+        assertEquals("room_group_dev", repo.rooms().first().id)
     }
 
     @Test
@@ -69,7 +70,8 @@ class LocalChatRoomListRepositoryTest {
         repo.fetchChatRooms()
 
         assertTrue(repo.setChatRoomPin("room_direct_3", true))
-        assertEquals("room_direct_3", repo.rooms().first().id)   // 나중에 고정한 방이 더 위
+        /** 나중에 고정한 방이 더 위 */
+        assertEquals("room_direct_3", repo.rooms().first().id)
 
         assertTrue(repo.setChatRoomPin("room_direct_3", false))
         assertEquals("room_group_dev", repo.rooms().first().id)
@@ -85,7 +87,8 @@ class LocalChatRoomListRepositoryTest {
         assertEquals(before - 1, repo.rooms().size)
         assertNull(repo.rooms().firstOrNull { it.id == "room_direct_1" })
 
-        assertFalse(repo.leaveChatRoom("room_direct_1"))   // 이미 없음
+        /** 이미 없음 */
+        assertFalse(repo.leaveChatRoom("room_direct_1"))
 
         val reopened = newRepository()
         reopened.fetchChatRooms()
@@ -140,7 +143,8 @@ class LocalChatRoomListRepositoryTest {
         val created = repo.groups().first { it.name == "임시" }
 
         repo.addRoomToGroup(created.id, "room_direct_3")
-        repo.addRoomToGroup(created.id, "room_direct_3")   // 중복 추가는 무시
+        /** 중복 추가는 무시 */
+        repo.addRoomToGroup(created.id, "room_direct_3")
         assertEquals(listOf("room_direct_3"), repo.groups().first { it.id == created.id }.roomIds)
 
         repo.removeRoomFromGroup(created.id, "room_direct_3")

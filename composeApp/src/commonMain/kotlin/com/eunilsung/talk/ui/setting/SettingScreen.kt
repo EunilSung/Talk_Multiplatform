@@ -77,7 +77,7 @@ fun SettingContent(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val moveToBackground = rememberMoveToBackground()
 
-    // 탭 최상위 화면이라 뒤로가기는 앱 종료가 아니라 백그라운드 전환.
+    /** 탭 최상위 화면이라 뒤로가기는 앱 종료가 아니라 백그라운드 전환. */
     val rightPaneOpen = LocalRightPaneOpen.current
     BackHandler(enabled = !rightPaneOpen, onBack = { moveToBackground() })
 

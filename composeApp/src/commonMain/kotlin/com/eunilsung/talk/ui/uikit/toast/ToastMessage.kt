@@ -56,8 +56,10 @@ fun ToastMessage(
     duration: Long = 2000L,
     restartKey: Any? = message,
 ) {
-    // 이전 토스트가 떠 있는 채로 새 토스트가 오면 isVisible 은 true 로 유지된다.
-    // restartKey 를 함께 키로 써야 표시 시간이 처음부터 다시 흐른다.
+    /**
+     * 이전 토스트가 떠 있는 채로 새 토스트가 오면 isVisible 은 true 로 유지된다.
+     * restartKey 를 함께 키로 써야 표시 시간이 처음부터 다시 흐른다.
+     */
     LaunchedEffect(restartKey, isVisible) {
         if (isVisible) {
             delay(duration)
@@ -74,8 +76,10 @@ fun ToastMessage(
             enter = fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.8f, animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f, animationSpec = tween(300))
         ) {
-            // Surface 는 내부 pointerInput 때문에 토스트가 뜬 동안 그 자리의 버튼·리스트 항목이
-            // 눌리지 않는다. 토스트는 입력을 가로채면 안 되므로 배경만 그리는 Box 로 둔다.
+            /**
+             * Surface 는 내부 pointerInput 때문에 토스트가 뜬 동안 그 자리의 버튼·리스트 항목이
+             * 눌리지 않는다. 토스트는 입력을 가로채면 안 되므로 배경만 그리는 Box 로 둔다.
+             */
             Box(
                 modifier = Modifier
                     .padding(bottom = 50.dp)

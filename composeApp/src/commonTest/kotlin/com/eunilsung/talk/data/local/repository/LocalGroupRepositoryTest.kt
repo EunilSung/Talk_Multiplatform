@@ -53,7 +53,8 @@ class LocalGroupRepositoryTest {
 
         val ids = repo.groups().map { it.id }
         assertEquals(setOf("myprofile", DEFAULT_GROUP_ID, "1", "2", "3"), ids.toSet())
-        assertEquals("myprofile", ids.first())   // 내 프로필은 항상 최상단
+        /** 내 프로필은 항상 최상단 */
+        assertEquals("myprofile", ids.first())
     }
 
     @Test
@@ -61,7 +62,7 @@ class LocalGroupRepositoryTest {
         val repo = newRepository()
         repo.fetchGroups()
 
-        // 개발팀 시드는 test1~test4 지만 로그인한 test1 은 제외되어야 한다.
+        /** 개발팀 시드는 test1~test4 지만 로그인한 test1 은 제외되어야 한다. */
         val devMembers = repo.groups().memberIdsOf("1")
         assertEquals(listOf("test2", "test3", "test4"), devMembers.sorted())
     }
@@ -83,7 +84,8 @@ class LocalGroupRepositoryTest {
         assertTrue(repo.createGroup("신규팀"))
 
         val created = repo.groups().first { it.name == "신규팀" }
-        assertEquals("4", created.id)   // 기존 최대 숫자 id(3) 다음
+        /** 기존 최대 숫자 id(3) 다음 */
+        assertEquals("4", created.id)
         assertEquals(6, repo.groups().size)
     }
 
@@ -119,7 +121,8 @@ class LocalGroupRepositoryTest {
         assertFalse(repo.groups().memberIdsOf("1").contains("test2"))
         assertContains(repo.groups().memberIdsOf("2"), "test2")
 
-        assertFalse(repo.removeUserFromGroup("test2", "1"))   // 이미 없음
+        /** 이미 없음 */
+        assertFalse(repo.removeUserFromGroup("test2", "1"))
     }
 
     @Test
@@ -143,7 +146,7 @@ class LocalGroupRepositoryTest {
         assertFalse(repo.renameGroup("1", " "))
         assertFalse(repo.renameGroup("없는그룹", "아무거나"))
 
-        // 새 인스턴스로 다시 읽어도 유지 = DB 에 반영됐다는 뜻.
+        /** 새 인스턴스로 다시 읽어도 유지 = DB 에 반영됐다는 뜻. */
         val reopened = newRepository()
         reopened.fetchGroups()
         assertEquals("플랫폼팀", reopened.groups().first { it.id == "1" }.name)

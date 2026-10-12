@@ -160,8 +160,10 @@ private fun LockScreenContent(
     onBiometricClick: () -> Unit,
 ) {
     Box(
-        // 잠금 화면은 앱 본문 위에 겹쳐 그려져 배경색만으로는 시각적으로만 가린다.
-        // 이벤트까지 흡수해야 잠긴 상태에서 뒤쪽 대화방 등이 조작되지 않는다.
+        /**
+         * 잠금 화면은 앱 본문 위에 겹쳐 그려져 배경색만으로는 시각적으로만 가린다.
+         * 이벤트까지 흡수해야 잠긴 상태에서 뒤쪽 대화방 등이 조작되지 않는다.
+         */
         modifier = Modifier.fillMaxSize().background(AppColors.Bg).blockPointerInput(),
         contentAlignment = Alignment.Center,
     ) {

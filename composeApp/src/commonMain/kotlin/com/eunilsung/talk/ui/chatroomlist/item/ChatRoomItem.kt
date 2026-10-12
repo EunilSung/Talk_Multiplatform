@@ -158,7 +158,7 @@ fun ChatRoomItem(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 미리보기 앞의 이모티콘 id 토큰은 이미지로 그리고 남은 본문은 옆에 붙인다.
+                    /** 미리보기 앞의 이모티콘 id 토큰은 이미지로 그리고 남은 본문은 옆에 붙인다. */
                     val preview = item.lastChatContent.trim()
                     val parsed = remember(preview) {
                         val (token, rest) = splitLeadingToken(preview)
@@ -171,7 +171,7 @@ fun ChatRoomItem(
                         StaticEmoticonImage(
                             resourceName = emoticonName,
                             contentDescription = null,
-                            // 목록에서는 정적 이미지로만.
+                            /** 목록에서는 정적 이미지로만. */
                             modifier = Modifier.height(22.dp),
                         )
                         if (previewText.isNotEmpty()) Spacer(modifier = Modifier.size(4.dp))

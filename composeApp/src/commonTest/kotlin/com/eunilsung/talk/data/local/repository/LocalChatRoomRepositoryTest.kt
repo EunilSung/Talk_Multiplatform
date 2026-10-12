@@ -131,7 +131,7 @@ class LocalChatRoomRepositoryTest {
         assertEquals(before + 1, added.size)
         val noticeChat = added.last()
         assertEquals(Chat.Type.NOTICE, noticeChat.chatType)
-        // 본문은 chatContent, 등록/삭제 구분은 title.
+        /** 본문은 chatContent, 등록/삭제 구분은 title. */
         assertEquals("금요일 3시 전체 회의", noticeChat.chatContent)
         assertEquals(Notice.ACTION_ADD, noticeChat.title)
     }
@@ -235,7 +235,7 @@ class LocalChatRoomRepositoryTest {
 
         repo.recallChat(roomId, target.chatID)
 
-        // "1"/"0" 문자열로 저장되는 구간이라 재조회로 확인한다.
+        /** "1"/"0" 문자열로 저장되는 구간이라 재조회로 확인한다. */
         repo.fetchChats(roomId)
         assertTrue(chats().first { it.chatID == target.chatID }.isRecalled)
     }

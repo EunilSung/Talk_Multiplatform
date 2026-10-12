@@ -74,7 +74,7 @@ fun PhotoGalleryBottomSheetContent(
             selectedCount = selectedIds.size,
             onSend = onSend,
             leftContent = {
-                // 앨범이 하나도 없으면(권한 없음/조회 실패) 선택기를 숨겨 빈 버튼만 남지 않게 한다.
+                /** 앨범이 하나도 없으면(권한 없음/조회 실패) 선택기를 숨겨 빈 버튼만 남지 않게 한다. */
                 if (albums.isNotEmpty()) {
                     AlbumSelector(
                         label = selectedAlbumName ?: stringResource(Res.string.all),
@@ -244,7 +244,7 @@ private fun AlbumRow(
                 .clip(RoundedCornerShape(6.dp))
                 .background(AppColors.SearchBG)
         ) {
-            // iOS 는 대표 이미지 URI 를 만들 수 없어 미리 디코드한 바이트를 쓴다.
+            /** iOS 는 대표 이미지 URI 를 만들 수 없어 미리 디코드한 바이트를 쓴다. */
             val model: Any? = coverBytes ?: coverUri.takeIf { it.isNotBlank() }
             if (model != null) {
                 AsyncImage(

@@ -119,7 +119,7 @@ fun ChatItem(
     val canReply = !chat.isRecalled && canInteract
     val canEmpathy = !chat.isRecalled && canInteract
 
-    // 최소 높이는 프로필 이미지가 그려지는 행에만 적용.
+    /** 최소 높이는 프로필 이미지가 그려지는 행에만 적용. */
     val showsProfileImage = !isMe && groupedItem.showProfileAndName
 
     Row(

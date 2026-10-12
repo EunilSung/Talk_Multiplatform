@@ -49,7 +49,7 @@ val platformModule = module {
     single<FilePickerProvider> { AndroidFilePickerProvider() }
     single<PhotoPickerProvider> { AndroidPhotoPickerProvider() }
     single<FileMetadataResolver> { AndroidFileMetadataResolver(get()) }
-    // 스크롤로 말풍선이 드나들 때마다 다시 디코드하지 않도록 캐시로 감싼다.
+    /** 스크롤로 말풍선이 드나들 때마다 다시 디코드하지 않도록 캐시로 감싼다. */
     single<VideoThumbnailLoader> { VideoThumbCache(AndroidVideoThumbnailLoader(get())) }
     single<FileOpener> { AndroidFileOpener(get()) }
     single<PushNotifier> { AndroidPushNotifier(get(), get()) }

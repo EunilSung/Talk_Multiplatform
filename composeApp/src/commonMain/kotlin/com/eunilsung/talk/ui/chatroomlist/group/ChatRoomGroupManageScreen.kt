@@ -120,7 +120,7 @@ fun ChatRoomGroupManageContent(
 
             LineDivider(modifier = Modifier.fillMaxWidth())
 
-            // 안읽음(kind="1") 제외 커스텀 그룹이 최대치(10개)면 생성 버튼 비활성화.
+            /** 안읽음(kind="1") 제외 커스텀 그룹이 최대치(10개)면 생성 버튼 비활성화. */
             val maxReached = groups.count { !it.isUnreadGroup } >= 10
             ButtonV1(
                 text = stringResource(Res.string.chat_group_create),

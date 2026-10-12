@@ -29,7 +29,7 @@ fun UploadProgressOverlay(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        // 업로드 중에는 말풍선 탭이 통하면 안 된다 — 아직 서버에 없는 이미지의 뷰어가 열린다.
+        /** 업로드 중에는 말풍선 탭이 통하면 안 된다 — 아직 서버에 없는 이미지의 뷰어가 열린다. */
         modifier = modifier
             .clip(shape)
             .background(AppColors.Black.copy(alpha = 0.4f))

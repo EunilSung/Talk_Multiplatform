@@ -87,7 +87,7 @@ class IosRecentPhotosProvider(
                 fetchLimit = limit.toULong()
             }
             val requestedAlbum = albumId?.takeIf { it.isNotBlank() }
-            // 앨범이 지정되면 그 컬렉션 안에서만 조회한다.
+            /** 앨범이 지정되면 그 컬렉션 안에서만 조회한다. */
             val collection = requestedAlbum?.let { id ->
                 PHAssetCollection
                     .fetchAssetCollectionsWithLocalIdentifiers(listOf(id), null)
@@ -95,8 +95,10 @@ class IosRecentPhotosProvider(
             }
             val result = when {
                 collection != null -> PHAsset.fetchAssetsInAssetCollection(collection, options)
-                // 앨범을 지정했는데 못 찾은 경우(삭제됐거나 식별자가 낡음) 전체로 되돌리면
-                // "비디오" 를 골랐는데 전체 사진이 뜨는 꼴이 된다. 빈 목록이 덜 혼란스럽다.
+                /**
+                 * 앨범을 지정했는데 못 찾은 경우(삭제됐거나 식별자가 낡음) 전체로 되돌리면
+                 * "비디오" 를 골랐는데 전체 사진이 뜨는 꼴이 된다. 빈 목록이 덜 혼란스럽다.
+                 */
                 requestedAlbum != null -> {
                     Log.message("[RecentPhotos] iOS album not found: $requestedAlbum")
                     return@runCatching emptyList()
@@ -204,9 +206,11 @@ class IosRecentPhotosProvider(
                 .filter { it.first.name.isNotBlank() }
                 .sortedByDescending { it.first.count }
 
-            // 대표 이미지는 URI 로 못 넘겨 썸네일 바이트로 싣는다 — 행 높이(48dp)에 맞춰 작게.
-            // 없어도 목록은 쓸 수 있으므로 iCloud 다운로드를 막고, 늦으면 타임아웃 후
-            // 이름·개수만 반환한다. 이미지 한 장 때문에 목록 전체를 볼모로 잡지 않는다.
+            /**
+             * 대표 이미지는 URI 로 못 넘겨 썸네일 바이트로 싣는다 — 행 높이(48dp)에 맞춰 작게.
+             * 없어도 목록은 쓸 수 있으므로 iCloud 다운로드를 막고, 늦으면 타임아웃 후
+             * 이름·개수만 반환한다. 이미지 한 장 때문에 목록 전체를 볼모로 잡지 않는다.
+             */
             withTimeoutOrNull(ALBUM_COVER_TIMEOUT_MS) {
                 coroutineScope {
                     sorted.map { (album, cover) ->

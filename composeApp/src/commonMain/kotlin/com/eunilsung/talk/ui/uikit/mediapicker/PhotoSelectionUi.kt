@@ -54,8 +54,10 @@ fun SelectablePhotoCell(
     isShowToggle: Boolean = true
 ) {
     val selected = selectionOrder > 0
-    // 셀 전체가 클릭 대상이라 스크린리더가 "버튼" 만 읽는다.
-    // 무엇인지(사진/동영상) + 선택 순번을 함께 전달한다.
+    /**
+     * 셀 전체가 클릭 대상이라 스크린리더가 "버튼" 만 읽는다.
+     * 무엇인지(사진/동영상) + 선택 순번을 함께 전달한다.
+     */
     val kindLabel = stringResource(
         if (photo.isVideo) Res.string.a11y_video_cell else Res.string.a11y_photo_cell
     )

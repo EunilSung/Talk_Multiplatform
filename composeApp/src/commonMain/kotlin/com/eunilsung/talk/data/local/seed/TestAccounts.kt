@@ -6,8 +6,10 @@ object TestAccounts {
     /** 전 계정 공통 비밀번호. */
     const val PASSWORD = "1234"
 
-    // pcStatus: "1" 로그인 / "2" 자리비움 / "3" 업무중 / "4" 기타 / 그 외 로그아웃
-    // mobileStatus: "0" 오프라인 / 그 외 온라인
+    /**
+     * pcStatus: "1" 로그인 / "2" 자리비움 / "3" 업무중 / "4" 기타 / 그 외 로그아웃
+     * mobileStatus: "0" 오프라인 / 그 외 온라인
+     */
     data class Account(
         val userId: String,
         val userName: String,
@@ -23,7 +25,7 @@ object TestAccounts {
         val positionSortCode: String,
     )
 
-    // 앞에 올수록 상위 직급 — [Account.positionSortCode] 산출에 사용. [ALL] 보다 위에 있어야 한다.
+    /** 앞에 올수록 상위 직급 — [Account.positionSortCode] 산출에 사용. [ALL] 보다 위에 있어야 한다. */
     private val POSITION_ORDER = listOf("부장", "차장", "팀장", "과장", "대리", "주임", "사원")
 
     val ALL: List<Account> = listOf(

@@ -381,8 +381,10 @@ fun Phone(
             }
         }
 
-        // offsetX.value 를 직접 읽으면 슬라이드 300ms 동안 Phone 전체가 매 프레임 재구성된다.
-        // 자식 stickyOverlay 는 Voyager Screen(인터페이스, unstable)이라 skip 되지 않아 비용이 크다.
+        /**
+         * offsetX.value 를 직접 읽으면 슬라이드 300ms 동안 Phone 전체가 매 프레임 재구성된다.
+         * 자식 stickyOverlay 는 Voyager Screen(인터페이스, unstable)이라 skip 되지 않아 비용이 크다.
+         */
         val overlayVisible by remember(offsetX, screenWidthPx) {
             derivedStateOf { offsetX.value < screenWidthPx }
         }

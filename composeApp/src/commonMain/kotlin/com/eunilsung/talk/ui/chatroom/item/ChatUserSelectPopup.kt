@@ -66,7 +66,7 @@ fun BoxScope.ChatUserSelectPopup(
                         user.departmentName?.takeIf { it.isNotBlank() },
                         user.positionName?.takeIf { it.isNotBlank() },
                     ).joinToString("/")
-                    // 배경을 padding 앞에 두어야 강조가 행 전체 폭을 덮는다.
+                    /** 배경을 padding 앞에 두어야 강조가 행 전체 폭을 덮는다. */
                     val rowBackground =
                         if (user.id == selectedUserId) AppColors.UserSelectBg
                         else AppColors.Transparent

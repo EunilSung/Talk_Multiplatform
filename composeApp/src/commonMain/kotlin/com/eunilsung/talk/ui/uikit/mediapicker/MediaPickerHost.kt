@@ -120,8 +120,10 @@ fun MediaPickerHost(
             is RecentPhotosResult.Denied -> emptyList()
         }
 
-        // 같은 람다가 selectedPhotoIds 를 읽으므로, remember 없이 매핑하면 사진을 한 장 고를
-        // 때마다 목록 전체가 다시 변환된다. 시트가 보여주는 만큼만 잘라 쓴다.
+        /**
+         * 같은 람다가 selectedPhotoIds 를 읽으므로, remember 없이 매핑하면 사진을 한 장 고를
+         * 때마다 목록 전체가 다시 변환된다. 시트가 보여주는 만큼만 잘라 쓴다.
+         */
         val recentPhotos = remember(photos) {
             photos.take(MAX_RECENT_PHOTOS).map { it.toMultimediaPhoto() }
         }
@@ -172,7 +174,7 @@ fun MediaPickerHost(
         onDismiss = { state.showGallerySheet = false },
         isModal = false,
     ) {
-        // 기기 갤러리 전량이라 상한이 없다. remember 없이 두면 사진 탭 한 번에 전량 재변환.
+        /** 기기 갤러리 전량이라 상한이 없다. remember 없이 두면 사진 탭 한 번에 전량 재변환. */
         val galleryPhotos = remember(bindings.galleryPhotos) {
             bindings.galleryPhotos.map { it.toMultimediaPhoto() }
         }
@@ -197,7 +199,7 @@ fun MediaPickerHost(
             albums = bindings.galleryAlbums,
             selectedAlbumId = bindings.selectedAlbumId,
             onAlbumSelect = { albumId ->
-                // 폴더가 바뀌면 이전 폴더에서 고른 항목은 화면에서 사라지므로 선택도 비운다.
+                /** 폴더가 바뀌면 이전 폴더에서 고른 항목은 화면에서 사라지므로 선택도 비운다. */
                 state.selectedPhotoIds = emptyList()
                 bindings.onSelectGalleryAlbum(albumId)
             },

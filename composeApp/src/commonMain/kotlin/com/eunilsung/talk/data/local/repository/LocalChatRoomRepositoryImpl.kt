@@ -153,8 +153,6 @@ class LocalChatRoomRepositoryImpl(
         _bookmarks.value = emptyList()
     }
 
-    // ---- 전송 ----
-
     override suspend fun sendTextChat(
         chatRoomId: String,
         text: String,
@@ -181,7 +179,7 @@ class LocalChatRoomRepositoryImpl(
     ): Chat.Item {
         val sender = senderOf(chatRoomId)
         val hasEmoticon = !emoticonId.isNullOrBlank()
-        // 답장이면 REPLY, 이모티콘이면 EMOTICON, 아니면 TEXT.
+        /** 답장이면 REPLY, 이모티콘이면 EMOTICON, 아니면 TEXT. */
         return Chat.Item(
             chatID = ChatIdUtils.generateChatId(sender.id),
             chatType = when {
@@ -231,7 +229,7 @@ class LocalChatRoomRepositoryImpl(
             val myId = Config.MyInfo.userId
             if (myId.isBlank() || path.isBlank()) return@withContext null
 
-            // 메타데이터에서 실제 표시명을 얻는다.
+            /** 메타데이터에서 실제 표시명을 얻는다. */
             val meta = runCatching { fileMetadataResolver.resolve(path) }.getOrElse {
                 Log.message("[Chat/Local] sendFile: metadata resolve failed: ${it.message}")
                 return@withContext null
@@ -241,8 +239,10 @@ class LocalChatRoomRepositoryImpl(
             val sender = senderOf(chatRoomId)
             val chatId = ChatIdUtils.generateChatId(sender.id)
 
-            // iOS 갤러리 항목은 PHAsset 식별자라 그대로 저장하면 말풍선에서 열리지 않는다.
-            // 실제 파일로 확보해 두 진입점(대화방·공유)을 한 곳에서 처리한다.
+            /**
+             * iOS 갤러리 항목은 PHAsset 식별자라 그대로 저장하면 말풍선에서 열리지 않는다.
+             * 실제 파일로 확보해 두 진입점(대화방·공유)을 한 곳에서 처리한다.
+             */
             val storedPath = runCatching {
                 fileMetadataResolver.materializeForDisplay(path, "${chatId.substringBefore('.')}_$name")
             }.getOrElse {
@@ -262,7 +262,7 @@ class LocalChatRoomRepositoryImpl(
                 originalFileName = name,
                 imageSize = meta.widthHeight,
                 localPath = storedPath,
-                // imagePath — 파일 상세 시트가 열기/다운로드에 쓰는 값(비면 시트가 안 뜬다).
+                /** imagePath — 파일 상세 시트가 열기/다운로드에 쓰는 값(비면 시트가 안 뜬다). */
                 imagePath = storedPath,
             )
         }
@@ -278,7 +278,7 @@ class LocalChatRoomRepositoryImpl(
 
         val me = senderOf(chatRoomId)
         val current = target.empathy
-        // 같은 반응을 다시 누르면 취소(토글).
+        /** 같은 반응을 다시 누르면 취소(토글). */
         val already = current.listFor(empathyType).any { it.id == me.id }
         val updated = current.withoutMe(me.id).let { cleared ->
             if (already) cleared else cleared.plus(empathyType, me)
@@ -291,7 +291,7 @@ class LocalChatRoomRepositoryImpl(
     override suspend fun recallChat(chatRoomId: String, targetChatId: String) =
         withContext(Dispatchers.Default) {
             val myId = Config.MyInfo.userId
-            // isRecalled 는 "1"/"0" 으로 저장.
+            /** isRecalled 는 "1"/"0" 으로 저장. */
             dbQueries.updateChatRecalled(
                 isRecalled = "1", myId = myId, chatRoomId = chatRoomId, chatId = targetChatId
             )
@@ -311,8 +311,6 @@ class LocalChatRoomRepositoryImpl(
     }
 
     override suspend fun refreshChatUnreadCounts(chatRoomId: String) = Unit
-
-    // ---- 공지 ----
 
     override suspend fun requestNotice(chatRoomId: String) = withContext(Dispatchers.Default) {
         _currentNotice.value = loadNotice(Config.MyInfo.userId, chatRoomId)
@@ -347,7 +345,7 @@ class LocalChatRoomRepositoryImpl(
 
     override suspend fun deleteNotice(chatRoomId: String) {
         val myId = Config.MyInfo.userId
-        // 삭제 전 내용 확보(미리보기용).
+        /** 삭제 전 내용 확보(미리보기용). */
         val previous = withContext(Dispatchers.Default) {
             loadNotice(myId, chatRoomId).also {
                 dbQueries.deleteNotice(myId = myId, chatRoomId = chatRoomId)
@@ -371,9 +369,9 @@ class LocalChatRoomRepositoryImpl(
             val chat = Chat.Item(
                 chatID = ChatIdUtils.generateChatId(sender.id),
                 chatType = Chat.Type.NOTICE,
-                // 말풍선과 목록 미리보기 모두 이 본문을 쓴다.
+                /** 말풍선과 목록 미리보기 모두 이 본문을 쓴다. */
                 chatContent = noticeContent,
-                // 등록/삭제 구분 — 문구는 표시하는 쪽에서 고른다.
+                /** 등록/삭제 구분 — 문구는 표시하는 쪽에서 고른다. */
                 title = if (added) Notice.ACTION_ADD else Notice.ACTION_DELETE,
                 chatStatus = Chat.Status.COMPLETE,
                 date = nowChatDate(),
@@ -383,8 +381,6 @@ class LocalChatRoomRepositoryImpl(
             )
             appendMyChat(chatRoomId, chat)
         }
-
-    // ---- 책갈피 ----
 
     override suspend fun fetchBookmarks(chatRoomId: String) = withContext(Dispatchers.Default) {
         _bookmarks.value = loadBookmarks(Config.MyInfo.userId, chatRoomId)
@@ -411,8 +407,6 @@ class LocalChatRoomRepositoryImpl(
             dbQueries.deleteBookmark(myId = myId, chatRoomId = chatRoomId, chatId = chatId)
             _bookmarks.value = loadBookmarks(myId, chatRoomId)
         }
-
-    // ---- 내부 ----
 
     private fun loadNotice(myId: String, chatRoomId: String): Notice? =
         dbQueries.selectNotice(myId, chatRoomId).executeAsOneOrNull()?.let(chatMapper::toNotice)
@@ -563,8 +557,6 @@ class LocalChatRoomRepositoryImpl(
 
     }
 }
-
-// ---- EmpathyChat 헬퍼 ----
 
 private fun EmpathyChat.listFor(type: String): List<User> = when (type) {
     "0" -> empathy0

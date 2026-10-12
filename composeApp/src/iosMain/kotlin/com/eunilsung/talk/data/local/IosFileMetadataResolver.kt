@@ -82,7 +82,7 @@ class IosFileMetadataResolver : FileMetadataResolver {
     override suspend fun saveVideoToGallery(filename: String, bytes: ByteArray): String? =
         withContext(Dispatchers.Default) {
             runCatching {
-                // 동영상 asset 생성은 파일 URL 이 필요 — 임시 파일로 쓴 뒤 등록.
+                /** 동영상 asset 생성은 파일 URL 이 필요 — 임시 파일로 쓴 뒤 등록. */
                 val nsData = bytes.usePinned { pinned ->
                     NSData.create(bytes = pinned.addressOf(0), length = bytes.size.toULong())
                 }

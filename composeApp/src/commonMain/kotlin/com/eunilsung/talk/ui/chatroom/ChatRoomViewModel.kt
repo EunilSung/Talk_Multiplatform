@@ -264,7 +264,7 @@ class ChatRoomViewModel(
     }
 
     private fun moveToLatest() {
-        // 최신으로 점프하면 과거 페이징 상태를 처음으로 되돌려야 한다.
+        /** 최신으로 점프하면 과거 페이징 상태를 처음으로 되돌려야 한다. */
         noMoreChats = false
         fetchingMore = false
         inRoom("moveToLatest") { chatRoomUseCases.loadLatestChats(it) }

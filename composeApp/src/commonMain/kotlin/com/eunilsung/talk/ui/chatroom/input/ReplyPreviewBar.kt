@@ -95,7 +95,7 @@ private val ReplyLeadingSize = 36.dp
 
 @Composable
 private fun ReplyLeading(target: Chat.Item) {
-    // 타입이 아니라 실제로 달고 있는 이모티콘 유무로 먼저 판정한다.
+    /** 타입이 아니라 실제로 달고 있는 이모티콘 유무로 먼저 판정한다. */
     val emoticonName = target.emoticon.id.takeIf { it.isNotBlank() }
         ?.let { emoticonResourceNameForId(it) }
     if (emoticonName != null) {

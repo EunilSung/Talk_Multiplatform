@@ -15,7 +15,7 @@ import org.jetbrains.compose.resources.getString
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.Notice
 
-// 미리보기 앞쪽 괄호 토큰(이모티콘 id) 매칭용 정규식.
+/** 미리보기 앞쪽 괄호 토큰(이모티콘 id) 매칭용 정규식. */
 private val LEADING_TOKEN_REGEX = Regex("""^\(([^()]+)\)\s*""")
 
 /** 이모티콘 id + 본문 → 미리보기 문자열. 본문이 없으면 id 만. */
@@ -50,7 +50,7 @@ suspend fun chatDisplayText(chat: Chat.Item, forReply: Boolean = false): String 
     chat.chatType == Chat.Type.VOTE_COMPLETE ->
         getString(Res.string.chat_preview_vote_closed, chat.title)
 
-    // 등록/삭제는 title, 본문은 chatContent 에 나뉘어 있다.
+    /** 등록/삭제는 title, 본문은 chatContent 에 나뉘어 있다. */
     chat.chatType == Chat.Type.NOTICE ->
         getString(
             if (chat.title == Notice.ACTION_DELETE) Res.string.chat_preview_notice_deleted
@@ -58,7 +58,7 @@ suspend fun chatDisplayText(chat: Chat.Item, forReply: Boolean = false): String 
             chat.chatContent.stripMentionTags(),
         )
 
-    // 타입이 아니라 이모티콘을 달고 있는지로 판정(답장+이모티콘도 표기).
+    /** 타입이 아니라 이모티콘을 달고 있는지로 판정(답장+이모티콘도 표기). */
     chat.chatType == Chat.Type.EMOTICON || chat.emoticon.id.isNotBlank() ->
         if (forReply) chat.chatContent.stripMentionTags().ifBlank { getString(Res.string.emoticon_label) }
         else if (chat.emoticon.id.isBlank()) getString(Res.string.emoticon_label)

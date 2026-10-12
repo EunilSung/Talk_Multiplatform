@@ -24,7 +24,7 @@ class VideoThumbCache(
         val loaded = delegate.load(path)
         mutex.withLock {
             entries[path] = loaded
-            // 가장 오래 전에 넣은 것부터 버린다.
+            /** 가장 오래 전에 넣은 것부터 버린다. */
             while (entries.size > maxEntries) {
                 entries.remove(entries.keys.first())
             }

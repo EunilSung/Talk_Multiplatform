@@ -100,7 +100,7 @@ fun SettingItemButton(
     destructive: Boolean = false,
     enabled: Boolean = true,
 ) {
-    // 행 클릭은 걸지 않는다 — 버튼만 눌려야 한다.
+    /** 행 클릭은 걸지 않는다 — 버튼만 눌려야 한다. */
     SettingRow(title = title, modifier = modifier) {
         Spacer(Modifier.width(12.dp))
         ButtonV1(
