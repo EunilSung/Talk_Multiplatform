@@ -67,7 +67,7 @@ class AndroidRecentPhotosProvider(
                 MediaStore.Files.FileColumns.MEDIA_TYPE,
             )
         }
-        // 미디어 타입 조건은 괄호로 묶어야 앨범 조건이 OR 뒤쪽에만 걸리지 않는다.
+        /** 미디어 타입 조건은 괄호로 묶어야 앨범 조건이 OR 뒤쪽에만 걸리지 않는다. */
         val typeCondition = "(${MediaStore.Files.FileColumns.MEDIA_TYPE} = ? OR " +
                 "${MediaStore.Files.FileColumns.MEDIA_TYPE} = ?)"
         val typeArgs = arrayOf(
@@ -111,7 +111,7 @@ class AndroidRecentPhotosProvider(
             return@withContext RecentPhotosResult.Granted(emptyList())
         }
 
-        // 동영상 썸네일은 loadThumbnail 로 점진적으로 디코드해 채운다.
+        /** 동영상 썸네일은 loadThumbnail 로 점진적으로 디코드해 채운다. */
         onPartial(RecentPhotosResult.Granted(items))
 
         if (!isQ || items.none { it.isVideo }) {

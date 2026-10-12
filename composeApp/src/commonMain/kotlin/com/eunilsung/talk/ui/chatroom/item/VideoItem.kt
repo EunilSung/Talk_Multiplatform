@@ -52,7 +52,7 @@ fun VideoItem(
         value = runCatching { loader.load(source) }.getOrDefault(VideoThumb())
     }
 
-    // 이미지와 동일한 크기 규칙. 해상도를 모르면 200x150.
+    /** 이미지와 동일한 크기 규칙. 해상도를 모르면 200x150. */
     val parsed = ImageSizeUtils.getImageSize(thumb.widthHeight)
     val sizeBase = if (parsed != null) {
         Modifier.size(width = parsed.width, height = parsed.height)
@@ -80,7 +80,7 @@ fun VideoItem(
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            // 첫 프레임. 못 뽑으면 어두운 배경만 남는다.
+            /** 첫 프레임. 못 뽑으면 어두운 배경만 남는다. */
             thumb.frameBytes?.let { bytes ->
                 AsyncImage(
                     model = bytes,

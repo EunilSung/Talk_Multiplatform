@@ -28,7 +28,7 @@ class AndroidVideoThumbnailLoader(
                 ?.toLongOrNull() ?: 0L
             val w = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
             val h = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
-            // 90/270° 회전이면 표시상 가로세로가 바뀐다.
+            /** 90/270° 회전이면 표시상 가로세로가 바뀐다. */
             val rotation = retriever
                 .extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
                 ?.toIntOrNull() ?: 0
@@ -36,7 +36,7 @@ class AndroidVideoThumbnailLoader(
                 if (rotation == 90 || rotation == 270) "$h:$w" else "$w:$h"
             } else ""
 
-            // 첫 프레임(근처 키프레임).
+            /** 첫 프레임(근처 키프레임). */
             val frame: Bitmap? = retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
             val bytes = frame?.let { bmp ->
                 ByteArrayOutputStream().use { out ->

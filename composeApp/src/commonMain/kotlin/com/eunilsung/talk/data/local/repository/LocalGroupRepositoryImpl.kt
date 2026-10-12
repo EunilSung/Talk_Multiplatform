@@ -50,7 +50,7 @@ class LocalGroupRepositoryImpl(
         }
         repositoryScope.launch {
             loginRepository.isLoggedIn.drop(1).filter { !it }.collect {
-                // DB 는 그대로 두고 화면 상태만 비운다.
+                /** DB 는 그대로 두고 화면 상태만 비운다. */
                 Log.message("[Group/Local] clear view on logout")
                 _groups.value = emptyList()
             }
@@ -154,7 +154,7 @@ class LocalGroupRepositoryImpl(
         val myId = Config.MyInfo.userId
         if (myId.isBlank()) return@withContext false
 
-        // 기존 그룹 id 와 겹치지 않도록 DB 의 최대 숫자 id 다음 값을 쓴다.
+        /** 기존 그룹 id 와 겹치지 않도록 DB 의 최대 숫자 id 다음 값을 쓴다. */
         val nextId = ((dbQueries.selectGroupsByMyId(myId).executeAsList()
             .mapNotNull { it.groupId.toIntOrNull() }.maxOrNull() ?: 0) + 1).toString()
 
@@ -168,8 +168,6 @@ class LocalGroupRepositoryImpl(
         Log.message("[Group/Local] createGroup '$name' (id=$nextId)")
         true
     }
-
-    // ---- 내부 ----
 
     /** 해당 계정의 그룹이 DB 에 없을 때만 초기 배치를 넣는다. */
     private suspend fun seedIfNeeded() = withContext(Dispatchers.Default) {

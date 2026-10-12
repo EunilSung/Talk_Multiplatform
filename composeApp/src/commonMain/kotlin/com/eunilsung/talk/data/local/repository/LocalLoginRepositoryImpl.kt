@@ -40,7 +40,7 @@ class LocalLoginRepositoryImpl(
     }
 
     override suspend fun requestLogin(input: Login.LoginRequest): Login.LoginResult {
-        // 로딩 상태 전환이 보이도록 최소 지연.
+        /** 로딩 상태 전환이 보이도록 최소 지연. */
         delay(LOGIN_DELAY_MS)
 
         if (input.id.isBlank()) return Login.LoginResult.Error(text(Res.string.login_id_required))

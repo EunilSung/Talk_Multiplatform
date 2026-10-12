@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 fun ToastHost(content: @Composable () -> Unit) {
     var message by remember { mutableStateOf<String?>(null) }
     var icon by remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
-    // 같은 문구를 연달아 띄워도 새 토스트로 인식되도록 호출마다 증가시킨다.
+    /** 같은 문구를 연달아 띄워도 새 토스트로 인식되도록 호출마다 증가시킨다. */
     var showToken by remember { mutableStateOf(0) }
 
     val manager = remember {

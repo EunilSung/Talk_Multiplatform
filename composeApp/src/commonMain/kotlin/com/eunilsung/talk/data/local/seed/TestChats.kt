@@ -27,7 +27,7 @@ object TestChats {
 
         val lastMillis = parseMillis(room.lastChatDate) ?: return emptyList()
 
-        // 마지막 줄이 방의 lastChatDate 와 같은 시각이 되도록 역순으로 시간을 매긴다.
+        /** 마지막 줄이 방의 lastChatDate 와 같은 시각이 되도록 역순으로 시간을 매긴다. */
         return lines.mapIndexed { index, line ->
             val fromEnd = lines.lastIndex - index
             val millis = lastMillis - fromEnd * GAP_MINUTES * 60_000L
@@ -68,13 +68,11 @@ object TestChats {
         val members = UserListCodec.decode(room.totalUserList)
         val myName = TestAccounts.find(myId)?.userName ?: myId
         val others = members.filterNot { it.first.equals(myId, ignoreCase = true) }
-        // 상대가 모두 퇴장한 방은 [seed] 가 화자를 전부 나로 배정하므로 안읽음이 없다.
+        /** 상대가 모두 퇴장한 방은 [seed] 가 화자를 전부 나로 배정하므로 안읽음이 없다. */
         if (others.isEmpty()) return emptyList()
         val lines = scriptFor(room, others.map { it.second }, myName)
         return lines.takeLastWhile { !it.mine }
     }
-
-    // ---- 방별 대화 스크립트 ----
 
     private data class Line(val text: String, val mine: Boolean, val speakerIndex: Int = 0)
 
@@ -99,7 +97,7 @@ object TestChats {
                 Line("빌드 통과했습니다 👍", mine = false, speakerIndex = 0),
             )
 
-            // 스크롤·페이징 확인용 긴 방 — 총 35줄, 마지막 10줄이 상대 대화라 안읽음 10.
+            /** 스크롤·페이징 확인용 긴 방 — 총 35줄, 마지막 10줄이 상대 대화라 안읽음 10. */
             room.id == "room_group_release" -> listOf(
                 Line("9월 릴리즈 준비 시작하겠습니다", mine = true),
                 Line("일정 공유 부탁드려요", mine = false, speakerIndex = 0),
@@ -158,8 +156,6 @@ object TestChats {
             )
         }
     }
-
-    // ---- 유틸 ----
 
 
     /** `yyyy-MM-dd HH:mm:ss` → epoch millis. 파싱 실패 시 null. */

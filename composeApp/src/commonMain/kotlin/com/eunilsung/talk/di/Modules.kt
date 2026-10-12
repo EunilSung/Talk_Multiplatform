@@ -112,7 +112,7 @@ val appModule = module {
     singleOf(::GetLinkPreviewUseCase)
     viewModelOf(::LinkPreviewViewModel)
 
-    // 원격 XML 대신 즉시 "업데이트 불필요" 반환.
+    /** 원격 XML 대신 즉시 "업데이트 불필요" 반환. */
     single<VersionCheckRepository> { LocalVersionCheckRepositoryImpl() }
     singleOf(::VersionCheckUseCase)
 
@@ -151,12 +151,12 @@ val appModule = module {
     singleOf(::MarkNoticeShownUseCase)
     singleOf(::ObserveProfileImagesUseCase)
     singleOf(::MainUseCases)
-    // 강제 로그아웃은 발생하지 않는다.
+    /** 강제 로그아웃은 발생하지 않는다. */
     single<MainRepository> { LocalMainRepositoryImpl() }
 
     viewModelOf(::GroupViewModel)
     viewModelOf(::QuickActionsViewModel)
-    // TestAccounts / TestGroups 로 그룹 구성.
+    /** TestAccounts / TestGroups 로 그룹 구성. */
     singleOf(::UserDirectory)
     single<GroupRepository> {
         if (Config.Server.IS_ENABLED) {
@@ -188,7 +188,7 @@ val appModule = module {
 
     viewModelOf(::InviteViewModel)
     viewModelOf(::InviteGroupViewModel)
-    // ChatRoomEntity 에 직접 방을 만들고 참여자를 추가.
+    /** ChatRoomEntity 에 직접 방을 만들고 참여자를 추가. */
     single<InviteRepository> {
         if (Config.Server.IS_ENABLED) InviteRepositoryImpl(get(), get()) else LocalInviteRepositoryImpl(get(), get(), get())
     }
@@ -211,7 +211,7 @@ val appModule = module {
     singleOf(::DownloadFileUseCase)
     singleOf(::OpenFileUseCase)
     singleOf(::SaveToGalleryUseCase)
-    // TestAccounts 를 프로필로 사용.
+    /** TestAccounts 를 프로필로 사용. */
     single<UserProfileRepository> {
         if (Config.Server.IS_ENABLED) UserProfileRepositoryImpl(get(), get(), get()) else LocalUserProfileRepositoryImpl(get())
     }
@@ -245,8 +245,10 @@ val appModule = module {
     single<AppMaintenanceRepository> { AppMaintenanceRepositoryImpl(get(), get()) }
 
     singleOf(::ChatMapper)
-    // ChatEntity 에 대화를 직접 읽고 쓴다. (투표 저장소도 구현 타입이 필요해 둘 다 등록)
-    // 전송 주체 전환(샘플 전용) — 싱글턴.
+    /**
+     * ChatEntity 에 대화를 직접 읽고 쓴다. (투표 저장소도 구현 타입이 필요해 둘 다 등록)
+     * 전송 주체 전환(샘플 전용) — 싱글턴.
+     */
     single<SenderOverrideRepository> { ChatSenderOverride() }
     single {
         LocalChatRoomRepositoryImpl(
@@ -294,7 +296,7 @@ val appModule = module {
 
     viewModelOf(::ChatRoomListViewModel)
     singleOf(::ChatRoomMapper)
-    // TestChatRooms 로 대화방/그룹 칩 구성.
+    /** TestChatRooms 로 대화방/그룹 칩 구성. */
     single {
         LocalChatRoomListRepositoryImpl(get(), get(), get(), get(), seedsSampleRooms = !Config.Server.IS_ENABLED)
     }
@@ -321,7 +323,7 @@ val appModule = module {
     singleOf(::ChatRoomListUseCases)
     viewModelOf(::ChatRoomGroupManageViewModel)
 
-    // 알림 설정은 로컬 저장만 한다.
+    /** 알림 설정은 로컬 저장만 한다. */
     single<NotificationSettingsRepository> { LocalNotificationSettingsRepositoryImpl(get(), get()) }
     single<ChatSettingsRepository> { ChatSettingsRepositoryImpl(get()) }
     single<ScreenLockRepository> {
@@ -361,7 +363,7 @@ val appModule = module {
     viewModelOf(::SettingViewModel)
 
     viewModelOf(::VoteViewModel)
-    // 투표/투표 결과는 VoteEntity 에 저장.
+    /** 투표/투표 결과는 VoteEntity 에 저장. */
     single<VoteRepository> {
         if (Config.Server.IS_ENABLED) VoteRepositoryImpl(get(), get(), get(), get()) else LocalVoteRepositoryImpl(get(), get(), get())
     }

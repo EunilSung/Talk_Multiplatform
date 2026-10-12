@@ -39,6 +39,6 @@ actual fun VideoPlayer(
         },
     )
 
-    // 다이얼로그가 닫힐 때 재생 중단은 VideoView 가 dispose 시 자동 처리되나, 명시적으로도 멈춘다.
+    /** 다이얼로그가 닫힐 때 재생 중단은 VideoView 가 dispose 시 자동 처리되나, 명시적으로도 멈춘다. */
     DisposableEffect(uri) { onDispose { } }
 }

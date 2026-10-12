@@ -68,21 +68,27 @@ fun BottomSheet(
 ) {
     val scope = rememberCoroutineScope()
 
-    // 닫힘 통보는 **지금 조립된** 람다로 보내야 한다.
-    //
-    // settleSheet 는 remember 된 nestedScroll 안에 갇혀 첫 조립 때의 onDismiss 를 붙들고 있었다.
-    // 그 람다는 "그때 열려 있던 시트"(=아직 없음)를 가리켜서, 닫아도 호스트가 비워지지 않았다.
+    /**
+     * 닫힘 통보는 **지금 조립된** 람다로 보내야 한다.
+     *
+     * settleSheet 는 remember 된 nestedScroll 안에 갇혀 첫 조립 때의 onDismiss 를 붙들고 있었다.
+     * 그 람다는 "그때 열려 있던 시트"(=아직 없음)를 가리켜서, 닫아도 호스트가 비워지지 않았다.
+     */
     val currentOnDismiss by rememberUpdatedState(onDismiss)
 
     val offsetY = remember { Animatable(SHEET_HIDDEN_FALLBACK) }
 
-    // 시트를 완전히 감추려면 "시트 높이"만큼 내려야 한다. 고정값을 쓰면 그보다 큰 시트는
-    // 애니메이션이 끝난 뒤에도 아랫부분이 화면에 남아 있다가 뚝 사라진다. 실제 높이를 재서 쓴다.
+    /**
+     * 시트를 완전히 감추려면 "시트 높이"만큼 내려야 한다. 고정값을 쓰면 그보다 큰 시트는
+     * 애니메이션이 끝난 뒤에도 아랫부분이 화면에 남아 있다가 뚝 사라진다. 실제 높이를 재서 쓴다.
+     */
     var sheetHeightPx by remember { mutableFloatStateOf(SHEET_HIDDEN_FALLBACK) }
 
-    // Animatable.snapTo 는 suspend 라 값이 다음 프레임에야 반영된다. 한 제스처 안에서 이벤트가
-    // 연달아 들어오면 낡은 offsetY 를 읽어 같은 이동을 두 번 더하게 되므로, "지금까지 명령한
-    // 목표값"을 따로 들고 그걸 기준으로 누적한다.
+    /**
+     * Animatable.snapTo 는 suspend 라 값이 다음 프레임에야 반영된다. 한 제스처 안에서 이벤트가
+     * 연달아 들어오면 낡은 offsetY 를 읽어 같은 이동을 두 번 더하게 되므로, "지금까지 명령한
+     * 목표값"을 따로 들고 그걸 기준으로 누적한다.
+     */
     var dragTarget by remember { mutableFloatStateOf(0f) }
 
     /**
@@ -105,18 +111,22 @@ fun BottomSheet(
             isDismissing = true
             dragTarget = sheetHeightPx
             offsetY.animateTo(sheetHeightPx, spring(stiffness = Spring.StiffnessMediumLow))
-            // 여기서는 onDismiss 를 부르지 않는다.
-            //
-            // 이 분기는 **바깥이 이미 닫으라고 해서** 도는 것이라, 다시 알릴 것이 없다. 예전에는
-            // 불렀는데, 닫히는 애니메이션이 끝나기 전에 사용자가 다른 사용자를 누르면 그 통보가
-            // 갓 열린 시트를 도로 닫아 버렸다 — 클릭은 먹었는데 시트가 안 올라오던 증상이다.
-            //
-            // 스스로 닫는 경로(끌기·스크림·뒤로가기)는 각자 onDismiss 를 부르므로 누락은 없다.
+            /**
+             * 여기서는 onDismiss 를 부르지 않는다.
+             *
+             * 이 분기는 **바깥이 이미 닫으라고 해서** 도는 것이라, 다시 알릴 것이 없다. 예전에는
+             * 불렀는데, 닫히는 애니메이션이 끝나기 전에 사용자가 다른 사용자를 누르면 그 통보가
+             * 갓 열린 시트를 도로 닫아 버렸다 — 클릭은 먹었는데 시트가 안 올라오던 증상이다.
+             *
+             * 스스로 닫는 경로(끌기·스크림·뒤로가기)는 각자 onDismiss 를 부르므로 누락은 없다.
+             */
         }
     }
 
-    // 높이를 처음 알게 된 시점에 숨은 위치를 맞춰 둔다 — 첫 열기 때 시트 아랫단이 화면에
-    // 걸친 채로 슬라이드가 시작되지 않도록. 진행 중인 애니메이션은 건드리지 않는다.
+    /**
+     * 높이를 처음 알게 된 시점에 숨은 위치를 맞춰 둔다 — 첫 열기 때 시트 아랫단이 화면에
+     * 걸친 채로 슬라이드가 시작되지 않도록. 진행 중인 애니메이션은 건드리지 않는다.
+     */
     LaunchedEffect(sheetHeightPx) {
         if (!isVisible && !offsetY.isRunning) {
             dragTarget = sheetHeightPx
@@ -193,12 +203,12 @@ fun BottomSheet(
 
                 val delta = available.y
                 if (delta <= 0f) return Offset.Zero
-                // 이미 끌리고 있는 시트는 계속 따라와야 한다 — 손짓 도중에 멈춰 버리면 안 된다.
+                /** 이미 끌리고 있는 시트는 계속 따라와야 한다 — 손짓 도중에 멈춰 버리면 안 된다. */
                 if (innerScrolled.value && dragTarget <= 0f) return Offset.Zero
                 return Offset(0f, dragSheetBy(delta))
             }
 
-            // 시트가 내려가 있는 동안의 관성은 목록이 아니라 시트 몫이다 — 전부 소비하고 정리한다.
+            /** 시트가 내려가 있는 동안의 관성은 목록이 아니라 시트 몫이다 — 전부 소비하고 정리한다. */
             override suspend fun onPreFling(available: Velocity): Velocity {
                 if (dragTarget <= 0f) return Velocity.Zero
                 settleSheet(available.y)
@@ -219,14 +229,16 @@ fun BottomSheet(
         }
     }
 
-    // offsetY.value 를 조건식에서 직접 읽으면 열기/닫기 300ms + 드래그 프레임마다
-    // 시트 전체가 재구성된다. 표시 여부만 파생 상태로 좁힌다.
+    /**
+     * offsetY.value 를 조건식에서 직접 읽으면 열기/닫기 300ms + 드래그 프레임마다
+     * 시트 전체가 재구성된다. 표시 여부만 파생 상태로 좁힌다.
+     */
     val isRendered by remember(offsetY) { derivedStateOf { offsetY.value < sheetHeightPx } }
     if (isVisible || isRendered) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                // 알파 계산을 draw 단계로 내려 스크림 때문에 재구성되지 않게 한다.
+                /** 알파 계산을 draw 단계로 내려 스크림 때문에 재구성되지 않게 한다. */
                 .drawBehind {
                     if (!isModal) return@drawBehind
                     val progress = offsetY.value / sheetHeightPx.coerceAtLeast(1f)
@@ -236,15 +248,17 @@ fun BottomSheet(
                 }
                 .then(
                     when {
-                        // 이미 닫기로 정해졌다. 남은 애니메이션 동안 누른 것은 뒤 화면 몫이다.
+                        /** 이미 닫기로 정해졌다. 남은 애니메이션 동안 누른 것은 뒤 화면 몫이다. */
                         isDismissing -> Modifier
                         isModal -> Modifier
                             .clickable(
                                 rippleColor = null,
                                 onClick = { closeSheetWithAnimation() }
                             )
-                        // 비모달은 스크림 탭으로 닫지 않지만, 입력까지 흘려보내면 시트가 덮지 못한
-                        // 위쪽을 눌렀을 때 뒤 화면이 반응한다. 닫히지는 않되 통과도 막는다.
+                        /**
+                         * 비모달은 스크림 탭으로 닫지 않지만, 입력까지 흘려보내면 시트가 덮지 못한
+                         * 위쪽을 눌렀을 때 뒤 화면이 반응한다. 닫히지는 않되 통과도 막는다.
+                         */
                         else -> Modifier.blockPointerInput()
                     }
                 )

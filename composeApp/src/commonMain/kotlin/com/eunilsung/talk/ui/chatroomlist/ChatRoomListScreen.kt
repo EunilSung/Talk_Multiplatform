@@ -103,7 +103,7 @@ fun ChatRoomListContent(
     val groupsWithUnread = uiState.groupsWithUnread
     val isRefreshing = uiState.isRefreshing
 
-    // 필터/그룹 칩마다 스크롤 위치 보존 — 칩 전환 시 각 탭의 LazyListState 복원.
+    /** 필터/그룹 칩마다 스크롤 위치 보존 — 칩 전환 시 각 탭의 LazyListState 복원. */
     val scrollKey = if (searchState.filterType == Search.FilterType.GROUP) {
         "group_${searchState.selectedGroupId}"
     } else {
@@ -115,8 +115,10 @@ fun ChatRoomListContent(
         key = "chatRoomListScroll_$scrollKey",
     ) { LazyListState() }
 
-    // heightOffset 을 key 로 쓰면 스크롤 프레임마다 화면 스코프가 무효화되고 코루틴도 재기동된다.
-    // snapshotFlow 로 구독을 이 이펙트 안에 가두고, 임계값을 넘는 순간만 걸러낸다.
+    /**
+     * heightOffset 을 key 로 쓰면 스크롤 프레임마다 화면 스코프가 무효화되고 코루틴도 재기동된다.
+     * snapshotFlow 로 구독을 이 이펙트 안에 가두고, 임계값을 넘는 순간만 걸러낸다.
+     */
     LaunchedEffect(scrollBehavior) {
         snapshotFlow { scrollBehavior.state.heightOffset < TOP_BAR_COLLAPSE_THRESHOLD }
             .distinctUntilChanged()

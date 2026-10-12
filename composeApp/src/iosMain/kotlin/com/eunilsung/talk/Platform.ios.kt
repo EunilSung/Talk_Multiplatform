@@ -49,7 +49,7 @@ val platformModule = module {
     single<FilePickerProvider> { IosFilePickerProvider() }
     single<PhotoPickerProvider> { IosPhotoPickerProvider() }
     single<FileMetadataResolver> { IosFileMetadataResolver() }
-    // 스크롤로 말풍선이 드나들 때마다 다시 디코드하지 않도록 캐시로 감싼다.
+    /** 스크롤로 말풍선이 드나들 때마다 다시 디코드하지 않도록 캐시로 감싼다. */
     single<VideoThumbnailLoader> { VideoThumbCache(IosVideoThumbnailLoader()) }
     single<FileOpener> { IosFileOpener() }
     single<PushNotifier> { IosPushNotifier(get()) }

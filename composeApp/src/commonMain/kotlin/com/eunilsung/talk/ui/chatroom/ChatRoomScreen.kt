@@ -214,16 +214,16 @@ fun ChatRoomContent(
     val isKeyboardVisible = imeHeight > 0.dp
     val stableImeHeight by rememberStableImeHeight(imeHeight)
 
-    // 패널이 열릴 높이 — 오버레이와 bottomBar 예약이 같은 값을 받아야 한다.
+    /** 패널이 열릴 높이 — 오버레이와 bottomBar 예약이 같은 값을 받아야 한다. */
     val panelHeight = emoticonPanelHeight(stableImeHeight)
 
-    // 키보드가 올라오면 이모티콘 패널을 내린다(둘이 하단을 동시에 차지하면 가린다).
+    /** 키보드가 올라오면 이모티콘 패널을 내린다(둘이 하단을 동시에 차지하면 가린다). */
     LaunchedEffect(isKeyboardVisible) {
         if (isKeyboardVisible && emoticon.isOpen) emoticon.close()
     }
 
     var isDrawerOpen by remember { mutableStateOf(initialDrawerOpen) }
-    // 공지 전문 다이얼로그에 띄울 본문 — null 이면 닫힘.
+    /** 공지 전문 다이얼로그에 띄울 본문 — null 이면 닫힘. */
     var noticeDialogText by remember { mutableStateOf<String?>(null) }
     var isSearchUserBoxVisible by remember { mutableStateOf(false) }
     var isSenderBoxVisible by remember { mutableStateOf(false) }
@@ -434,7 +434,7 @@ fun ChatRoomContent(
                                 users = users,
                                 onLongPress = { longPressedChat = it },
                                 translations = translations,
-                                // 지금 걸린 공지가 아니라 그 대화가 담고 있던 본문을 보여준다.
+                                /** 지금 걸린 공지가 아니라 그 대화가 담고 있던 본문을 보여준다. */
                                 onNoticeClick = { noticeDialogText = it.chatContent },
                                 onAction = onAction,
                             )

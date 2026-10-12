@@ -24,7 +24,7 @@ object TestChatRooms {
     private fun buildRooms(myId: String): List<ChatRoom.Item> {
         val me = myId to nameOf(myId)
 
-        // 본인이 상대로 지정된 경우를 피하려고, 본인이 아닌 계정 중에서 상대를 고른다.
+        /** 본인이 상대로 지정된 경우를 피하려고, 본인이 아닌 계정 중에서 상대를 고른다. */
         val others = TestAccounts.ALL.map { it.userId }.filterNot { it.equals(myId, ignoreCase = true) }
         fun partner(preferred: String): String =
             if (preferred.equals(myId, ignoreCase = true)) others.first() else preferred
@@ -72,28 +72,32 @@ object TestChatRooms {
                 me = me,
                 partnerId = p5,
                 lastChat = "회의록 정리해서 올려두었습니다.",
-                minutesAgo = 60 * 26,          // 어제
+                /** 어제 */
+                minutesAgo = 60 * 26,
                 alarmOff = true,
             ),
             selfRoom(
                 id = "room_self",
                 me = me,
                 lastChat = "메모: 배포 전 체크리스트 확인",
-                minutesAgo = 60 * 30,          // 어제
+                /** 어제 */
+                minutesAgo = 60 * 30,
             ),
             direct(
                 id = "room_direct_3",
                 me = me,
                 partnerId = p9,
                 lastChat = "감사합니다. 좋은 하루 보내세요.",
-                minutesAgo = 60 * 24 * 3,      // 3일 전
+                /** 3일 전 */
+                minutesAgo = 60 * 24 * 3,
             ),
             abandonedDirect(
                 id = "room_direct_left",
                 me = me,
                 partnerId = partner("test10"),
                 lastChat = "상대방이 대화방을 나갔습니다.",
-                minutesAgo = 60 * 24 * 8,      // 8일 전
+                /** 8일 전 */
+                minutesAgo = 60 * 24 * 8,
             ),
         )
     }
@@ -115,8 +119,6 @@ object TestChatRooms {
             roomIds = listOf("room_direct_1", "room_direct_2"),
         ),
     )
-
-    // ---- 방 종류별 생성 ----
 
     private fun direct(
         id: String,
@@ -154,7 +156,7 @@ object TestChatRooms {
         minutesAgo = minutesAgo,
         unRead = unRead,
         mentionCount = mention,
-        // 상단고정은 서버가 아니라 로컬 Settings 소관이라, 시드에서는 정렬용 값만 넣어둔다.
+        /** 상단고정은 서버가 아니라 로컬 Settings 소관이라, 시드에서는 정렬용 값만 넣어둔다. */
         pinDate = if (pinned) PIN_SEED_MILLIS else "",
     )
 
@@ -218,8 +220,6 @@ object TestChatRooms {
         mentionCount = mentionCount,
         enableMode = "0",
     )
-
-    // ---- 유틸 ----
 
     private fun nameOf(userId: String): String =
         TestAccounts.find(userId)?.userName ?: userId

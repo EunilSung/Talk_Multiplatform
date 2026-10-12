@@ -88,7 +88,7 @@ fun ChatMessageList(
         items(
             items = groupedChats,
             key = { it.chat.chatID },
-            // 한 목록에 말풍선 종류가 10가지라 지정하지 않으면 슬롯 재사용이 무효화된다.
+            /** 한 목록에 말풍선 종류가 10가지라 지정하지 않으면 슬롯 재사용이 무효화된다. */
             contentType = { it.chat.chatType },
         ) { grouped ->
             val chat = grouped.chat

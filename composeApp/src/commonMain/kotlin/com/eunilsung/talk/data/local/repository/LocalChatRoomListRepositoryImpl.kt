@@ -93,7 +93,7 @@ class LocalChatRoomListRepositoryImpl(
         if (current.unReadCount == "0" && current.mentionCount == "0") return@withContext
 
         dbQueries.updateChatRoomUnreadCount(unReadCount = "0", myId = myId, roomId = roomId)
-        // 멘션 카운트 전용 쿼리가 없어 행 전체를 다시 써서 함께 0 으로 맞춘다.
+        /** 멘션 카운트 전용 쿼리가 없어 행 전체를 다시 써서 함께 0 으로 맞춘다. */
         dbQueries.insertChatRoom(
             mapper.toEntity(myId, current.copy(unReadCount = "0", mentionCount = "0"))
         )
@@ -158,8 +158,6 @@ class LocalChatRoomListRepositoryImpl(
             true
         }
 
-    // ---- 대화방 그룹(칩) ----
-
     override suspend fun addRoomToGroup(groupId: String, roomId: String) {
         updateChatGroups(Config.MyInfo.userId) { groups ->
             groups.map {
@@ -211,8 +209,6 @@ class LocalChatRoomListRepositoryImpl(
         }
     }
 
-    // ---- 내부 ----
-
     /** 해당 계정의 대화방이 DB 에 없을 때만 초기 배치를 넣는다. */
     private suspend fun seedIfNeeded() = withContext(Dispatchers.Default) {
         val myId = Config.MyInfo.userId
@@ -223,7 +219,7 @@ class LocalChatRoomListRepositoryImpl(
             dbQueries.transaction {
                 seeded.forEach { dbQueries.insertChatRoom(mapper.toEntity(myId, it)) }
             }
-            // 시드의 pinDate 는 Settings 소관이므로 옮겨 적는다.
+            /** 시드의 pinDate 는 Settings 소관이므로 옮겨 적는다. */
             seeded.filter { it.pinDate.isNotBlank() }.forEach {
                 settings.putString(pinKey(myId, it.id), it.pinDate)
             }

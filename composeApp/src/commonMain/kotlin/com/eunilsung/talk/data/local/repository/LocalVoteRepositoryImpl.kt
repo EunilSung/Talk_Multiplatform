@@ -73,7 +73,7 @@ class LocalVoteRepositoryImpl(
                 voters = emptyList(),
             )
             save(myId, chatRoomId, data)
-            // 생성 결과를 투표 대화 한 줄로 남긴다.
+            /** 생성 결과를 투표 대화 한 줄로 남긴다. */
             appendVoteChat(myId, chatRoomId, data)
             Log.message("[Vote/Local] created $voteId in $chatRoomId (${items.size} items)")
             Result.success(voteId)
@@ -88,7 +88,7 @@ class LocalVoteRepositoryImpl(
         val current = load(chatRoomId, voteId) ?: return@withContext null
         if (current.isClosed) return@withContext current
 
-        // 기존 표를 걷어낸 뒤 새로 선택한 항목에 넣는다.
+        /** 기존 표를 걷어낸 뒤 새로 선택한 항목에 넣는다. */
         val cleared = current.withoutVoter(myId)
         val myName = TestAccounts.find(myId)?.userName ?: myId
         val updated = cleared.copy(
@@ -124,8 +124,6 @@ class LocalVoteRepositoryImpl(
             Log.message("[Vote/Local] closed $voteId")
         }
     }
-
-    // ---- 대화 리스트 반영 ----
 
     /** 투표 생성 대화([Chat.Type.VOTE]) 한 줄 추가. */
     private suspend fun appendVoteChat(myId: String, chatRoomId: String, data: VoteData) {
@@ -172,7 +170,7 @@ class LocalVoteRepositoryImpl(
     ) = Chat.Item(
         chatID = ChatIdUtils.generateChatId(myId),
         chatType = type,
-        // 투표 화면은 제목을 Chat.Item.title 에서 읽는다.
+        /** 투표 화면은 제목을 Chat.Item.title 에서 읽는다. */
         title = data.title,
         chatStatus = Chat.Status.COMPLETE,
         date = nowChatDate(),
@@ -194,8 +192,6 @@ class LocalVoteRepositoryImpl(
         return "${p(dt.year, 4)}-${p(dt.monthNumber)}-${p(dt.dayOfMonth)} " +
             "${p(dt.hour)}:${p(dt.minute)}:${p(dt.second)}:${p(dt.nanosecond / 1_000_000, 3)}"
     }
-
-    // ---- 저장/조회 ----
 
     private fun load(chatRoomId: String, voteId: String): VoteData? {
         val myId = Config.MyInfo.userId

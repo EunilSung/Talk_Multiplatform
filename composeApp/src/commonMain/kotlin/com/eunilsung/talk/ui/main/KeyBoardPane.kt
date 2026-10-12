@@ -75,7 +75,7 @@ fun KeyBoardPane(
     val bottomInset = keyboardBottomInset()
     val idleFloor = if (fillIdleBottomInset) bottomInset else 0.dp
 
-    // 하단 높이는 목표값 하나로 정하고 그 값만 애니메이션한다.
+    /** 하단 높이는 목표값 하나로 정하고 그 값만 애니메이션한다. */
     val keyboardDriven = emoticon?.isOpen != true && isKeyboardVisible
 
     /**
@@ -96,7 +96,7 @@ fun KeyBoardPane(
     var prevIme by remember { mutableStateOf(imeHeight) }
 
     val target = when {
-        // 패널이 열려 있으면 키보드가 내려가는 중이어도 패널 높이를 지킨다.
+        /** 패널이 열려 있으면 키보드가 내려가는 중이어도 패널 높이를 지킨다. */
         emoticon?.isOpen == true -> maxOf(panelHeight, idleFloor)
         isKeyboardVisible -> maxOf(imeHeight, holdHeight, idleFloor)
         else -> idleFloor
@@ -115,17 +115,17 @@ fun KeyBoardPane(
         holdHeight = 0.dp
     }
 
-    // 키보드가 높이를 정하는 동안에는 애니메이션을 걸지 않고, 패널이 여닫힐 때만 곡선을 쓴다.
+    /** 키보드가 높이를 정하는 동안에는 애니메이션을 걸지 않고, 패널이 여닫힐 때만 곡선을 쓴다. */
     var prevTarget by remember { mutableStateOf(target) }
     val spec: AnimationSpec<Dp> = if (keyboardDriven) {
         snap()
     } else {
-        // 줄어들 때만 느리게 — 늘어날 때까지 늘어지면 키보드보다 굼떠 보인다.
+        /** 줄어들 때만 느리게 — 늘어날 때까지 늘어지면 키보드보다 굼떠 보인다. */
         tween(durationMillis = if (target < prevTarget) PanelCloseMillis else PanelOpenMillis)
     }
     val animatedH by animateDpAsState(targetValue = target, animationSpec = spec, label = "kbPane")
 
-    // 키보드를 따라갈 때는 애니메이션 값을 거치지 않고 목표를 바로 쓴다.
+    /** 키보드를 따라갈 때는 애니메이션 값을 거치지 않고 목표를 바로 쓴다. */
     val h = if (keyboardDriven) target else animatedH
 
     SideEffect {

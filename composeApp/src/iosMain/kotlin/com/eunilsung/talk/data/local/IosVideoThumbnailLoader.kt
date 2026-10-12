@@ -34,7 +34,8 @@ class IosVideoThumbnailLoader : VideoThumbnailLoader {
         val url = when {
             path.startsWith("file://") || path.startsWith("http") -> NSURL.URLWithString(path)
             path.startsWith("/") -> NSURL.fileURLWithPath(path)
-            else -> null // PHAsset 식별자 등 URL 로 못 여는 경로.
+            /** PHAsset 식별자 등 URL 로 못 여는 경로. */
+            else -> null
         } ?: return VideoThumb()
 
         return try {

@@ -97,9 +97,11 @@ fun AppHosts(
                         }
                         fullScreenOverlay?.let { screen ->
                             BackHandler { fullScreenOverlay = null }
-                            // 오버레이는 앱 본문과 같은 Box 의 z-형제라, 입력을 막지 않으면 빈 영역
-                            // 탭·드래그가 뒤쪽(대화방·대화함)으로 그대로 전달된다. 화면마다 막는 대신
-                            // 호스트에서 한 번 끊어 루트가 Scaffold 가 아닌 화면까지 함께 보호한다.
+                            /**
+                             * 오버레이는 앱 본문과 같은 Box 의 z-형제라, 입력을 막지 않으면 빈 영역
+                             * 탭·드래그가 뒤쪽(대화방·대화함)으로 그대로 전달된다. 화면마다 막는 대신
+                             * 호스트에서 한 번 끊어 루트가 Scaffold 가 아닌 화면까지 함께 보호한다.
+                             */
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()

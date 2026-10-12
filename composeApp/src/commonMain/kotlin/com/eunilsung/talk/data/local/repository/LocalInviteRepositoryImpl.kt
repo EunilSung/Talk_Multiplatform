@@ -38,7 +38,7 @@ class LocalInviteRepositoryImpl(
         if (cleaned.isEmpty()) return null
 
         val roomId = withContext(Dispatchers.Default) {
-            // blank / "-" 이면 신규 생성, 아니면 기존 방에 추가.
+            /** blank / "-" 이면 신규 생성, 아니면 기존 방에 추가. */
             val isNewRoom = chatRoomId.isBlank() || chatRoomId == "-"
             if (isNewRoom) createRoom(myId, cleaned) else addToRoom(myId, chatRoomId, cleaned)
         } ?: return null
@@ -67,7 +67,7 @@ class LocalInviteRepositoryImpl(
         val room = ChatRoom.Item(
             id = roomId,
             myId = myId,
-            // 단체방 제목 — 참여자 이름을 이어붙인다.
+            /** 단체방 제목 — 참여자 이름을 이어붙인다. */
             title = invited.joinToString(", ") { it.second.ifBlank { it.first } },
             unReadCount = "0",
             isAlarm = ALARM_ON,

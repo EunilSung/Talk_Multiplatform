@@ -29,7 +29,7 @@ fun EmoticonPreview(
     previewEmoticon?.let { item ->
         Column(modifier) {
             Box(
-                // 프리뷰가 대화 목록 위에 겹치므로 탭이 뒤쪽 말풍선으로 새지 않게 막는다.
+                /** 프리뷰가 대화 목록 위에 겹치므로 탭이 뒤쪽 말풍선으로 새지 않게 막는다. */
                 modifier = Modifier
                     .size(width = 200.dp, height = 180.dp)
                     .clip(RoundedCornerShape(16.dp))
