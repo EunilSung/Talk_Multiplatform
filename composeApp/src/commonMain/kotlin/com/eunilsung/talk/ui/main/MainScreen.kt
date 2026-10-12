@@ -74,6 +74,7 @@ import com.eunilsung.talk.ui.uikit.swipe.SwipeDismissController
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.runtime.CompositionLocalProvider
 import com.eunilsung.talk.ui.share.ShareScreen
+import com.eunilsung.talk.ui.uikit.image.LocalProfileImageUrls
 import com.eunilsung.talk.ui.uikit.sheet.LocalBottomSheetManager
 
 object MainScreen : Screen {
@@ -92,15 +93,17 @@ object MainScreen : Screen {
 
         AppTheme {
             Navigator(EmptyScreen) { rightNavigator ->
-                AppHosts(
-                    rightNavigator = rightNavigator,
-                    isReconnecting = uiState.isReconnecting,
-                    isLoggedIn = uiState.isLoggedIn,
-                ) {
-                    MainEventHandler(viewModel, rightNavigator)
-                    MainContent(isLoggedIn = uiState.isLoggedIn, chatUnreadTotal = uiState.chatUnreadTotal)
-                    if (!uiState.isLoggedIn) LoginScreen()
-                    ScreenLockGate(isLoggedIn = uiState.isLoggedIn)
+                CompositionLocalProvider(LocalProfileImageUrls provides uiState.profileImages) {
+                    AppHosts(
+                        rightNavigator = rightNavigator,
+                        isReconnecting = uiState.isReconnecting,
+                        isLoggedIn = uiState.isLoggedIn,
+                    ) {
+                        MainEventHandler(viewModel, rightNavigator)
+                        MainContent(isLoggedIn = uiState.isLoggedIn, chatUnreadTotal = uiState.chatUnreadTotal)
+                        if (!uiState.isLoggedIn) LoginScreen()
+                        ScreenLockGate(isLoggedIn = uiState.isLoggedIn)
+                    }
                 }
             }
         }

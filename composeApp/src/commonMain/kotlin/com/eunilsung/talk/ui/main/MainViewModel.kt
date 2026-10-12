@@ -38,8 +38,14 @@ class MainViewModel(
             loginUseCases.observeLoginState(),
             mainUseCases.observeConnection(),
             chatRoomListUseCases.observeChatRoomUnreadTotal(),
-        ) { isLoggedIn, isConnected, unreadTotal ->
-            MainUiState(isLoggedIn = isLoggedIn, isConnected = isConnected, chatUnreadTotal = unreadTotal)
+            mainUseCases.observeProfileImages(),
+        ) { isLoggedIn, isConnected, unreadTotal, profileImages ->
+            MainUiState(
+                isLoggedIn = isLoggedIn,
+                isConnected = isConnected,
+                chatUnreadTotal = unreadTotal,
+                profileImages = profileImages,
+            )
         }.stateIn(
             viewModelScope,
             SharingStarted.Eagerly,
@@ -47,6 +53,7 @@ class MainViewModel(
                 isLoggedIn = loginUseCases.observeLoginState().value,
                 isConnected = mainUseCases.observeConnection().value,
                 chatUnreadTotal = chatRoomListUseCases.observeChatRoomUnreadTotal().value,
+                profileImages = mainUseCases.observeProfileImages().value,
             ),
         )
 
