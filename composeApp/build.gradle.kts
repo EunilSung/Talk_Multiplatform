@@ -274,6 +274,7 @@ val iosTestDevice: String? = providers.environmentVariable("TALK_IOS_DEVICE").or
 tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest>().configureEach {
     if (functionalTestUrl.isNotBlank()) {
         environment("SIMCTL_CHILD_TALK_FUNCTEST_URL", functionalTestUrl)
+        outputs.upToDateWhen { false }
         if (functionalTestUrl == localServerUrl) dependsOn(":server:startLocalServer")
     }
     iosTestDevice?.let { device.set(it) }
@@ -299,7 +300,6 @@ val e2eIos by tasks.registering(Exec::class) {
     dependsOn(":server:startLocalServer")
     commandLine("bash", maestroRunner, "ios")
     environment("TALK_SERVER_BASE_URL", serverBaseUrlProperty)
-    iosTestDevice?.let { environment("TALK_IOS_DEVICE", it) }
 }
 
 /**
