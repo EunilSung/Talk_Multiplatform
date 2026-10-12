@@ -13,9 +13,4 @@ interface PushNotifier {
 
     /** 런처 배지 카운트 설정. iOS 만 native 지원. */
     fun setBadge(count: Int)
-
-    companion object {
-        /** 미리보기 비활성 시 본문 대신 표시되는 텍스트. */
-        const val PREVIEW_HIDDEN_BODY: String = "새로운 메시지가 있습니다"
-    }
 }

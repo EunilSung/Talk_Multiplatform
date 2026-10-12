@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="push_preview_hidden">새로운 메시지가 있습니다</string>
+    <string name="push_new_message">새 메시지</string>
+    <string name="push_new_notification">새 알림</string>
+    <string name="push_channel_sound">메시지 (%1$s)</string>
+    <string name="push_channel_sound_vibrate">메시지 (%1$s + 진동)</string>
+    <string name="push_channel_sound_desc">사운드 %1$s — 진동 없음</string>
+    <string name="push_channel_sound_vibrate_desc">사운드 %1$s — 진동 포함</string>
+    <string name="push_channel_vibrate">메시지 (진동)</string>
+    <string name="push_channel_silent">메시지 (무음)</string>
+    <string name="push_channel_vibrate_desc">소리 없음 — 진동만</string>
+    <string name="push_channel_silent_desc">소리/진동 모두 끔</string>
+    <string-array name="notification_sound_names">
+        <item>띵동</item>
+        <item>보글</item>
+        <item>스윽</item>
+        <item>펜쓰기</item>
+        <item>물방울</item>
+        <item>키보드</item>
+        <item>타이핑</item>
+        <item>주사위</item>
+        <item>달각</item>
+        <item>둥</item>
+        <item>수면걷기</item>
+        <item>페이지넘김</item>
+        <item>우흐</item>
+        <item>쏙</item>
+        <item>지익</item>
+        <item>태엽</item>
+        <item>딩~</item>
+        <item>강아지</item>
+    </string-array>
+</resources>

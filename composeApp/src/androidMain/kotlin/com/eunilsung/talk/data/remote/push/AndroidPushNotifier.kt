@@ -98,7 +98,11 @@ class AndroidPushNotifier(
         }
     }
 
-    /** 38채널을 미리 등록 (생성 후 sound/vibrate/importance 변경 불가). */
+    /**
+     * 38채널을 미리 등록 (생성 후 sound/vibrate/importance 변경 불가).
+     *
+     * 이미 있는 채널도 다시 등록한다. 이름·설명만 바뀌므로, 기기 언어를 바꾸면 시스템 설정의 채널 이름이 따라간다.
+     */
     private fun ensureChannels() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
@@ -108,15 +112,21 @@ class AndroidPushNotifier(
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
 
+        val soundNames = context.resources.getStringArray(R.array.notification_sound_names)
         NotificationSoundCatalog.SOUNDS.forEachIndexed { id, sound ->
+            val soundName = soundNames.getOrElse(id) { sound.baseName }
             for (vib in listOf(true, false)) {
                 val channelId = soundChannelId(id, vib)
-                if (manager.getNotificationChannel(channelId) != null) continue
-                val name = if (vib) "메시지 (${sound.displayName} + 진동)"
-                else "메시지 (${sound.displayName})"
+                val name = context.getString(
+                    if (vib) R.string.push_channel_sound_vibrate else R.string.push_channel_sound,
+                    soundName,
+                )
                 val uri = soundUriFor(sound.baseName)
                 val ch = NotificationChannel(channelId, name, NotificationManager.IMPORTANCE_HIGH).apply {
-                    description = "사운드 ${sound.displayName} — ${if (vib) "진동 포함" else "진동 없음"}"
+                    description = context.getString(
+                        if (vib) R.string.push_channel_sound_vibrate_desc else R.string.push_channel_sound_desc,
+                        soundName,
+                    )
                     enableVibration(vib)
                     setSound(uri, audioAttrs)
                 }
@@ -126,10 +136,11 @@ class AndroidPushNotifier(
 
         for (vib in listOf(true, false)) {
             val channelId = muteChannelId(vib)
-            if (manager.getNotificationChannel(channelId) != null) continue
-            val name = if (vib) "메시지 (진동)" else "메시지 (무음)"
+            val name = context.getString(if (vib) R.string.push_channel_vibrate else R.string.push_channel_silent)
             val ch = NotificationChannel(channelId, name, NotificationManager.IMPORTANCE_HIGH).apply {
-                description = if (vib) "소리 없음 — 진동만" else "소리/진동 모두 끔"
+                description = context.getString(
+                    if (vib) R.string.push_channel_vibrate_desc else R.string.push_channel_silent_desc
+                )
                 enableVibration(vib)
                 setSound(null, null)
             }
@@ -159,11 +170,11 @@ class AndroidPushNotifier(
         val title = payload.senderName.ifBlank { appName }
         val previewEnabled = notificationSettings.state.value.preview
         if (!previewEnabled) {
-            return title to PushNotifier.PREVIEW_HIDDEN_BODY
+            return title to context.getString(R.string.push_preview_hidden)
         }
         return when (payload.kind) {
-            PushPayload.Kind.CHAT -> title to payload.msg.ifBlank { "새 메시지" }
-            else -> appName to (payload.msg.ifBlank { "새 알림" })
+            PushPayload.Kind.CHAT -> title to payload.msg.ifBlank { context.getString(R.string.push_new_message) }
+            else -> appName to (payload.msg.ifBlank { context.getString(R.string.push_new_notification) })
         }
     }
 

@@ -444,4 +444,24 @@
     <string name="contact_label_mobile">휴대폰</string>
     <string name="toast_no_number_to_call">전화할 번호가 없습니다</string>
     <string name="main_notice_message">안내\n이 앱은 서버 없이 동작하는 샘플입니다.\n모든 계정·대화·그룹은 단말에 저장된 테스트 데이터입니다.\n대화방 우측 상단의 사람 아이콘으로 전송 주체를 바꿔볼 수 있습니다.</string>
+
+    <!-- 알림음 이름 (NotificationSoundCatalog 순서) -->
+    <string name="notification_sound_ding">띵동</string>
+    <string name="notification_sound_button_1">보글</string>
+    <string name="notification_sound_page">스윽</string>
+    <string name="notification_sound_pencil1">펜쓰기</string>
+    <string name="notification_sound_bubble_1">물방울</string>
+    <string name="notification_sound_typing_1">키보드</string>
+    <string name="notification_sound_typing">타이핑</string>
+    <string name="notification_sound_tick_2">주사위</string>
+    <string name="notification_sound_tick_1">달각</string>
+    <string name="notification_sound_drum">둥</string>
+    <string name="notification_sound_water_step">수면걷기</string>
+    <string name="notification_sound_page2">페이지넘김</string>
+    <string name="notification_sound_ooph">우흐</string>
+    <string name="notification_sound_button_2">쏙</string>
+    <string name="notification_sound_yank_1">지익</string>
+    <string name="notification_sound_yank_2">태엽</string>
+    <string name="notification_sound_bell_little">딩~</string>
+    <string name="notification_sound_dog">강아지</string>
 </resources>

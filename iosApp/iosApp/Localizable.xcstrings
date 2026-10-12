@@ -1,0 +1,57 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "push_preview_hidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have a new message"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "새로운 메시지가 있습니다"
+          }
+        }
+      }
+    },
+    "push_new_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New message"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "새 메시지"
+          }
+        }
+      }
+    },
+    "push_new_notification": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New notification"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "새 알림"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
