@@ -109,6 +109,30 @@ iosApp/        Xcode 프로젝트
 - DI = Koin, 네비게이션 = Voyager, 이미지 = coil3, 통신 = ktor, 기기 DB = SQLDelight
 - 의존성은 안쪽으로만 흐른다. `domain` 은 `ui`·`data` 를 모르고 Compose 타입도 쓰지 않는다
 
+### 계층 규칙
+
+새 화면·기능을 만들 때 이 모양을 따른다. 앞의 세 가지는 지금 모든 화면이 지킨다.
+
+- **화면은 ViewModel 만 본다.** Composable 이 저장소·유스케이스를 `koinInject` 로 가져와 부르지 않는다.
+  예외는 기기 기능 추상화뿐이다 — `data/local` 의 `FileOpener`·`ExternalUrlOpener`·`AppExiter`·
+  `RecentPhotosProvider`·`FileMetadataResolver`·`AppVersionProvider`·`VideoThumbnailLoader`, 그리고 `Platform`.
+- **ViewModel 은 유스케이스만 쓴다.** 저장소·`TalkServer`·`ServerEvents` 를 받지 않는다. 기기 기능 추상화
+  (사진첩·파일 고르기)는 받아도 된다. 유스케이스는 `domain/usecase` 에 두고 `di/Modules.kt` 에 등록한다.
+  여러 개를 쓰는 화면은 `XUseCases` 묶음으로 받는다.
+- **화면은 `onAction` 으로만 ViewModel 에 일을 시킨다.** ViewModel 마다 `XActions`(sealed)·`XUiState`·
+  `onAction` 을 둔다. 다이얼로그·이동·토스트처럼 한 번만 처리할 일은 `XEvent` 를 `Channel` 로 내보낸다
+  (`events`). 액션은 `XActions.kt`, 상태는 `XUiState.kt` 에 둔다. 화면의 `LaunchedEffect`·`DisposableEffect`
+  에서 할 일도 액션으로 보낸다(대화방의 `OnEnterRoom`·`OnLeaveRoom`).
+- **상태는 `uiState` 하나로 모은다.** 새로 만드는 ViewModel 은 `StateFlow<XUiState>` 하나만 내놓는다
+  (대화방 `ChatRoomUiState` 참고). 대화함·내 그룹·로그인·공유·초대(그룹 탭)는 아직 상태 흐름을 여럿
+  내놓는다. 고칠 때 하나로 모으고, 새 코드는 따라 하지 않는다.
+- **도메인 모델은 화면을 모른다.** 선택 표시·묶음 표시처럼 화면에만 필요한 값은 ui 쪽 상태에 둔다
+  (`GroupedChat`, 고른 id 집합). 내가 보낸 대화인지(`isMe`)는 로그인한 계정을 아는 매퍼·저장소가 채운다.
+- **서버 응답의 모양을 바꾸는 일은 매퍼가 한다**(`data/mapper`). 저장소는 주고받기와 반영만 한다.
+- **ViewModel 이 커지면 역할별 처리기로 나눈다.** 대화방은 사진·파일(`ChatMediaHandler`), 찾기
+  (`ChatSearchHandler`), 읽음(`ChatReadHandler`)을 따로 둔다. 처리기는 ViewModel 의 scope 와 상태를 받아 쓰고
+  화면에는 드러나지 않는다.
+
 ### 로컬 모드와 서버 모드
 
 `local.properties` 의 `server.baseUrl` 이 비어 있으면 로컬 모드, 값이 있으면 서버 모드로 빌드된다
