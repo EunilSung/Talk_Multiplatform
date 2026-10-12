@@ -64,6 +64,9 @@ import com.eunilsung.talk.ui.main.MainViewModel
 import com.eunilsung.talk.ui.group.GroupViewModel
 import com.eunilsung.talk.ui.quickactions.QuickActionsViewModel
 import com.eunilsung.talk.ui.userprofile.UserProfileViewModel
+import com.eunilsung.talk.ui.userprofile.ProfilePhotoPickerViewModel
+import com.eunilsung.talk.domain.repository.ProfileImageRepository
+import com.eunilsung.talk.data.repository.ProfileImageRepositoryImpl
 import com.eunilsung.talk.ui.chatroomlist.ChatRoomListViewModel
 import com.eunilsung.talk.ui.setting.SettingViewModel
 import com.eunilsung.talk.ui.chatroom.vote.VoteViewModel
@@ -140,6 +143,7 @@ val appModule = module {
     singleOf(::MarkImageCacheClearedUseCase)
     singleOf(::GetUnseenNoticeVersionUseCase)
     singleOf(::MarkNoticeShownUseCase)
+    singleOf(::ObserveProfileImagesUseCase)
     singleOf(::MainUseCases)
     // 강제 로그아웃은 발생하지 않는다.
     single<MainRepository> { LocalMainRepositoryImpl() }
@@ -189,6 +193,9 @@ val appModule = module {
     viewModelOf(::ShareViewModel)
 
     viewModelOf(::UserProfileViewModel)
+    viewModelOf(::ProfilePhotoPickerViewModel)
+    single<ProfileImageRepository> { ProfileImageRepositoryImpl(get()) }
+    singleOf(::SaveMyProfilePhotoUseCase)
     // TestAccounts 를 프로필로 사용.
     single<UserProfileRepository> {
         if (Config.Server.IS_ENABLED) UserProfileRepositoryImpl(get(), get(), get()) else LocalUserProfileRepositoryImpl()

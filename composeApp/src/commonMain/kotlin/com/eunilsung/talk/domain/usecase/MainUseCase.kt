@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
  * 메인 화면의 유스케이스 묶음.
  *
  * 앱이 앞뒤로 오갈 때의 연결 관리, 강제 로그아웃 알림, 푸시·공유로 들어온 진입, 앱 아이콘 배지,
- * 그리고 앱을 켤 때마다 하는 정리(이미지 캐시·버전 안내)가 모여 있다.
+ * 앱 전체가 쓰는 프로필 사진 주소, 그리고 앱을 켤 때마다 하는 정리(이미지 캐시·버전 안내)가 모여 있다.
  */
 data class MainUseCases(
     val observeConnection: ObserveConnectionUseCase,
@@ -32,6 +32,7 @@ data class MainUseCases(
     val markImageCacheCleared: MarkImageCacheClearedUseCase,
     val getUnseenNoticeVersion: GetUnseenNoticeVersionUseCase,
     val markNoticeShown: MarkNoticeShownUseCase,
+    val observeProfileImages: ObserveProfileImagesUseCase,
 )
 
 /** 서버와 연결돼 있는지. 끊기면 화면 위에 재연결 중 표시를 띄운다. */

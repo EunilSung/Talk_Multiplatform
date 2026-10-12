@@ -25,8 +25,8 @@ fun ProfileImages(
     onClick: (() -> Unit)? = null
 ) {
     val ids = userIds.take(4)
-    val version = ProfileImageRefresh.version
-    fun profileUrl(id: String): String = profileImageUrl(id, version)
+    val imageUrls = LocalProfileImageUrls.current
+    fun profileUrl(id: String): String = imageUrls.urlFor(id)
     Box(modifier = modifier) {
         when (ids.size) {
             0 -> {

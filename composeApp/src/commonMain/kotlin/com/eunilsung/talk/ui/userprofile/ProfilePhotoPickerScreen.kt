@@ -28,7 +28,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,28 +46,19 @@ import multiplatformtalk.composeapp.generated.resources.photo_permission_message
 import multiplatformtalk.composeapp.generated.resources.ok
 import multiplatformtalk.composeapp.generated.resources.cancel
 import org.jetbrains.compose.resources.stringResource
-import kotlinx.coroutines.launch
-import com.eunilsung.talk.Config
-import com.eunilsung.talk.data.local.FileMetadataResolver
-import com.eunilsung.talk.data.local.RecentPhoto
-import com.eunilsung.talk.data.local.RecentPhotosProvider
-import com.eunilsung.talk.data.local.RecentPhotosResult
 import com.eunilsung.talk.ui.main.LocalFullScreenOverlay
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.BackHandler
 import com.eunilsung.talk.ui.uikit.dialog.Button2Dialog
 import com.eunilsung.talk.ui.uikit.mediapicker.MultimediaRecentPhoto
 import com.eunilsung.talk.ui.uikit.mediapicker.PhotoDetailDialog
-import com.eunilsung.talk.data.local.ProfilePhotoStore
-import com.eunilsung.talk.ui.uikit.image.ProfileImageRefresh
 import com.eunilsung.talk.ui.uikit.mediapicker.SelectablePhotoCell
 import com.eunilsung.talk.ui.uikit.topbar.TopBarV1
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
-import com.eunilsung.talk.util.CompressedImage
-import com.eunilsung.talk.util.compressImageToJpeg
 import org.jetbrains.compose.resources.painterResource
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
+import androidx.compose.runtime.collectAsState
 
 /**
  * 프로필 사진 선택 전용 풀스크린 화면 — [LocalFullScreenOverlay] 로 띄움.
@@ -82,47 +72,36 @@ class ProfilePhotoPickerScreen(
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
+        val viewModel: ProfilePhotoPickerViewModel = koinViewModel()
+        val uiState by viewModel.uiState.collectAsState()
         val showOverlay = LocalFullScreenOverlay.current
-        val provider: RecentPhotosProvider = koinInject()
-        val fileMetadataResolver: FileMetadataResolver = koinInject()
-        val scope = rememberCoroutineScope()
 
-        var photos by remember { mutableStateOf<List<RecentPhoto>>(emptyList()) }
         var detail by remember { mutableStateOf<MultimediaRecentPhoto?>(null) }
-        var isUploading by remember { mutableStateOf(false) }
-        var showPermissionDialog by remember { mutableStateOf(false) }
 
         BackHandler(enabled = true) { showOverlay(null) }
 
-        val setPhotos: (RecentPhotosResult) -> Unit = { r ->
-            photos = when (r) {
-                is RecentPhotosResult.Granted -> r.photos.filter { !it.isVideo }
-                is RecentPhotosResult.Limited -> r.photos.filter { !it.isVideo }
-                is RecentPhotosResult.Denied -> emptyList()
-            }
-        }
-        val loadRecent: suspend () -> Unit = {
-            val result = runCatching { provider.fetchRecent(500, onPartial = setPhotos) }
-                .getOrElse { RecentPhotosResult.Granted(emptyList()) }
-            setPhotos(result)
+        LaunchedEffect(viewModel) {
+            viewModel.onAction(ProfilePhotoPickerActions.OnStart)
         }
 
-        LaunchedEffect(Unit) {
-            if (provider.hasPhotoAccess()) {
-                loadRecent()
-            } else {
-                showPermissionDialog = true
+        LaunchedEffect(viewModel) {
+            viewModel.events.collect { event ->
+                when (event) {
+                    is ProfilePhotoPickerEvent.Saved -> {
+                        onSelected(event.path)
+                        detail = null
+                        showOverlay(null)
+                    }
+                }
             }
         }
 
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-            if (provider.hasPhotoAccess() && photos.isEmpty()) {
-                scope.launch { loadRecent() }
-            }
+            viewModel.onAction(ProfilePhotoPickerActions.OnResume)
         }
 
-        val items = remember(photos) {
-            photos.map { MultimediaRecentPhoto(id = it.id, uri = it.uri, thumbnailBytes = it.thumbnailBytes) }
+        val items = remember(uiState.photos) {
+            uiState.photos.map { MultimediaRecentPhoto(id = it.id, uri = it.uri, thumbnailBytes = it.thumbnailBytes) }
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -132,7 +111,7 @@ class ProfilePhotoPickerScreen(
             onPhotoClick = { detail = it },
         )
 
-            if (isUploading) {
+            if (uiState.isUploading) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -151,44 +130,19 @@ class ProfilePhotoPickerScreen(
                 isUserProfileUpload = true,
                 onUpload = {
                     val uri = photo.uri
-                    if (!uri.isNullOrBlank() && !isUploading) {
-                        isUploading = true
+                    if (!uri.isNullOrBlank()) {
                         detail = null
-                        scope.launch {
-                            try {
-                                val bytes = runCatching { fileMetadataResolver.readBytes(uri) }.getOrNull()
-                                if (bytes != null && bytes.isNotEmpty()) {
-                                    val compressed = runCatching { compressImageToJpeg(bytes, 1_000_000) }
-                                        .getOrElse { CompressedImage(bytes, "") }
-                                    val myId = Config.MyInfo.userId
-                                    val saved = runCatching {
-                                        fileMetadataResolver.writeCacheFile(
-                                            ProfilePhotoStore.nextFileName(myId),
-                                            compressed.bytes,
-                                        )
-                                    }.getOrNull()
-                                    if (saved != null) {
-                                        ProfilePhotoStore.save(myId, saved)
-                                        ProfileImageRefresh.bump()
-                                        onSelected(saved)
-                                        detail = null
-                                        showOverlay(null)
-                                    }
-                                }
-                            } finally {
-                                isUploading = false
-                            }
-                        }
+                        viewModel.onAction(ProfilePhotoPickerActions.OnUpload(uri))
                     }
                 },
                 onDismiss = { detail = null }
             )
         }
 
-        if (showPermissionDialog) {
+        if (uiState.showPermissionDialog) {
             Button2Dialog(
                 onDismissRequest = {
-                    showPermissionDialog = false
+                    viewModel.onAction(ProfilePhotoPickerActions.OnDismissPermission)
                     showOverlay(null)
                 },
                 title = { Text(stringResource(Res.string.photo_permission_title)) },
@@ -201,12 +155,9 @@ class ProfilePhotoPickerScreen(
                               },
                 confirmText = stringResource(Res.string.ok),
                 dismissText = stringResource(Res.string.cancel),
-                onConfirm = {
-                    showPermissionDialog = false
-                    provider.requestPhotoAccess()
-                },
+                onConfirm = { viewModel.onAction(ProfilePhotoPickerActions.OnRequestPhotoAccess) },
                 onDismiss = {
-                    showPermissionDialog = false
+                    viewModel.onAction(ProfilePhotoPickerActions.OnDismissPermission)
                     showOverlay(null)
                 },
             )

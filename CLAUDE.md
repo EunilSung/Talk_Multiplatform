@@ -116,6 +116,8 @@ iosApp/        Xcode 프로젝트
 - **화면은 ViewModel 만 본다.** Composable 이 저장소·유스케이스를 `koinInject` 로 가져와 부르지 않는다.
   예외는 기기 기능 추상화뿐이다 — `data/local` 의 `FileOpener`·`ExternalUrlOpener`·`AppExiter`·
   `RecentPhotosProvider`·`FileMetadataResolver`·`AppVersionProvider`·`VideoThumbnailLoader`, 그리고 `Platform`.
+  앱 전체가 쓰는 값(프로필 사진 주소)은 `MainViewModel` 의 상태를 CompositionLocal 로 내려 준다
+  (`LocalProfileImageUrls`). 목록 항목마다 ViewModel 을 두지 않기 위해서다.
 - **ViewModel 은 유스케이스만 쓴다.** 저장소·`TalkServer`·`ServerEvents` 를 받지 않는다. 기기 기능 추상화
   (사진첩·파일 고르기)는 받아도 된다. 유스케이스는 `domain/usecase` 에 두고 `di/Modules.kt` 에 등록한다.
   여러 개를 쓰는 화면은 `XUseCases` 묶음으로 받는다.

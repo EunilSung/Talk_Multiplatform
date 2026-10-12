@@ -72,9 +72,8 @@ import com.eunilsung.talk.ui.uikit.click.itemClickable
 import com.eunilsung.talk.ui.uikit.contact.rememberAddContactLauncher
 import com.eunilsung.talk.ui.main.LocalFullScreenOverlay
 import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
-import com.eunilsung.talk.ui.uikit.image.ProfileImageRefresh
 import com.eunilsung.talk.ui.uikit.image.ProfileImages
-import com.eunilsung.talk.ui.uikit.image.profileImageUrl
+import com.eunilsung.talk.ui.uikit.image.LocalProfileImageUrls
 import com.eunilsung.talk.ui.uikit.line.LineDot
 import com.eunilsung.talk.ui.uikit.mediapicker.MultimediaRecentPhoto
 import com.eunilsung.talk.ui.uikit.mediapicker.PhotoDetailDialog
@@ -258,13 +257,14 @@ private fun ProfileBody(
         ) {
             val isMe = profile.userId.isNotBlank() &&
                 profile.userId.equals(Config.MyInfo.userId, ignoreCase = true)
+            val imageUrls = LocalProfileImageUrls.current
             Box(modifier = Modifier.size(93.dp)) {
                 ProfileImages(
                     userIds = listOf(profile.userId),
                     modifier = Modifier.size(93.dp),
                     roundDp = 30.dp,
                     onClick = {
-                        photoDetailUri = profileImageUrl(profile.userId, ProfileImageRefresh.version)
+                        photoDetailUri = imageUrls.urlFor(profile.userId)
                     }
                 )
                 if (isMe) {
