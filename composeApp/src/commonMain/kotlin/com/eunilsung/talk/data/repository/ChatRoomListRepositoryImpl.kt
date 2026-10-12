@@ -1,5 +1,6 @@
 package com.eunilsung.talk.data.repository
 
+import com.eunilsung.talk.domain.model.ALARM_OFF
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.data.mapper.ServerChatMapper
 import com.eunilsung.talk.data.remote.push.CurrentChatRoomTracker
@@ -180,7 +181,6 @@ class ChatRoomListRepositoryImpl(
     }
 
     private companion object {
-        const val ALARM_OFF = "1"
         const val PUSH_BUFFER = 8
     }
 }

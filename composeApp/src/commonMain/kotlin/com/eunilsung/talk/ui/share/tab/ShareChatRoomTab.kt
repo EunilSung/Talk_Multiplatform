@@ -67,7 +67,7 @@ private fun ShareChatRoomTabContent() {
     val keyboardController = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
 
-    var query by remember { mutableStateOf("") }
+    val query = controller.query
 
     // heightOffset 을 key 로 쓰면 스크롤 프레임마다 화면 스코프가 무효화되고 코루틴도 재기동된다.
     // snapshotFlow 로 구독을 이 이펙트 안에 가두고, 임계값을 넘는 순간만 걸러낸다.
@@ -97,8 +97,8 @@ private fun ShareChatRoomTabContent() {
                     SearchBar(
                         searchTxt = query,
                         hintTxt = stringResource(Res.string.chatroom_list_search_hint),
-                        onSearchTextChanged = { query = it },
-                        onClearClick = { query = "" },
+                        onSearchTextChanged = controller.onQueryChange,
+                        onClearClick = { controller.onQueryChange("") },
                         onSearchClick = { }
                     )
                 },
@@ -106,15 +106,11 @@ private fun ShareChatRoomTabContent() {
             )
         }
     ) { padding ->
-        val filteredRooms = remember(rooms, query) {
-            if (query.isBlank()) rooms
-            else rooms.filter { it.displayTitle.contains(query, ignoreCase = true) }
+        val pinnedRooms = remember(rooms) {
+            rooms.filter { it.pinDate.isNotEmpty() }
         }
-        val pinnedRooms = remember(filteredRooms) {
-            filteredRooms.filter { it.pinDate.isNotEmpty() }
-        }
-        val nonPinnedRooms = remember(filteredRooms) {
-            filteredRooms.filter { it.pinDate.isEmpty() }
+        val nonPinnedRooms = remember(rooms) {
+            rooms.filter { it.pinDate.isEmpty() }
         }
 
         Column(

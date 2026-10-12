@@ -35,3 +35,12 @@ enum class ChatRoomListKind {
     /** 안읽음 칩. */
     UNREAD,
 }
+
+/**
+ * 편집 모드에서 나가기를 눌렀을 때 실제로 나갈 대화방 ID — **지금 화면에 보이는 방 중 고른 것만**, 화면 순서대로.
+ *
+ * 방을 고른 뒤 필터 칩이나 검색어를 바꾸면 선택은 남은 채 방이 화면에서 빠진다. 나가기는 되돌릴 수 없으므로
+ * 확인을 누르는 순간 보고 있지 않은 방까지 나가면 안 된다.
+ */
+fun chatRoomsToLeave(visibleRooms: List<ChatRoom.Item>, selectedIds: Set<String>): List<String> =
+    visibleRooms.map { it.id }.filter { it in selectedIds }

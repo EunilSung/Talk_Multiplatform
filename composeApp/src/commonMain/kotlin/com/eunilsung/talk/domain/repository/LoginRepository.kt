@@ -1,7 +1,6 @@
 package com.eunilsung.talk.domain.repository
 
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.eunilsung.talk.domain.model.Login
 import com.eunilsung.talk.domain.model.User
@@ -9,7 +8,9 @@ import com.eunilsung.talk.domain.model.User
 interface LoginRepository {
     val isLoggedIn: StateFlow<Boolean>
     val isConnected: StateFlow<Boolean>
-    val isForeground: MutableStateFlow<Boolean>
+    /** 앱이 화면 앞에 있는지. */
+    val isForeground: StateFlow<Boolean>
+    fun setForeground(isForeground: Boolean)
     fun logout()
     suspend fun requestLogin(input: Login.LoginRequest): Login.LoginResult
     fun getSavedId(): String?

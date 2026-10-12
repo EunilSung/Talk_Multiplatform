@@ -1,5 +1,7 @@
 package com.eunilsung.talk.data.mapper
 
+import com.eunilsung.talk.domain.model.ALARM_ON
+import com.eunilsung.talk.domain.model.ALARM_OFF
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
@@ -216,7 +218,7 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
     fun toChatGroup(group: ChatGroupDto) = ChatGroup(
         id = group.id,
         name = group.name,
-        kind = USER_GROUP_KIND,
+        kind = ChatGroup.KIND_CUSTOM,
         sort = group.sort.toString(),
         roomIds = group.roomIds,
     )
@@ -314,9 +316,5 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
 
     private companion object {
         const val TITLE_SEPARATOR = ", "
-        const val ALARM_ON = "0"
-        const val ALARM_OFF = "1"
-        /** 사용자가 만든 그룹 칩의 종류 값. */
-        const val USER_GROUP_KIND = "2"
     }
 }

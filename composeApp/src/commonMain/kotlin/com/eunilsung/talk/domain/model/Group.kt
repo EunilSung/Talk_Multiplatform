@@ -2,11 +2,11 @@ package com.eunilsung.talk.domain.model
 
 sealed class Group {
     data class Item (
-        var id : String,
-        var name : String,
-        var alineCode : String,
-        var userData : List<User> = emptyList(),
-        var isExpanded: Boolean = false                             
+        val id : String,
+        val name : String,
+        val alineCode : String,
+        val userData : List<User> = emptyList(),
+        val isExpanded: Boolean = false
     )
 
     data class User(
@@ -55,3 +55,12 @@ const val MY_PROFILE_GROUP_ID = "myprofile"
 
 /** 내 프로필 그룹인지 — 이름 표기·메뉴 제한 분기에 쓴다. */
 val Group.Item.isMyProfileGroup: Boolean get() = id == MY_PROFILE_GROUP_ID
+
+/** 고정 그룹 id 에 들어가는 표시. 음수 id 가 앱이 미리 둔 그룹이다. */
+private const val SYSTEM_GROUP_ID_MARK = "-"
+
+/** [groupId] 가 사람이 만들지 않은 고정 그룹인지. 이름 바꾸기·삭제·사람 빼기를 막는다. */
+fun isSystemGroupId(groupId: String): Boolean = groupId.contains(SYSTEM_GROUP_ID_MARK)
+
+/** 사람이 만들지 않은 고정 그룹인지. */
+val Group.Item.isSystemGroup: Boolean get() = isSystemGroupId(id)

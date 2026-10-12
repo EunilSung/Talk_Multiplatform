@@ -8,6 +8,9 @@ class ShareChatRoomController(
     val rooms: StateFlow<List<ChatRoom.Item>>,
     val selectedRoomId: String?,
     val onSelect: (ChatRoom.Item) -> Unit,
+    /** 방 이름 검색어. [rooms] 는 이미 이 말로 걸러져 있다. */
+    val query: String,
+    val onQueryChange: (String) -> Unit,
 )
 
 val LocalShareChatRoomController = staticCompositionLocalOf<ShareChatRoomController> {

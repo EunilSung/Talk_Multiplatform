@@ -1,6 +1,5 @@
 package com.eunilsung.talk.ui.chatroom
 
-import com.eunilsung.talk.ui.chatroomlist.ChatRoomNameValidation
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.model.User

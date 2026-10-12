@@ -15,6 +15,8 @@ sealed interface ShareActions {
 
     data object OnChatRoomClear : ShareActions
 
+    data class OnRoomQueryChange(val query: String) : ShareActions
+
     data object OnSubmit : ShareActions
 
     data object OnClose : ShareActions

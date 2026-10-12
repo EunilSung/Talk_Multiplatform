@@ -43,6 +43,17 @@ sealed class ChatRoom{
         val isDirectRoom: Boolean
             get() = totalUserCount == "2"
 
+        /** 알림을 꺼 둔 방인지. */
+        val isMuted: Boolean
+            get() = isAlarm == ALARM_OFF
+
+        /** 안 읽은 대화가 있는지. */
+        val hasUnread: Boolean
+            get() = (unReadCount.toIntOrNull() ?: 0) > 0
+
+        /** 보이는 방 이름([displayTitle])에 [query] 가 들어 있는지. 대화함·공유의 방 찾기가 쓴다. */
+        fun matchesTitle(query: String): Boolean = displayTitle.contains(query, ignoreCase = true)
+
         /** 서버가 보내는 알림방. 방 id 에 [NOTIFICATION_ID_MARK] 가 들어 있다. */
         val isNotificationRoom: Boolean
             get() = id.contains(NOTIFICATION_ID_MARK)
@@ -92,3 +103,9 @@ sealed class ChatRoom{
 
 /** 알림방·알림 보낸 사람의 id 에 들어가는 표시. */
 const val NOTIFICATION_ID_MARK = "$"
+
+/** [ChatRoom.Item.isAlarm] 값 — 알림 켬. */
+const val ALARM_ON = "0"
+
+/** [ChatRoom.Item.isAlarm] 값 — 알림 끔. */
+const val ALARM_OFF = "1"

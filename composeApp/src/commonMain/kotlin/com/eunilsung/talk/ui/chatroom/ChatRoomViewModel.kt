@@ -144,9 +144,9 @@ class ChatRoomViewModel(
             is ChatRoomActions.OnReachEnd -> fetchMore()
             is ChatRoomActions.OnReachStart -> fetchNewer()
             is ChatRoomActions.OnEnterSearch -> {
-                _uiState.update { it.copy(replyTarget = null, search = ChatSearchState(isActive = true)) }
+                _uiState.update { it.copy(replyTarget = null, search = ChatSearchUiState(isActive = true)) }
             }
-            is ChatRoomActions.OnExitSearch -> search.update { ChatSearchState() }
+            is ChatRoomActions.OnExitSearch -> search.update { ChatSearchUiState() }
             is ChatRoomActions.OnSearchQueryChange -> search.updateQuery(action.query)
             is ChatRoomActions.OnSearch -> search.searchByQuery()
             is ChatRoomActions.OnSearchNext -> search.moveIndex(+1)
@@ -160,7 +160,7 @@ class ChatRoomViewModel(
             is ChatRoomActions.OnSearchByDate -> search.searchByDate(action.datePrefix)
             is ChatRoomActions.OnSwipeReply -> {
                 if (_uiState.value.search.isActive) {
-                    search.update { ChatSearchState() }
+                    search.update { ChatSearchUiState() }
                 }
                 viewModelScope.launch {
                     val chat = action.chat
@@ -341,7 +341,7 @@ class ChatRoomViewModel(
                 users = emptyList(),
                 sender = stateUseCases.getSender(chatRoomId),
                 myId = stateUseCases.getMyUser().id,
-                search = ChatSearchState(),
+                search = ChatSearchUiState(),
                 replyTarget = null,
                 translations = emptyMap(),
                 polish = PolishUiState.Idle,

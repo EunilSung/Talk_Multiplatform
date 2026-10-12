@@ -44,9 +44,7 @@ class ObserveConnectionUseCase(private val repository: LoginRepository) {
 
 /** 앱이 화면 앞에 있는지 알린다. 푸시 알림을 띄울지, 보고 있는 방의 새 대화를 읽은 것으로 칠지가 이 값으로 갈린다. */
 class SetForegroundUseCase(private val repository: LoginRepository) {
-    operator fun invoke(isForeground: Boolean) {
-        repository.isForeground.value = isForeground
-    }
+    operator fun invoke(isForeground: Boolean) = repository.setForeground(isForeground)
 }
 
 /** 서버에 닿는지 다시 확인해 연결 상태를 맞춘다. 로그인돼 있지 않으면 아무것도 하지 않는다. */

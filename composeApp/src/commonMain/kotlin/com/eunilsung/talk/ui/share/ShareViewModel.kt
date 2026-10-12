@@ -47,6 +47,7 @@ class ShareViewModel(
             is ShareActions.OnChatRoomSelect -> selectChatRoom(action.chatRoom)
             is ShareActions.OnChatRoomClear ->
                 _uiState.update { it.copy(selectedChatRoom = null) }
+            is ShareActions.OnRoomQueryChange -> _uiState.update { it.copy(roomQuery = action.query) }
             is ShareActions.OnSubmit -> submit()
             is ShareActions.OnClose -> Unit
             is ShareActions.Reset -> _uiState.update { ShareUiState(rooms = it.rooms) }

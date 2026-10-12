@@ -1,5 +1,7 @@
 package com.eunilsung.talk.domain.repository
 
+import com.eunilsung.talk.domain.model.ALARM_ON
+import com.eunilsung.talk.domain.model.ALARM_OFF
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,7 +45,7 @@ interface ChatRoomListRepository {
     /** 대화방 이름 변경. */
     suspend fun renameChatRoom(chatRoomId: String, newName: String): Boolean
 
-    /** 대화방 알림 토글. isAlarm = "1" 끔(뮤트) / "0" 켬. */
+    /** 대화방 알림 토글. isAlarm = [ALARM_OFF] 끔(뮤트) / [ALARM_ON] 켬. */
     suspend fun setChatRoomAlarm(chatRoomId: String, isAlarm: String): Boolean
 
     /** 대화방 상단고정 토글 — Settings 에 저장. */

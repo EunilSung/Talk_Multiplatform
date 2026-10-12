@@ -37,7 +37,7 @@ import com.eunilsung.talk.ui.uikit.mediapicker.MediaPickerState
 @Composable
 fun ChatRoomBottomBar(
     isSearchMode: Boolean,
-    searchState: ChatSearchState,
+    searchState: ChatSearchUiState,
     replyTarget: Chat.Item?,
     mentionState: MentionFieldState,
     polishButton: PolishButtonState,

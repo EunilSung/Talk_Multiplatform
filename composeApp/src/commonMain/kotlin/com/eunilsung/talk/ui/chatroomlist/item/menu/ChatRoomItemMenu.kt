@@ -1,5 +1,7 @@
 package com.eunilsung.talk.ui.chatroomlist.item.menu
 
+import com.eunilsung.talk.domain.model.ALARM_ON
+import com.eunilsung.talk.domain.model.ALARM_OFF
 import androidx.compose.runtime.Composable
 import com.eunilsung.talk.ui.chatroomlist.ChatRoomListActions
 import com.eunilsung.talk.ui.chatroomlist.ChatRoomListMode
@@ -39,7 +41,7 @@ class ChatRoomItemMenu internal constructor(
     ) {
         val isPinned = item.pinDate.isNotEmpty()
         val pinLabel = if (isPinned) labels.unpin else labels.pin
-        val isMuted = item.isAlarm == "1"
+        val isMuted = item.isMuted
         val alarmLabel = if (isMuted) labels.alarmOn else labels.alarmOff
 
         val groupLabel: String? = if (!Config.ChatRoom.IS_CHAT_GROUP_ENABLED) {
@@ -85,7 +87,7 @@ class ChatRoomItemMenu internal constructor(
                         )
                     )
                     alarmLabel        -> {
-                        val newValue = if (isMuted) "0" else "1"
+                        val newValue = if (isMuted) ALARM_ON else ALARM_OFF
                         onAction(
                             ChatRoomListActions.SetChatRoomAlarm(
                                 chatRoomId = item.id,

@@ -53,7 +53,7 @@ import com.eunilsung.talk.ui.uikit.mediapicker.MediaPickerState
 fun ChatMessageList(
     groupedChats: List<GroupedChat>,
     listState: LazyListState,
-    searchState: ChatSearchState,
+    searchState: ChatSearchUiState,
     chatFontSize: TextUnit,
     bookmarkedChatIds: Set<String>,
     currentChatRoomId: String,

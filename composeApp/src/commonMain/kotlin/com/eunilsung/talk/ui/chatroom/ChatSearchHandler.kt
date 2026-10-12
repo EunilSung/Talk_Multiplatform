@@ -24,7 +24,7 @@ internal class ChatSearchHandler(
     private val currentRoomId: () -> String,
     private val loadedChats: () -> List<Chat.Item>,
 ) {
-    fun update(transform: (ChatSearchState) -> ChatSearchState) {
+    fun update(transform: (ChatSearchUiState) -> ChatSearchUiState) {
         uiState.update { it.copy(search = transform(it.search)) }
     }
 

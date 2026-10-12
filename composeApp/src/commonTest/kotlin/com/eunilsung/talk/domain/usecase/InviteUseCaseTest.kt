@@ -56,7 +56,7 @@ class InviteUseCaseTest {
         val invite = RecordingInvite()
         val rooms = FakeChatRoomListRepository(listOf(room("r1", listOf(ME to "나", "test2" to "이서연"))))
 
-        val roomId = StartDirectChatUseCase(rooms, invite, Profiles(), FakeLoginRepository())("test2")
+        val roomId = StartDirectChatUseCase(CreateChatRoomUseCase(invite, rooms, FakeLoginRepository()), Profiles())("test2")
 
         assertEquals("r1", roomId)
         assertTrue(invite.calls.isEmpty())
@@ -72,7 +72,7 @@ class InviteUseCaseTest {
             )
         )
 
-        val roomId = StartDirectChatUseCase(rooms, invite, Profiles(cached = "이서연"), FakeLoginRepository())("test2")
+        val roomId = StartDirectChatUseCase(CreateChatRoomUseCase(invite, rooms, FakeLoginRepository()), Profiles(cached = "이서연"))("test2")
 
         assertEquals("new-room", roomId)
         assertEquals(listOf(Triple("", listOf("test2" to "이서연"), 0)), invite.calls)
@@ -82,7 +82,7 @@ class InviteUseCaseTest {
     fun 받아_둔_프로필이_없으면_서버에서_받은_이름으로_방을_만든다() = runTest {
         val invite = RecordingInvite()
 
-        StartDirectChatUseCase(FakeChatRoomListRepository(), invite, Profiles(fetched = "최지우"), FakeLoginRepository())("test4")
+        StartDirectChatUseCase(CreateChatRoomUseCase(invite, FakeChatRoomListRepository(), FakeLoginRepository()), Profiles(fetched = "최지우"))("test4")
 
         assertEquals(listOf("test4" to "최지우"), invite.calls.single().second)
     }
@@ -91,9 +91,31 @@ class InviteUseCaseTest {
     fun 나를_고르면_나와의_대화방을_찾는다() = runTest {
         val rooms = FakeChatRoomListRepository(listOf(room("me", listOf(ME to "나"))))
 
-        val roomId = StartDirectChatUseCase(rooms, RecordingInvite(), Profiles(), FakeLoginRepository())(ME)
+        val roomId = StartDirectChatUseCase(CreateChatRoomUseCase(RecordingInvite(), rooms, FakeLoginRepository()), Profiles())(ME)
 
         assertEquals("me", roomId)
+    }
+
+    @Test
+    fun 한_명과_방을_만들면_있던_둘만의_방을_연다() = runTest {
+        val invite = RecordingInvite()
+        val rooms = FakeChatRoomListRepository(listOf(room("r1", listOf(ME to "나", "test2" to "이서연"))))
+
+        val roomId = CreateChatRoomUseCase(invite, rooms, FakeLoginRepository())(listOf("test2" to "이서연"))
+
+        assertEquals("r1", roomId)
+        assertTrue(invite.calls.isEmpty())
+    }
+
+    @Test
+    fun 여러_명이면_늘_새_방을_만든다() = runTest {
+        val invite = RecordingInvite()
+        val rooms = FakeChatRoomListRepository(listOf(room("r1", listOf(ME to "나", "test2" to "이서연"))))
+
+        val roomId = CreateChatRoomUseCase(invite, rooms, FakeLoginRepository())(listOf("test2" to "이서연", "test3" to "박도윤"))
+
+        assertEquals("new-room", roomId)
+        assertEquals(1, invite.calls.size)
     }
 
     @Test

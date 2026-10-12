@@ -1,5 +1,6 @@
 package com.eunilsung.talk.data.local.seed
 
+import com.eunilsung.talk.domain.model.ALARM_ON
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import com.eunilsung.talk.domain.model.ChatGroup
@@ -102,14 +103,14 @@ object TestChatRooms {
         ChatGroup(
             id = "cg_work",
             name = "업무",
-            kind = "2",
+            kind = ChatGroup.KIND_CUSTOM,
             sort = "1",
             roomIds = listOf("room_group_dev", "room_group_plan"),
         ),
         ChatGroup(
             id = "cg_personal",
             name = "개인",
-            kind = "2",
+            kind = ChatGroup.KIND_CUSTOM,
             sort = "2",
             roomIds = listOf("room_direct_1", "room_direct_2"),
         ),
@@ -182,7 +183,7 @@ object TestChatRooms {
         id = id,
         title = nameOf(partnerId),
         unReadCount = "0",
-        isAlarm = "0",
+        isAlarm = ALARM_ON,
         lastChatDate = timestamp(minutesAgo),
         lastChatContent = lastChat,
         totalUserList = UserListCodec.encode(listOf(me)),

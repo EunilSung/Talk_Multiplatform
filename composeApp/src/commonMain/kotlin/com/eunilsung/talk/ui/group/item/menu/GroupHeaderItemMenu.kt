@@ -1,5 +1,10 @@
 package com.eunilsung.talk.ui.group.item.menu
 
+import org.jetbrains.compose.resources.getString
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import com.eunilsung.talk.domain.model.isSystemGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
@@ -27,12 +32,13 @@ class GroupHeaderItemMenu internal constructor(
     private val quickActions: QuickActions,
     private val showCreateGroupDialog: () -> Unit,
     private val onAction: (GroupActions) -> Unit,
-    private val labels: Labels
+    private val labels: Labels,
+    private val scope: CoroutineScope,
 ) {
 
     fun onLongClickHandler(group: Group.Item): (() -> Unit)? = when {
         group.isMyProfileGroup -> null
-        group.id == "0" || group.id.contains("-") -> ({ showSystemGroupMenu(group) })
+        group.isDefaultGroup || group.isSystemGroup -> ({ showSystemGroupMenu(group) })
         else -> ({ showRegularGroupMenu(group) })
     }
 
@@ -71,12 +77,14 @@ class GroupHeaderItemMenu internal constructor(
                             onAction(GroupActions.RenameGroup(groupId = group.id, newName = rawInput))
                         }
                     )
-                    labels.groupDelete  -> dialogManager.confirm(
-                        title = labels.groupDelete,
-                        message = "\"${group.name}\"${labels.confirmGroupDelete}",
-                        confirmText = labels.delete,
-                        onConfirm = { onAction(GroupActions.DeleteGroup(group.id)) }
-                    )
+                    labels.groupDelete  -> scope.launch {
+                        dialogManager.confirm(
+                            title = labels.groupDelete,
+                            message = getString(Res.string.confirm_group_delete, group.name),
+                            confirmText = labels.delete,
+                            onConfirm = { onAction(GroupActions.DeleteGroup(group.id)) }
+                        )
+                    }
                 }
             }
         )
@@ -92,7 +100,6 @@ class GroupHeaderItemMenu internal constructor(
         val groupRename: String,
         val groupDelete: String,
         val defaultGroup: String,
-        val confirmGroupDelete: String,
         val delete: String
     )
 }
@@ -110,10 +117,10 @@ fun rememberGroupItemMenu(
         groupRename = stringResource(Res.string.group_rename),
         groupDelete = stringResource(Res.string.group_delete),
         defaultGroup = stringResource(Res.string.default_group),
-        confirmGroupDelete = stringResource(Res.string.confirm_group_delete),
         delete = stringResource(Res.string.delete)
     )
-    return remember(dialogManager, quickActions, showCreateGroupDialog, onAction, labels) {
-        GroupHeaderItemMenu(dialogManager, quickActions, showCreateGroupDialog, onAction, labels)
+    val scope = rememberCoroutineScope()
+    return remember(dialogManager, quickActions, showCreateGroupDialog, onAction, labels, scope) {
+        GroupHeaderItemMenu(dialogManager, quickActions, showCreateGroupDialog, onAction, labels, scope)
     }
 }

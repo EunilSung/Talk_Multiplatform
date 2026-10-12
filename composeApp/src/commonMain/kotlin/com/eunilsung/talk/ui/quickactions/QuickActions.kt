@@ -1,5 +1,7 @@
 package com.eunilsung.talk.ui.quickactions
 
+import com.eunilsung.talk.domain.model.isSystemGroup
+import com.eunilsung.talk.domain.model.isMyProfileGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -14,7 +16,6 @@ import multiplatformtalk.composeapp.generated.resources.toast_add_to_group_faile
 import multiplatformtalk.composeapp.generated.resources.toast_added_to_group
 import multiplatformtalk.composeapp.generated.resources.toast_user_already_in_group
 import com.eunilsung.talk.domain.model.isDefaultGroup
-import com.eunilsung.talk.domain.model.MY_PROFILE_GROUP_ID
 import com.eunilsung.talk.ui.chatroom.ChatRoomScreen
 import com.eunilsung.talk.ui.main.EmptyScreen
 import com.eunilsung.talk.ui.main.LocalRightNavigator
@@ -104,7 +105,7 @@ fun rememberGroupPicker(): (title: String, onPicked: (String) -> Unit) -> Unit {
     return remember(groups, dialogManager, txtDefaultGroup) {
         { title, onPicked ->
             val targets = groups.filter {
-                it.id != MY_PROFILE_GROUP_ID && !it.id.contains("-")
+                !it.isMyProfileGroup && !it.isSystemGroup
             }
             val labels = targets.map { g ->
                 if (g.isDefaultGroup) txtDefaultGroup else g.name

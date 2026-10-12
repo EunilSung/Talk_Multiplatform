@@ -21,7 +21,7 @@ class SettingViewModel(
     platform: Platform,
 ) : ViewModel() {
 
-    private val isAndroid: Boolean = platform.name != "IPHONE"
+    private val isAndroid: Boolean = platform.isAndroid
 
     val uiState: StateFlow<SettingUiState> =
         combine(

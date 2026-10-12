@@ -1,5 +1,6 @@
 package com.eunilsung.talk.data.local.repository
 
+import com.eunilsung.talk.domain.model.ALARM_ON
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
@@ -69,7 +70,7 @@ class LocalInviteRepositoryImpl(
             // 단체방 제목 — 참여자 이름을 이어붙인다.
             title = invited.joinToString(", ") { it.second.ifBlank { it.first } },
             unReadCount = "0",
-            isAlarm = "0",
+            isAlarm = ALARM_ON,
             lastChatDate = nowTimestamp(),
             lastChatContent = "",
             totalUserList = UserListCodec.encode(members),
