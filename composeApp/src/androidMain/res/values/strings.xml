@@ -1,3 +1,34 @@
 <resources>
     <string name="app_name">Talk</string>
+    <string name="push_preview_hidden">You have a new message</string>
+    <string name="push_new_message">New message</string>
+    <string name="push_new_notification">New notification</string>
+    <string name="push_channel_sound">Message (%1$s)</string>
+    <string name="push_channel_sound_vibrate">Message (%1$s + vibration)</string>
+    <string name="push_channel_sound_desc">Sound %1$s — no vibration</string>
+    <string name="push_channel_sound_vibrate_desc">Sound %1$s — with vibration</string>
+    <string name="push_channel_vibrate">Message (vibration)</string>
+    <string name="push_channel_silent">Message (silent)</string>
+    <string name="push_channel_vibrate_desc">No sound — vibration only</string>
+    <string name="push_channel_silent_desc">Sound and vibration off</string>
+    <string-array name="notification_sound_names">
+        <item>Ding-dong</item>
+        <item>Bubbling</item>
+        <item>Swoosh</item>
+        <item>Pen writing</item>
+        <item>Water drop</item>
+        <item>Keyboard</item>
+        <item>Typing</item>
+        <item>Dice</item>
+        <item>Click</item>
+        <item>Drum</item>
+        <item>Water steps</item>
+        <item>Page turn</item>
+        <item>Ooph</item>
+        <item>Pop</item>
+        <item>Zip</item>
+        <item>Wind-up</item>
+        <item>Ding~</item>
+        <item>Puppy</item>
+    </string-array>
 </resources>

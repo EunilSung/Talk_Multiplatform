@@ -4,7 +4,7 @@
 //
 //  서버가 보낸 일반 APNs notification 을 수신 직후 본문/사운드 가공.
 //  메인 앱이 App Group `NSUserDefaults` 에 저장한 noti 설정 값을 읽어 다음 분기 적용:
-//   - `noti_preview = false`      → body 를 "새로운 메시지가 있습니다" 로 대체
+//   - `noti_preview = false`      → body 를 숨김 문구(`push_preview_hidden`)로 대체
 //   - `noti_sound_enabled = false` → sound 를 nil (무음)
 //   - `noti_sound_id` (Int)        → "{baseName}.wav" 사운드 파일 적용
 //
@@ -23,8 +23,9 @@ class NotificationService: UNNotificationServiceExtension {
     private let keySoundEnabled = "noti_sound_enabled"
     private let keySoundId = "noti_sound_id"
 
-    /// 미리보기 OFF 일 때 본문 대체 텍스트 — Kotlin `PushNotifier.PREVIEW_HIDDEN_BODY` 와 동일.
-    private let hiddenBody = "새로운 메시지가 있습니다"
+    /// 미리보기 OFF 일 때 본문 대체 텍스트 — 기기 언어에 맞춰 이 확장의 Localizable.xcstrings 에서 읽는다.
+    /// 앱 쪽(Android `push_preview_hidden`, iOS 앱 Localizable.xcstrings)과 같은 문구다.
+    private let hiddenBody = NSLocalizedString("push_preview_hidden", comment: "Notification body when preview is off")
 
     /// soundId → wav baseName. Kotlin `NotificationSoundCatalog.SOUNDS` 와 순서 일치.
     /// 인덱스 범위 밖은 0번 (`s_ding`) 으로 fallback.

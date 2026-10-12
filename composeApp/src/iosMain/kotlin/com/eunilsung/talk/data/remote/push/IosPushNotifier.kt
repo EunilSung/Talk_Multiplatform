@@ -4,6 +4,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import com.eunilsung.talk.domain.model.PushPayload
 import com.eunilsung.talk.domain.repository.NotificationSettingsRepository
 import com.eunilsung.talk.util.Log
+import platform.Foundation.NSBundle
 import platform.UserNotifications.UNMutableNotificationContent
 import platform.UserNotifications.UNNotification
 import platform.UserNotifications.UNNotificationRequest
@@ -66,18 +67,21 @@ class IosPushNotifier(
             .setBadgeCount(count.toLong(), null)
     }
 
-    /** 미리보기 토글이 OFF 면 본문을 [PushNotifier.PREVIEW_HIDDEN_BODY] 로 대체. 제목은 유지. */
+    /** 미리보기 토글이 OFF 면 본문을 숨김 문구로 대체. 제목은 유지. 문구는 앱의 Localizable.xcstrings 에서 읽는다. */
     private fun formatTitleBody(payload: PushPayload): Pair<String, String> {
         val title = payload.senderName.ifBlank { "Talk" }
         val previewEnabled = notificationSettings.state.value.preview
         if (!previewEnabled) {
-            return title to PushNotifier.PREVIEW_HIDDEN_BODY
+            return title to localized("push_preview_hidden")
         }
         return when (payload.kind) {
-            PushPayload.Kind.CHAT -> title to payload.msg.ifBlank { "새 메시지" }
-            else -> "Talk" to payload.msg.ifBlank { "새 알림" }
+            PushPayload.Kind.CHAT -> title to payload.msg.ifBlank { localized("push_new_message") }
+            else -> "Talk" to payload.msg.ifBlank { localized("push_new_notification") }
         }
     }
+
+    private fun localized(key: String): String =
+        NSBundle.mainBundle.localizedStringForKey(key, value = null, table = null)
 
     companion object {
         const val USER_INFO_KIND = "talk_push_msgkind"

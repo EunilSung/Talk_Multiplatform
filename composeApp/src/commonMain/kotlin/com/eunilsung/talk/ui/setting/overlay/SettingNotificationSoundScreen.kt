@@ -34,6 +34,25 @@ import org.koin.compose.viewmodel.koinViewModel
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.setting_noti_sound_title
 import org.jetbrains.compose.resources.stringResource
+import multiplatformtalk.composeapp.generated.resources.notification_sound_ding
+import multiplatformtalk.composeapp.generated.resources.notification_sound_button_1
+import multiplatformtalk.composeapp.generated.resources.notification_sound_page
+import multiplatformtalk.composeapp.generated.resources.notification_sound_pencil1
+import multiplatformtalk.composeapp.generated.resources.notification_sound_bubble_1
+import multiplatformtalk.composeapp.generated.resources.notification_sound_typing_1
+import multiplatformtalk.composeapp.generated.resources.notification_sound_typing
+import multiplatformtalk.composeapp.generated.resources.notification_sound_tick_2
+import multiplatformtalk.composeapp.generated.resources.notification_sound_tick_1
+import multiplatformtalk.composeapp.generated.resources.notification_sound_drum
+import multiplatformtalk.composeapp.generated.resources.notification_sound_water_step
+import multiplatformtalk.composeapp.generated.resources.notification_sound_page2
+import multiplatformtalk.composeapp.generated.resources.notification_sound_ooph
+import multiplatformtalk.composeapp.generated.resources.notification_sound_button_2
+import multiplatformtalk.composeapp.generated.resources.notification_sound_yank_1
+import multiplatformtalk.composeapp.generated.resources.notification_sound_yank_2
+import multiplatformtalk.composeapp.generated.resources.notification_sound_bell_little
+import multiplatformtalk.composeapp.generated.resources.notification_sound_dog
+import org.jetbrains.compose.resources.StringResource
 
 class SettingNotificationSoundScreen : Screen {
     override val key: ScreenKey = uniqueScreenKey
@@ -72,9 +91,9 @@ private fun NotificationSoundBody(
             .padding(padding)
             .verticalScroll(rememberScrollState())
     ) {
-        NotificationSoundCatalog.SOUNDS.forEachIndexed { id, sound ->
+        NotificationSoundCatalog.SOUNDS.indices.forEach { id ->
             SettingItemRadio(
-                title = sound.displayName,
+                title = notificationSoundLabel(id),
                 selected = id == selectedSoundId,
                 onClick = { onSelect(id) }
             )
@@ -91,5 +110,29 @@ private fun NotificationSoundBodyPreview() {
     }
 }
 
+/** 알림음 이름 — [NotificationSoundCatalog.SOUNDS] 와 같은 순서. */
+private val SOUND_NAMES: List<StringResource> = listOf(
+    Res.string.notification_sound_ding,
+    Res.string.notification_sound_button_1,
+    Res.string.notification_sound_page,
+    Res.string.notification_sound_pencil1,
+    Res.string.notification_sound_bubble_1,
+    Res.string.notification_sound_typing_1,
+    Res.string.notification_sound_typing,
+    Res.string.notification_sound_tick_2,
+    Res.string.notification_sound_tick_1,
+    Res.string.notification_sound_drum,
+    Res.string.notification_sound_water_step,
+    Res.string.notification_sound_page2,
+    Res.string.notification_sound_ooph,
+    Res.string.notification_sound_button_2,
+    Res.string.notification_sound_yank_1,
+    Res.string.notification_sound_yank_2,
+    Res.string.notification_sound_bell_little,
+    Res.string.notification_sound_dog,
+)
+
+/** 알림음 이름. 범위 밖이면 기본 알림음의 이름. */
+@Composable
 internal fun notificationSoundLabel(id: Int): String =
-    NotificationSoundCatalog.displayNameOrDefault(id)
+    stringResource(SOUND_NAMES.getOrElse(id) { SOUND_NAMES[NotificationSoundCatalog.DEFAULT_SOUND_ID] })

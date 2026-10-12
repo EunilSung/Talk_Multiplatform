@@ -444,4 +444,24 @@
     <string name="contact_label_mobile">Mobile</string>
     <string name="toast_no_number_to_call">There is no number to call</string>
     <string name="main_notice_message">Notice\nThis app is a sample that runs without a server.\nAll accounts, chats and groups are test data stored on this device.\nUse the person icon at the top right of a chat room to switch the sender.</string>
+
+    <!-- 알림음 이름 (NotificationSoundCatalog 순서) -->
+    <string name="notification_sound_ding">Ding-dong</string>
+    <string name="notification_sound_button_1">Bubbling</string>
+    <string name="notification_sound_page">Swoosh</string>
+    <string name="notification_sound_pencil1">Pen writing</string>
+    <string name="notification_sound_bubble_1">Water drop</string>
+    <string name="notification_sound_typing_1">Keyboard</string>
+    <string name="notification_sound_typing">Typing</string>
+    <string name="notification_sound_tick_2">Dice</string>
+    <string name="notification_sound_tick_1">Click</string>
+    <string name="notification_sound_drum">Drum</string>
+    <string name="notification_sound_water_step">Water steps</string>
+    <string name="notification_sound_page2">Page turn</string>
+    <string name="notification_sound_ooph">Ooph</string>
+    <string name="notification_sound_button_2">Pop</string>
+    <string name="notification_sound_yank_1">Zip</string>
+    <string name="notification_sound_yank_2">Wind-up</string>
+    <string name="notification_sound_bell_little">Ding~</string>
+    <string name="notification_sound_dog">Puppy</string>
 </resources>
