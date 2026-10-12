@@ -23,7 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.eunilsung.talk.domain.model.VoteOption
+import com.eunilsung.talk.ui.chatroom.vote.VoteOption
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.chatroom.vote.VoteActions
 import com.eunilsung.talk.ui.chatroom.vote.VoteUiState

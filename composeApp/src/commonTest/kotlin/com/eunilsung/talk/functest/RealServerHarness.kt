@@ -1,5 +1,7 @@
 package com.eunilsung.talk.functest
 
+import com.eunilsung.talk.data.mapper.SeedMapper
+import com.eunilsung.talk.data.mapper.VoteMapper
 import com.eunilsung.talk.data.mapper.ChatMapper
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.data.mapper.GroupMapper
@@ -84,6 +86,7 @@ class RealServerHarness private constructor(private val baseUrl: String) {
     private val localChats = LocalChatRoomRepositoryImpl(
         chatMapper = ChatMapper(),
         chatRoomMapper = chatRoomMapper,
+        seedMapper = SeedMapper(),
         chatRoomListRepository = localRooms,
         fileMetadataResolver = deviceFiles,
         senderOverride = ChatSenderOverride(),
@@ -94,10 +97,10 @@ class RealServerHarness private constructor(private val baseUrl: String) {
     val rooms = ChatRoomListRepositoryImpl(localRooms, server, events, login, mapper)
     val chats = ChatRoomRepositoryImpl(localChats, server, events, mapper, fileStore, deviceFiles, directory, database)
     val invite = InviteRepositoryImpl(server, rooms)
-    val votes = VoteRepositoryImpl(server, localChats, mapper)
+    val votes = VoteRepositoryImpl(server, localChats, mapper, VoteMapper())
     val groups = GroupRepositoryImpl(
         LocalGroupRepositoryImpl(
-            groupMapper, login, MapSettings(), database,
+            groupMapper, SeedMapper(), login, MapSettings(), database,
             seedsSampleGroups = false,
             findUser = { userId, groupId -> directory.find(userId)?.let { people.toGroupUser(it, groupId) } },
         ),

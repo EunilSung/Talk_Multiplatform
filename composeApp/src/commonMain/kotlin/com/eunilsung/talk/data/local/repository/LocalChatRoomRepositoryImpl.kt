@@ -19,9 +19,8 @@ import com.eunilsung.talk.Config
 import com.eunilsung.talk.data.local.FileMetadataResolver
 import com.eunilsung.talk.data.mapper.ChatMapper
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
+import com.eunilsung.talk.data.mapper.SeedMapper
 import com.eunilsung.talk.db.AppDatabase
-import com.eunilsung.talk.db.BookmarkEntity
-import com.eunilsung.talk.db.NoticeEntity
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.PolishStyle
@@ -46,6 +45,7 @@ import com.eunilsung.talk.data.local.seed.TestChats
 class LocalChatRoomRepositoryImpl(
     private val chatMapper: ChatMapper,
     private val chatRoomMapper: ChatRoomMapper,
+    private val seedMapper: SeedMapper,
     private val chatRoomListRepository: ChatRoomListRepository,
     private val fileMetadataResolver: FileMetadataResolver,
     private val senderOverride: SenderOverrideRepository,
@@ -129,17 +129,7 @@ class LocalChatRoomRepositoryImpl(
                 ?.let { chatRoomMapper.toModel(it) }
                 ?: return@withContext emptyList()
 
-            UserListCodec.decode(room.totalUserList).map { (id, name) ->
-                val account = TestAccounts.find(id)
-                User(
-                    id = id,
-                    name = name.ifBlank { account?.userName ?: id },
-                    departmentName = account?.organName,
-                    positionName = account?.positionName,
-                    presencePc = account?.pcStatus,
-                    presenceMobile = account?.mobileStatus,
-                )
-            }
+            UserListCodec.decode(room.totalUserList).map { (id, name) -> seedMapper.toRoomUser(id, name) }
         }
 
     override suspend fun searchChats(
@@ -359,18 +349,7 @@ class LocalChatRoomRepositoryImpl(
             date = nowChatDate(),
         )
         withContext(Dispatchers.Default) {
-            dbQueries.insertNotice(
-                NoticeEntity(
-                    myId = myId,
-                    chatRoomId = chatRoomId,
-                    noticeId = notice.noticeId,
-                    content = notice.content,
-                    ownerId = notice.ownerId,
-                    ownerName = notice.ownerName,
-                    ownerPosition = notice.ownerPosition,
-                    date = notice.date,
-                )
-            )
+            dbQueries.insertNotice(chatMapper.toEntity(myId, notice))
         }
         _currentNotice.value = notice
         appendNoticeChat(myId, chatRoomId, added = true, noticeContent = notice.content)
@@ -425,17 +404,15 @@ class LocalChatRoomRepositoryImpl(
     override suspend fun addBookmark(chatRoomId: String, chat: Chat.Item) =
         withContext(Dispatchers.Default) {
             val myId = Config.MyInfo.userId
-            dbQueries.insertBookmark(
-                BookmarkEntity(
-                    myId = myId,
-                    chatRoomId = chatRoomId,
-                    chatId = chat.chatID,
-                    content = chat.chatContent.stripMentionTags(),
-                    date = chat.date,
-                    userId = chat.user.id,
-                    userName = chat.user.name,
-                )
+            val bookmark = Bookmark(
+                chatId = chat.chatID,
+                chatRoomId = chatRoomId,
+                content = chat.chatContent.stripMentionTags(),
+                date = chat.date,
+                userId = chat.user.id,
+                userName = chat.user.name,
             )
+            dbQueries.insertBookmark(chatMapper.toEntity(myId, bookmark))
             _bookmarks.value = loadBookmarks(myId, chatRoomId)
         }
 
@@ -449,29 +426,10 @@ class LocalChatRoomRepositoryImpl(
     // ---- 내부 ----
 
     private fun loadNotice(myId: String, chatRoomId: String): Notice? =
-        dbQueries.selectNotice(myId, chatRoomId).executeAsOneOrNull()?.let {
-            Notice(
-                noticeId = it.noticeId,
-                chatRoomId = it.chatRoomId,
-                content = it.content,
-                ownerId = it.ownerId,
-                ownerName = it.ownerName,
-                ownerPosition = it.ownerPosition,
-                date = it.date,
-            )
-        }
+        dbQueries.selectNotice(myId, chatRoomId).executeAsOneOrNull()?.let(chatMapper::toNotice)
 
     private fun loadBookmarks(myId: String, chatRoomId: String): List<Bookmark> =
-        dbQueries.selectBookmarksByRoom(myId, chatRoomId).executeAsList().map {
-            Bookmark(
-                chatId = it.chatId,
-                chatRoomId = it.chatRoomId,
-                content = it.content,
-                date = it.date,
-                userId = it.userId,
-                userName = it.userName,
-            )
-        }
+        dbQueries.selectBookmarksByRoom(myId, chatRoomId).executeAsList().map(chatMapper::toBookmark)
 
     private fun seedChats(myId: String, chatRoomId: String) {
         val room = dbQueries.selectChatRoomsByMyId(myId).executeAsList()

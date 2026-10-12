@@ -24,7 +24,9 @@ import com.eunilsung.talk.data.mapper.ChatMapper
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.data.mapper.GroupMapper
+import com.eunilsung.talk.data.mapper.SeedMapper
 import com.eunilsung.talk.data.mapper.ServerPeopleMapper
+import com.eunilsung.talk.data.mapper.VoteMapper
 import com.eunilsung.talk.data.repository.ChatSettingsRepositoryImpl
 import com.eunilsung.talk.data.local.repository.LocalChatRoomListRepositoryImpl
 import com.eunilsung.talk.data.local.repository.ChatSenderOverride
@@ -157,16 +159,17 @@ val appModule = module {
             val directory: UserDirectory = get()
             val people: ServerPeopleMapper = get()
             val local = LocalGroupRepositoryImpl(
-                get(), get(), get(), get(),
+                get(), get(), get(), get(), get(),
                 seedsSampleGroups = false,
                 findUser = { userId, groupId -> directory.find(userId)?.let { people.toGroupUser(it, groupId) } },
             )
             GroupRepositoryImpl(local, get(), directory, get(), people)
         } else {
-            LocalGroupRepositoryImpl(get(), get(), get(), get())
+            LocalGroupRepositoryImpl(get(), get(), get(), get(), get())
         }
     }
     singleOf(::GroupMapper)
+    singleOf(::SeedMapper)
     singleOf(::ServerPeopleMapper)
     singleOf(::GetGroupsUseCase)
     singleOf(::FetchGroupsUseCase)
@@ -198,7 +201,7 @@ val appModule = module {
     singleOf(::SaveMyProfilePhotoUseCase)
     // TestAccounts 를 프로필로 사용.
     single<UserProfileRepository> {
-        if (Config.Server.IS_ENABLED) UserProfileRepositoryImpl(get(), get(), get()) else LocalUserProfileRepositoryImpl()
+        if (Config.Server.IS_ENABLED) UserProfileRepositoryImpl(get(), get(), get()) else LocalUserProfileRepositoryImpl(get())
     }
 
     singleOf(::ObserveNewChatUseCase)
@@ -235,7 +238,7 @@ val appModule = module {
     single<SenderOverrideRepository> { ChatSenderOverride() }
     single {
         LocalChatRoomRepositoryImpl(
-            get(), get(), get<LocalChatRoomListRepositoryImpl>(), get(), get(), get(),
+            get(), get(), get(), get<LocalChatRoomListRepositoryImpl>(), get(), get(), get(),
             seedsSampleChats = !Config.Server.IS_ENABLED,
         )
     }
@@ -347,8 +350,9 @@ val appModule = module {
     viewModelOf(::VoteViewModel)
     // 투표/투표 결과는 VoteEntity 에 저장.
     single<VoteRepository> {
-        if (Config.Server.IS_ENABLED) VoteRepositoryImpl(get(), get(), get()) else LocalVoteRepositoryImpl(get(), get())
+        if (Config.Server.IS_ENABLED) VoteRepositoryImpl(get(), get(), get(), get()) else LocalVoteRepositoryImpl(get(), get(), get())
     }
+    singleOf(::VoteMapper)
     singleOf(::GetVotesUseCase)
     singleOf(::GetVoteUseCase)
     singleOf(::CreateVoteUseCase)

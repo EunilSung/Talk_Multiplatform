@@ -1,5 +1,6 @@
 package com.eunilsung.talk.data.local.repository
 
+import com.eunilsung.talk.data.mapper.SeedMapper
 import com.eunilsung.talk.data.local.FileMetadata
 import com.eunilsung.talk.data.local.FileMetadataResolver
 import com.eunilsung.talk.data.mapper.ChatMapper
@@ -59,6 +60,7 @@ class LocalChatRoomRepositoryTest {
         repo = LocalChatRoomRepositoryImpl(
             chatMapper = ChatMapper(),
             chatRoomMapper = chatRoomMapper,
+            seedMapper = SeedMapper(),
             chatRoomListRepository = roomList,
             fileMetadataResolver = NoopFileMetadataResolver(),
             senderOverride = ChatSenderOverride(),

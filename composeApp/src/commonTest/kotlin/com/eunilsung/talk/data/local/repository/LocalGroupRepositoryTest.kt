@@ -1,5 +1,7 @@
 package com.eunilsung.talk.data.local.repository
 
+import com.eunilsung.talk.domain.model.DEFAULT_GROUP_ID
+import com.eunilsung.talk.data.mapper.SeedMapper
 import com.eunilsung.talk.data.mapper.GroupMapper
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.Group
@@ -19,7 +21,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import com.eunilsung.talk.data.local.seed.TestGroups
 
 /** 그룹 저장소 + SQLDelight 통합 — 변경이 DB 를 거쳐 다시 조회되는지 확인한다. */
 class LocalGroupRepositoryTest {
@@ -38,7 +39,7 @@ class LocalGroupRepositoryTest {
     fun tearDown() = TestMyInfo.clear()
 
     private fun newRepository() =
-        LocalGroupRepositoryImpl(GroupMapper(), FakeLoginRepository(), settings, database)
+        LocalGroupRepositoryImpl(GroupMapper(), SeedMapper(), FakeLoginRepository(), settings, database)
 
     private suspend fun LocalGroupRepositoryImpl.groups(): List<Group.Item> = getGroups().first()
 
@@ -51,7 +52,7 @@ class LocalGroupRepositoryTest {
         repo.fetchGroups()
 
         val ids = repo.groups().map { it.id }
-        assertEquals(setOf("myprofile", TestGroups.DEFAULT_GROUP_ID, "1", "2", "3"), ids.toSet())
+        assertEquals(setOf("myprofile", DEFAULT_GROUP_ID, "1", "2", "3"), ids.toSet())
         assertEquals("myprofile", ids.first())   // 내 프로필은 항상 최상단
     }
 

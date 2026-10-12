@@ -4,10 +4,14 @@ import com.eunilsung.talk.data.local.LocalSecret
 import com.eunilsung.talk.util.Log
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import com.eunilsung.talk.db.BookmarkEntity
 import com.eunilsung.talk.db.ChatEntity
+import com.eunilsung.talk.db.NoticeEntity
+import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.EmpathyChat
 import com.eunilsung.talk.domain.model.Emoticon
+import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.model.ReplyChat
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.model.Vote
@@ -15,7 +19,7 @@ import com.eunilsung.talk.domain.model.VoteComplete
 import com.eunilsung.talk.domain.model.VoteSetting
 import com.eunilsung.talk.domain.model.VoteResultItem
 
-/** Chat 도메인 <-> DB 매퍼. 복합 필드는 [Json] 으로 인코딩해 단일 TEXT 컬럼에 저장. */
+/** 대화·공지·책갈피 도메인 <-> DB 매퍼. 대화의 복합 필드는 [Json] 으로 인코딩해 단일 TEXT 컬럼에 저장. */
 class ChatMapper {
     private val json = Json {
         ignoreUnknownKeys = true
@@ -66,6 +70,46 @@ class ChatMapper {
         originalFileName = entity.originalFileName.orEmpty(),
         isRecalled = (entity.isRecalled ?: "0") == "1"
     ).let { it.copy(isMe = it.user.id == entity.myId) }
+
+    fun toEntity(myId: String, notice: Notice): NoticeEntity = NoticeEntity(
+        myId = myId,
+        chatRoomId = notice.chatRoomId,
+        noticeId = notice.noticeId,
+        content = notice.content,
+        ownerId = notice.ownerId,
+        ownerName = notice.ownerName,
+        ownerPosition = notice.ownerPosition,
+        date = notice.date,
+    )
+
+    fun toNotice(entity: NoticeEntity): Notice = Notice(
+        noticeId = entity.noticeId,
+        chatRoomId = entity.chatRoomId,
+        content = entity.content,
+        ownerId = entity.ownerId,
+        ownerName = entity.ownerName,
+        ownerPosition = entity.ownerPosition,
+        date = entity.date,
+    )
+
+    fun toEntity(myId: String, bookmark: Bookmark): BookmarkEntity = BookmarkEntity(
+        myId = myId,
+        chatRoomId = bookmark.chatRoomId,
+        chatId = bookmark.chatId,
+        content = bookmark.content,
+        date = bookmark.date,
+        userId = bookmark.userId,
+        userName = bookmark.userName,
+    )
+
+    fun toBookmark(entity: BookmarkEntity): Bookmark = Bookmark(
+        chatId = entity.chatId,
+        chatRoomId = entity.chatRoomId,
+        content = entity.content,
+        date = entity.date,
+        userId = entity.userId,
+        userName = entity.userName,
+    )
 
     private fun encodeUser(u: User): String =
         runCatching { json.encodeToString(UserDto.serializer(), UserDto.from(u)) }

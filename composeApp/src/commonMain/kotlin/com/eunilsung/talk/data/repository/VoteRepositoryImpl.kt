@@ -2,6 +2,7 @@ package com.eunilsung.talk.data.repository
 
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.data.mapper.ServerChatMapper
+import com.eunilsung.talk.data.mapper.VoteMapper
 import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.data.remote.server.valueOrNull
 import com.eunilsung.talk.data.local.repository.LocalChatRoomRepositoryImpl
@@ -22,22 +23,13 @@ class VoteRepositoryImpl(
     private val server: TalkServer,
     private val localChats: LocalChatRoomRepositoryImpl,
     private val mapper: ServerChatMapper,
+    private val voteMapper: VoteMapper,
 ) : VoteRepository {
 
     override suspend fun fetchVotes(chatRoomId: String): List<VoteSummary> {
         val myId = Config.MyInfo.userId
-        return server.votes(chatRoomId).valueOrNull().orEmpty().map { mapper.toVoteData(it) }.map { data ->
-            VoteSummary(
-                id = data.id,
-                title = data.title,
-                itemCount = data.items.size,
-                participantCount = data.participantCount,
-                isClosed = data.isClosed,
-                endTime = data.endTime,
-                isMine = data.writeUserId.equals(myId, ignoreCase = true),
-                hasVoted = data.hasVoted(myId),
-            )
-        }
+        return server.votes(chatRoomId).valueOrNull().orEmpty()
+            .map { voteMapper.toSummary(mapper.toVoteData(it), myId) }
     }
 
     override suspend fun fetchVote(chatRoomId: String, voteId: String): VoteData? =
