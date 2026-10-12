@@ -13,6 +13,7 @@ import multiplatformtalk.composeapp.generated.resources.toast_chat_create_failed
 import multiplatformtalk.composeapp.generated.resources.toast_add_to_group_failed
 import multiplatformtalk.composeapp.generated.resources.toast_added_to_group
 import multiplatformtalk.composeapp.generated.resources.toast_user_already_in_group
+import com.eunilsung.talk.domain.model.isDefaultGroup
 import com.eunilsung.talk.domain.model.MY_PROFILE_GROUP_ID
 import com.eunilsung.talk.ui.chatroom.ChatRoomScreen
 import com.eunilsung.talk.ui.main.EmptyScreen
@@ -60,7 +61,7 @@ fun rememberQuickActions(): QuickActions {
                     val target = event.group
                     val displayName = when {
                         target == null -> ""
-                        target.id == "0" && target.alineCode == "-3" -> txtDefaultGroup
+                        target.isDefaultGroup -> txtDefaultGroup
                         else -> target.name
                     }
                     toastManager.show(getString(Res.string.toast_added_to_group, displayName))
@@ -106,7 +107,7 @@ fun rememberGroupPicker(): (title: String, onPicked: (String) -> Unit) -> Unit {
                 it.id != MY_PROFILE_GROUP_ID && !it.id.contains("-")
             }
             val labels = targets.map { g ->
-                if (g.id == "0" && g.alineCode == "-3") txtDefaultGroup else g.name
+                if (g.isDefaultGroup) txtDefaultGroup else g.name
             }
             val labelToId = labels.zip(targets.map { it.id }).toMap()
             dialogManager.list(

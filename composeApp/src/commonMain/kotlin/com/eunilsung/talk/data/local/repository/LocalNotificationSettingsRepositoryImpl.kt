@@ -9,7 +9,7 @@ import com.eunilsung.talk.data.repository.setAppGroupNotificationPreview
 import com.eunilsung.talk.data.repository.setAppGroupNotificationSoundEnabled
 import com.eunilsung.talk.data.repository.setAppGroupNotificationSoundId
 import com.eunilsung.talk.domain.repository.NotificationSettingsRepository
-import com.eunilsung.talk.domain.repository.NotificationSettingsState
+import com.eunilsung.talk.domain.model.NotificationSettingsState
 import com.eunilsung.talk.domain.repository.SystemNotificationGate
 import com.eunilsung.talk.util.Log
 

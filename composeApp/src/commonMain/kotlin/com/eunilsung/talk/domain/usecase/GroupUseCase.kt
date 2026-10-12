@@ -2,7 +2,7 @@ package com.eunilsung.talk.domain.usecase
 
 import kotlinx.coroutines.flow.Flow
 import com.eunilsung.talk.domain.model.Group
-import com.eunilsung.talk.domain.repository.AddUserResult
+import com.eunilsung.talk.domain.model.AddUserResult
 import com.eunilsung.talk.domain.repository.GroupRepository
 
 /** 그룹 관련 유스케이스 묶음. */

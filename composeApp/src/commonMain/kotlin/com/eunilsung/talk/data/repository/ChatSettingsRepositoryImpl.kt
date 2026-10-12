@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.eunilsung.talk.domain.repository.ChatSettingsRepository
-import com.eunilsung.talk.domain.repository.ChatSettingsState
+import com.eunilsung.talk.domain.model.ChatSettingsState
 
 class ChatSettingsRepositoryImpl(
     private val settings: Settings,
@@ -17,11 +17,11 @@ class ChatSettingsRepositoryImpl(
     private fun loadFromSettings(): ChatSettingsState {
         val rawSize = settings.getInt(
             SettingsKeys.KEY_CHAT_FONT_SIZE,
-            ChatSettingsRepository.DEFAULT_FONT_SIZE
+            ChatSettingsState.DEFAULT_FONT_SIZE
         )
-        val safeSize = ChatSettingsRepository.FONT_SIZE_OPTIONS
+        val safeSize = ChatSettingsState.FONT_SIZE_OPTIONS
             .minByOrNull { kotlin.math.abs(it - rawSize) }
-            ?: ChatSettingsRepository.DEFAULT_FONT_SIZE
+            ?: ChatSettingsState.DEFAULT_FONT_SIZE
         return ChatSettingsState(
             enterToSend = settings.getBoolean(SettingsKeys.KEY_CHAT_ENTER_SEND, false),
             fontSize = safeSize,
@@ -34,9 +34,9 @@ class ChatSettingsRepositoryImpl(
     }
 
     override fun setFontSize(size: Int) {
-        val snapped = ChatSettingsRepository.FONT_SIZE_OPTIONS
+        val snapped = ChatSettingsState.FONT_SIZE_OPTIONS
             .minByOrNull { kotlin.math.abs(it - size) }
-            ?: ChatSettingsRepository.DEFAULT_FONT_SIZE
+            ?: ChatSettingsState.DEFAULT_FONT_SIZE
         settings.putInt(SettingsKeys.KEY_CHAT_FONT_SIZE, snapped)
         _state.value = _state.value.copy(fontSize = snapped)
     }

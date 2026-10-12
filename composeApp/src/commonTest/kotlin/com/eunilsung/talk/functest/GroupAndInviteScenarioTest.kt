@@ -1,7 +1,7 @@
 package com.eunilsung.talk.functest
 
 import com.eunilsung.talk.domain.model.Chat
-import com.eunilsung.talk.domain.repository.AddUserResult
+import com.eunilsung.talk.domain.model.AddUserResult
 import kotlinx.coroutines.flow.first
 import kotlin.test.Test
 

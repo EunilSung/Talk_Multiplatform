@@ -33,7 +33,7 @@ import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.SendMessageRequest
 import com.eunilsung.talk.shared.api.VoteDto
 import com.eunilsung.talk.util.ChatIdUtils
-import com.eunilsung.talk.util.UserListCodec
+import com.eunilsung.talk.domain.util.UserListCodec
 import com.eunilsung.talk.util.chatDisplayText
 import com.eunilsung.talk.util.formatFileSize
 import kotlinx.datetime.Instant

@@ -10,7 +10,7 @@ import com.eunilsung.talk.data.remote.server.valueOrNull
 import com.eunilsung.talk.data.local.repository.LocalGroupRepositoryImpl
 import com.eunilsung.talk.domain.model.isDefaultGroup
 import com.eunilsung.talk.domain.model.isMyProfileGroup
-import com.eunilsung.talk.domain.repository.AddUserResult
+import com.eunilsung.talk.domain.model.AddUserResult
 import com.eunilsung.talk.domain.repository.GroupRepository
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

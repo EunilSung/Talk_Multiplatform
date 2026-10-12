@@ -16,6 +16,12 @@ sealed interface MainActions {
     data class OnNoticeConfirmed(val version: String) : MainActions
 
     data object Logout : MainActions
+
+    /** 파일 상세 시트에서 받기를 눌렀다. [source] 는 서버 파일 이름, [displayName] 은 저장할 이름이다. */
+    data class OnDownloadFile(val source: String, val displayName: String) : MainActions
+
+    /** 파일 상세 시트에서 열기를 눌렀다. 받아 둔 파일이 없으면 먼저 받는다. */
+    data class OnOpenFile(val source: String, val displayName: String) : MainActions
 }
 
 /** 메인 화면이 한 번씩 처리할 일. 다이얼로그·이동처럼 상태로 들고 있을 수 없는 것들이다. */
@@ -36,4 +42,11 @@ sealed interface MainScreenEvent {
 
     /** 다른 앱에서 공유해 들어왔다. */
     data class OpenShare(val content: SharedContent) : MainScreenEvent
+
+    /** 파일을 다운로드 폴더에 받았다. */
+    data class FileDownloaded(val displayName: String) : MainScreenEvent
+
+    data object FileDownloadFailed : MainScreenEvent
+
+    data object FileOpenFailed : MainScreenEvent
 }

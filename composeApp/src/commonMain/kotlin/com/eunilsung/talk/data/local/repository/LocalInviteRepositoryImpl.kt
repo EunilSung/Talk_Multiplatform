@@ -11,7 +11,7 @@ import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.repository.ChatRoomListRepository
 import com.eunilsung.talk.domain.repository.InviteRepository
 import com.eunilsung.talk.util.ChatIdUtils
-import com.eunilsung.talk.util.UserListCodec
+import com.eunilsung.talk.domain.util.UserListCodec
 import com.eunilsung.talk.util.Log
 
 /** `ChatRoomEntity` 에 직접 쓰는 초대 / 대화방 생성 저장소. */

@@ -1,4 +1,4 @@
-package com.eunilsung.talk.util
+package com.eunilsung.talk.domain.util
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

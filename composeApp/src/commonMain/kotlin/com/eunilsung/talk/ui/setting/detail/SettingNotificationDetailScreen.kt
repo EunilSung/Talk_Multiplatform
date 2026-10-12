@@ -21,7 +21,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
-import com.eunilsung.talk.domain.repository.NotificationSettingsState
+import com.eunilsung.talk.domain.model.NotificationSettingsState
 import com.eunilsung.talk.ui.main.LocalFullScreenOverlay
 import com.eunilsung.talk.ui.setting.SettingActions
 import com.eunilsung.talk.ui.setting.SettingEvent

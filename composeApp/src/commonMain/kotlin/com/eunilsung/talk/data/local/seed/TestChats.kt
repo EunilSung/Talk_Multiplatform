@@ -7,7 +7,7 @@ import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.ChatRoom
-import com.eunilsung.talk.util.UserListCodec
+import com.eunilsung.talk.domain.util.UserListCodec
 import com.eunilsung.talk.domain.model.User
 
 /** 대화방별 초기 대화 내용. */

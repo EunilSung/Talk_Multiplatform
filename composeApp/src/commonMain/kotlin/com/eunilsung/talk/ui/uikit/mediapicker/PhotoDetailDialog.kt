@@ -28,11 +28,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,8 +58,6 @@ import coil3.compose.AsyncImage
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.close_icon
 import multiplatformtalk.composeapp.generated.resources.ok
-import kotlinx.coroutines.launch
-import com.eunilsung.talk.data.local.FileMetadataResolver
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.click.clickable
 import com.eunilsung.talk.ui.uikit.toast.ToastMessage
@@ -69,7 +67,7 @@ import com.eunilsung.talk.ui.util.chatTimeText
 import multiplatformtalk.composeapp.generated.resources.download_icon
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.foundation.layout.Arrangement
 
 /** 사진 한 장 상세보기 — 프로필 사진 업로드 확인에도 쓴다. */
@@ -214,32 +212,29 @@ fun PhotoDetailDialog(
                         fontWeight = FontWeight.Bold,
                     )
                 } else if (photo.serverFileName.isNotBlank()) {
-                    val resolver: FileMetadataResolver = koinInject()
-                    val scope = rememberCoroutineScope()
+                    val viewModel: PhotoDetailViewModel = koinViewModel()
+                    val uiState by viewModel.uiState.collectAsState()
                     val saveAs = photo.originalFileName.ifBlank { photo.serverFileName }
                     val isVideo = photo.isVideo
 
-                    IconButton(
-                        onClick = {
-                            scope.launch {
-                                val source = photo.uri?.takeIf { it.isNotBlank() }
-                                    ?: photo.serverFileName
-                                val saveBytes = runCatching {
-                                    resolver.readBytes(source)
-                                }.getOrNull()
-                                val saved = saveBytes?.let {
-                                    runCatching {
-                                        if (isVideo) resolver.saveVideoToGallery(saveAs, it)
-                                        else resolver.saveToGallery(saveAs, it)
-                                    }.getOrNull()
-                                }
-                                val label = getString(if (isVideo) Res.string.video else Res.string.photo)
-                                inlineToast = if (saved != null) {
-                                    getString(Res.string.toast_saved_to_gallery, saveAs)
-                                } else {
-                                    getString(Res.string.toast_save_failed, label)
-                                }
+                    LaunchedEffect(viewModel) {
+                        viewModel.events.collect { event ->
+                            inlineToast = when (event) {
+                                is PhotoDetailEvent.Saved ->
+                                    getString(Res.string.toast_saved_to_gallery, event.saveAs)
+                                is PhotoDetailEvent.SaveFailed -> getString(
+                                    Res.string.toast_save_failed,
+                                    getString(if (event.isVideo) Res.string.video else Res.string.photo),
+                                )
                             }
+                        }
+                    }
+
+                    IconButton(
+                        enabled = !uiState.isSaving,
+                        onClick = {
+                            val source = photo.uri?.takeIf { it.isNotBlank() } ?: photo.serverFileName
+                            viewModel.onAction(PhotoDetailActions.OnSaveToGallery(source, saveAs, isVideo))
                         },
                     ) {
                         Icon(

@@ -1,15 +1,8 @@
 package com.eunilsung.talk.domain.repository
 
+import com.eunilsung.talk.domain.model.AddUserResult
 import kotlinx.coroutines.flow.Flow
 import com.eunilsung.talk.domain.model.Group
-
-/** 사용자 그룹 추가 결과 — 3-state */
-enum class AddUserResult {
-    SUCCESS,
-    /** 이미 그룹에 있는 사용자 (안내 문구용으로 구분). */
-    ALREADY_EXISTS,
-    FAILED
-}
 
 interface GroupRepository {
     fun getGroups(): Flow<List<Group.Item>>

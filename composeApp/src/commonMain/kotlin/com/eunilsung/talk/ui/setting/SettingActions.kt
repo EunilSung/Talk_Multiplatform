@@ -20,3 +20,8 @@ sealed interface SettingActions {
     data class SetChatFontSize(val size: Int) : SettingActions
 
 }
+
+sealed interface SettingEvent {
+    /** 바꾼 값을 저장하지 못했다. 화면에는 저장돼 있던 값이 그대로 남는다. */
+    data object ChangeFailed : SettingEvent
+}

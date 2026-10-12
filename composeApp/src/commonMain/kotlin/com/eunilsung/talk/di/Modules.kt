@@ -67,6 +67,9 @@ import com.eunilsung.talk.ui.group.GroupViewModel
 import com.eunilsung.talk.ui.quickactions.QuickActionsViewModel
 import com.eunilsung.talk.ui.userprofile.UserProfileViewModel
 import com.eunilsung.talk.ui.userprofile.ProfilePhotoPickerViewModel
+import com.eunilsung.talk.ui.uikit.mediapicker.PhotoDetailViewModel
+import com.eunilsung.talk.domain.repository.DeviceFileRepository
+import com.eunilsung.talk.data.repository.DeviceFileRepositoryImpl
 import com.eunilsung.talk.domain.repository.ProfileImageRepository
 import com.eunilsung.talk.data.repository.ProfileImageRepositoryImpl
 import com.eunilsung.talk.ui.chatroomlist.ChatRoomListViewModel
@@ -200,6 +203,11 @@ val appModule = module {
     viewModelOf(::ProfilePhotoPickerViewModel)
     single<ProfileImageRepository> { ProfileImageRepositoryImpl(get()) }
     singleOf(::SaveMyProfilePhotoUseCase)
+    viewModelOf(::PhotoDetailViewModel)
+    single<DeviceFileRepository> { DeviceFileRepositoryImpl(get(), get()) }
+    singleOf(::DownloadFileUseCase)
+    singleOf(::OpenFileUseCase)
+    singleOf(::SaveToGalleryUseCase)
     // TestAccounts 를 프로필로 사용.
     single<UserProfileRepository> {
         if (Config.Server.IS_ENABLED) UserProfileRepositoryImpl(get(), get(), get()) else LocalUserProfileRepositoryImpl(get())

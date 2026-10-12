@@ -19,7 +19,7 @@ import com.eunilsung.talk.data.repository.SettingsKeys
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.DEFAULT_GROUP_ID
 import com.eunilsung.talk.domain.model.Group
-import com.eunilsung.talk.domain.repository.AddUserResult
+import com.eunilsung.talk.domain.model.AddUserResult
 import com.eunilsung.talk.domain.repository.GroupRepository
 import com.eunilsung.talk.domain.repository.LoginRepository
 import com.eunilsung.talk.util.Log

@@ -20,6 +20,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import com.eunilsung.talk.domain.model.MainEvent
+import com.eunilsung.talk.domain.model.OpenFileResult
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 import com.eunilsung.talk.domain.usecase.GroupUseCases
@@ -128,6 +129,27 @@ class MainViewModel(
             }
             is MainActions.OnNoticeConfirmed -> mainUseCases.markNoticeShown(action.version)
             is MainActions.Logout -> loginUseCases.logout()
+            is MainActions.OnDownloadFile -> downloadFile(action.source, action.displayName)
+            is MainActions.OnOpenFile -> openFile(action.source, action.displayName)
+        }
+    }
+
+    private fun downloadFile(source: String, displayName: String) {
+        viewModelScope.launch {
+            val saved = mainUseCases.downloadFile(source, displayName)
+            _events.send(
+                if (saved) MainScreenEvent.FileDownloaded(displayName) else MainScreenEvent.FileDownloadFailed
+            )
+        }
+    }
+
+    private fun openFile(source: String, displayName: String) {
+        viewModelScope.launch {
+            when (mainUseCases.openFile(source, displayName)) {
+                OpenFileResult.OPENED -> Unit
+                OpenFileResult.DOWNLOADED_AND_OPENED -> _events.send(MainScreenEvent.FileDownloaded(displayName))
+                OpenFileResult.FAILED -> _events.send(MainScreenEvent.FileOpenFailed)
+            }
         }
     }
 

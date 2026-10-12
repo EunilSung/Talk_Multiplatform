@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.Platform
-import com.eunilsung.talk.domain.repository.BiometricResult
+import com.eunilsung.talk.domain.model.BiometricResult
 import com.eunilsung.talk.domain.usecase.ScreenLockUseCases
 
 /** 화면 잠금 설정/검증 ViewModel — 설정 화면과 잠금 화면에서 공용. */

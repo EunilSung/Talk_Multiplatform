@@ -3,7 +3,7 @@ package com.eunilsung.talk.data.local.seed
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import com.eunilsung.talk.domain.model.ChatGroup
-import com.eunilsung.talk.util.UserListCodec
+import com.eunilsung.talk.domain.util.UserListCodec
 import com.eunilsung.talk.domain.model.ChatRoom
 
 /** 로컬 테스트용 대화방 목록 구성. */

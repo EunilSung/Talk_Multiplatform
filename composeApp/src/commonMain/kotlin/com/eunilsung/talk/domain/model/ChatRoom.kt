@@ -1,6 +1,6 @@
 package com.eunilsung.talk.domain.model
 
-import com.eunilsung.talk.util.UserListCodec
+import com.eunilsung.talk.domain.util.UserListCodec
 
 sealed class ChatRoom{
     data class Item(

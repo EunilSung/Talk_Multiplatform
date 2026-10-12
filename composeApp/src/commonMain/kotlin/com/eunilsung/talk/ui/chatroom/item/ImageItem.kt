@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.ui.uikit.image.UrlImage
-import com.eunilsung.talk.util.ImageSizeUtils
 
 @Composable
 fun ImageItem(

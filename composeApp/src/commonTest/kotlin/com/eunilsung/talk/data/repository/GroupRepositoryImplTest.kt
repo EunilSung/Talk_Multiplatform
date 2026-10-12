@@ -7,7 +7,7 @@ import com.eunilsung.talk.data.mapper.ServerPeopleMapper
 import com.eunilsung.talk.data.local.repository.LocalGroupRepositoryImpl
 import com.eunilsung.talk.domain.model.Group
 import com.eunilsung.talk.domain.model.MY_PROFILE_GROUP_ID
-import com.eunilsung.talk.domain.repository.AddUserResult
+import com.eunilsung.talk.domain.model.AddUserResult
 import com.eunilsung.talk.shared.api.ContactGroupDto
 import com.eunilsung.talk.testsupport.FakeLoginRepository
 import com.eunilsung.talk.testsupport.FakeTalkServer

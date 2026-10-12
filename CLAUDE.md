@@ -114,8 +114,9 @@ iosApp/        Xcode 프로젝트
 새 화면·기능을 만들 때 이 모양을 따른다. 앞의 세 가지는 지금 모든 화면이 지킨다.
 
 - **화면은 ViewModel 만 본다.** Composable 이 저장소·유스케이스를 `koinInject` 로 가져와 부르지 않는다.
-  예외는 기기 기능 추상화뿐이다 — `data/local` 의 `FileOpener`·`ExternalUrlOpener`·`AppExiter`·
-  `RecentPhotosProvider`·`FileMetadataResolver`·`AppVersionProvider`·`VideoThumbnailLoader`, 그리고 `Platform`.
+  예외는 한 번 부르고 끝나는 기기 기능뿐이다 — `data/local` 의 `ExternalUrlOpener`·`AppExiter`·
+  `AppVersionProvider`·`VideoThumbnailLoader`, 그리고 `Platform`. 파일을 읽고 저장하고 결과를 알리는 흐름
+  (받기·열기·사진첩 저장)은 ViewModel → 유스케이스 → `DeviceFileRepository` 로 간다.
   앱 전체가 쓰는 값(프로필 사진 주소)은 `MainViewModel` 의 상태를 CompositionLocal 로 내려 준다
   (`LocalProfileImageUrls`). 목록 항목마다 ViewModel 을 두지 않기 위해서다.
 - **ViewModel 은 유스케이스만 쓴다.** 저장소·`TalkServer`·`ServerEvents` 를 받지 않는다. 기기 기능 추상화
@@ -137,6 +138,12 @@ iosApp/        Xcode 프로젝트
 - **바깥 모양을 도메인 모델로 바꾸는 일은 매퍼가 한다**(`data/mapper`). 서버 응답·기기 DB 행·저장용 JSON·
   시연용 데이터(`SeedMapper`)가 모두 해당한다. 저장소는 주고받기·저장과 반영만 하고, 새 대화·새 공지처럼
   업무 중에 새로 생기는 도메인 객체만 직접 만든다.
+- **`domain/repository` 에는 인터페이스만 둔다.** 주고받는 상태·결과 타입은 `domain/model` 에 둔다
+  (`ChatSettingsState`·`AddUserResult`). `util` 은 계층을 모르는 순수 도우미다. domain 이 쓰는 도우미는
+  `domain/util`, Compose 단위(`Dp`)를 쓰는 것은 ui 에 둔다. 대화 미리보기 문구(`util/ChatPreview.kt`)만
+  data·ui 가 함께 써서 util 에 남는다.
+- **화면 함수 이름** — `XContent` 는 화면 전체를 그리는 상태 없는 함수, `XBody` 는 공용 스캐폴드
+  (`SettingDetailScaffold`·`OverlayScaffold`) 안에 들어가는 본문이다.
 - **ViewModel 이 커지면 역할별 처리기로 나눈다.** 대화방은 사진·파일(`ChatMediaHandler`), 찾기
   (`ChatSearchHandler`), 읽음(`ChatReadHandler`)을 따로 둔다. 처리기는 ViewModel 의 scope 와 상태를 받아 쓰고
   화면에는 드러나지 않는다.

@@ -1,9 +1,9 @@
 package com.eunilsung.talk.domain.usecase
 
 import com.eunilsung.talk.domain.repository.ChatSettingsRepository
-import com.eunilsung.talk.domain.repository.ChatSettingsState
+import com.eunilsung.talk.domain.model.ChatSettingsState
 import com.eunilsung.talk.domain.repository.NotificationSettingsRepository
-import com.eunilsung.talk.domain.repository.NotificationSettingsState
+import com.eunilsung.talk.domain.model.NotificationSettingsState
 import com.eunilsung.talk.domain.repository.NotificationSoundPreviewer
 import com.eunilsung.talk.domain.repository.SystemNotificationGate
 import kotlinx.coroutines.flow.StateFlow

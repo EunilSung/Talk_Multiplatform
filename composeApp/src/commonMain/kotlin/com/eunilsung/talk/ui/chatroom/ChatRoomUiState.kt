@@ -9,7 +9,7 @@ import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.model.User
-import com.eunilsung.talk.domain.repository.ChatSettingsState
+import com.eunilsung.talk.domain.model.ChatSettingsState
 
 /** 대화방 화면의 상태. */
 data class ChatRoomUiState(
