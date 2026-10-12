@@ -206,7 +206,8 @@ iosApp/        Xcode 프로젝트
    환경에 `GEMINI_API_KEY` 로 넘긴다(모델은 `AI_MODEL`, 기본 `gemini-3.5-flash-lite`).
    없으면 AI 만 꺼지고 나머지는 그대로 동작한다.
 5. **Maestro 와 Xcode** — 실화면 흐름에만 필요하다. `curl -fsSL https://get.maestro.mobile.dev | bash` 로 설치한다.
-   iOS 앱 빌드에는 Xcode 가 있어야 한다.
+   iOS 앱 빌드에는 Xcode 가 있어야 하고, 명령줄 도구가 Xcode 를 가리켜야 한다(`sudo xcode-select -s /Applications/Xcode.app`).
+   새 Mac 의 준비 순서는 README 의 "검증 환경 준비" 에 있다.
 
 ## 실행
 
