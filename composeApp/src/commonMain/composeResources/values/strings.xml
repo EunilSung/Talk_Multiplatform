@@ -94,7 +94,7 @@
 
     <!-- 대화함 빈 상태 -->
     <string name="chatroom_unread_empty_title">All caught up!</string>
-    <string name="chatroom_unread_empty_desc">You\'ve read all your messages.</string>
+    <string name="chatroom_unread_empty_desc">You've read all your messages.</string>
     <string name="chatroom_group_empty_title">No chat rooms in this group.</string>
     <string name="chatroom_group_empty_desc">Organize your chat rooms into groups for easy management.</string>
 
@@ -284,7 +284,7 @@
     <string name="notice_delete_title">Delete notice</string>
     <string name="notice_delete_message">Delete this notice?</string>
     <string name="notice_delete_label">Delete notice</string>
-    <string name="notice_reopen_never">Don\'t show again</string>
+    <string name="notice_reopen_never">Don't show again</string>
     <string name="notice_collapse">Collapse</string>
     <string name="toast_no_notice">No notice registered.</string>
     <string name="notice_added_msg">A notice has been posted.</string>
@@ -397,15 +397,15 @@
     <string name="lock_setup_password_title">Set password</string>
     <string name="lock_setup_pattern_title">Set pattern</string>
     <string name="lock_setup_password_confirm">Enter the password again.</string>
-    <string name="lock_setup_password_mismatch">Passwords don\'t match. Please try again.</string>
+    <string name="lock_setup_password_mismatch">Passwords don't match. Please try again.</string>
     <string name="lock_setup_pattern_confirm">Draw the pattern again.</string>
-    <string name="lock_setup_pattern_mismatch">Patterns don\'t match. Please try again.</string>
+    <string name="lock_setup_pattern_mismatch">Patterns don't match. Please try again.</string>
     <string name="lock_pattern_too_short">Connect at least %1$d dots.</string>
     <string name="lock_unlock_title_password">Password</string>
     <string name="lock_unlock_title_pattern">Pattern</string>
     <string name="lock_unlock_password_hint">Enter your password.</string>
     <string name="lock_unlock_pattern_hint">Draw your unlock pattern.</string>
-    <string name="lock_unlock_mismatch">Doesn\'t match. Please try again.</string>
+    <string name="lock_unlock_mismatch">Doesn't match. Please try again.</string>
     <string name="lock_biometric_prompt_title">Unlock</string>
     <string name="lock_biometric_prompt_sub_fingerprint">Unlock with your fingerprint.</string>
     <string name="lock_biometric_prompt_sub_faceid">Unlock with Face ID.</string>
@@ -437,7 +437,7 @@
     <string name="date_time">%1$s %2$d:%3$s</string>
     <string name="reply_to_name">Reply to %1$s</string>
     <string name="file_open_chooser">Open with</string>
-    <string name="toast_download_done">\'%1$s\' downloaded</string>
+    <string name="toast_download_done">'%1$s' downloaded</string>
     <string name="profile_load_failed">Failed to load profile</string>
     <string name="chat_group_edit">Edit chat groups</string>
     <string name="contact_label_extension">Extension</string>
