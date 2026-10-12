@@ -26,9 +26,9 @@ import kotlin.test.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatRoomViewModelScenarioTest {
 
-    /** ViewModel 은 메인 스레드에서 돈다. 테스트에는 메인 스레드가 없어 다른 스레드를 대신 세운다. */
+    /** ViewModel 은 메인 스레드에서 돈다. 테스트에는 메인 스레드가 없어 그 대역([viewModelMainThread])을 세운다. */
     @BeforeTest
-    fun setUp() = Dispatchers.setMain(Dispatchers.Default)
+    fun setUp() = Dispatchers.setMain(viewModelMainThread)
 
     @AfterTest
     fun tearDown() {

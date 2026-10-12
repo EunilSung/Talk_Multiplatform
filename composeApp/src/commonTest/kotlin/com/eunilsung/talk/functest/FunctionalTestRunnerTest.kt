@@ -60,6 +60,23 @@ class FunctionalTestRunnerTest {
     }
 
     @Test
+    fun 단계_밖에서_서버가_거절하거나_기다림이_끝나도_실패로_센다() = runTest {
+        TestMyInfo.loginAs()
+
+        val refused = FunctionalTestRunner.run(
+            "준비 거절",
+            listOf(scenario("방을 못 만듦") { throw StepFailure("방 만들기 — 서버가 거절했다") }),
+        )
+        val timedOut = FunctionalTestRunner.run(
+            "준비 기다림",
+            listOf(scenario("방이 안 뜸") { awaitTrue("오지 않는다", timeoutMs = 100) { false } }),
+        )
+
+        assertFalse(refused)
+        assertFalse(timedOut)
+    }
+
+    @Test
     fun 건너뛴_단계는_실패가_아니고_뒤_단계는_계속_돈다() = runTest {
         TestMyInfo.loginAs()
         var after = false

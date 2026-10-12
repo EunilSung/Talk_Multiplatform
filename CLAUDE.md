@@ -253,13 +253,16 @@ open iosApp/iosApp.xcodeproj           # iOS 는 Xcode 에서 시뮬레이터 �
 - **`-PfunctionalTest=true` 가 없으면 돌지 않는다.** 평소 `testDebugUnitTest` 에서는 서버로 아무것도 나가지
   않고 통과한다. 서버를 건드렸거나 `:shared` 의 계약을 바꿨으면 켜고 돌린다.
 - **결과는 `[FT]` 로그로 본다.** `composeApp/build/test-results/testDebugUnitTest/*functest*.xml` 에서
-  `STEP-FAIL` 을 찾으면 어느 시나리오의 어느 단계에서 무엇이 달랐는지 나온다. 콘솔은 한글이 깨져 보일 수 있다.
+  `STEP-FAIL` 을 찾으면 어느 시나리오의 어느 단계에서 무엇이 달랐는지 나온다. 단계 밖(준비)에서 깨지면
+  `SCENARIO-ERROR` 로 남는다. 콘솔은 한글이 깨져 보일 수 있다.
 - **묶음** — 로그인 · 대화방 목록 · 대화 · 읽음 · 공감/회수/공지/책갈피 · 파일 · 투표 · 대화그룹 · 사람 ·
   초대 · AI, 그리고 갈래들(`DetailScenarioTest`: 이모티콘·사진·둘만의 방·나와의 대화·그룹 순서·투표 옵션·
   AI 의 나머지 방식). 새 기능을 서버에 붙였으면 해당 묶음에 시나리오를 더한다.
-- **화면 상태는 ViewModel 묶음으로 본다**(`ChatRoomViewModelScenarioTest`). 화면이 하는 일을 액션으로 넣고
-  안읽음 표시선·번역·다듬기 상태가 진짜 서버의 응답으로 맞게 만들어지는지 본다. 버튼을 실제로 누르지는
-  않는다 — 버튼과 액션의 연결은 에뮬레이터에서 확인한다.
+- **화면 상태는 ViewModel 묶음으로 본다**(`*ViewModelScenarioTest` — 대화방·대화함·로그인·투표·초대·내 그룹·
+  프로필). 화면이 하는 일을 액션으로 넣고 상태와 한 번만 알리는 일(`events`)이 진짜 서버의 응답으로 맞게
+  만들어지는지 본다. ViewModel 은 `FunctionalViewModels.kt` 의 `harness.xViewModel()` 로 세우고, 메인 스레드
+  대역은 한 번에 하나만 도는 `viewModelMainThread` 를 쓴다. 버튼을 실제로 누르지는 않는다 — 버튼과 액션의
+  연결은 에뮬레이터에서 확인한다.
 - **둘만의 방과 나와의 대화방에는 아무것도 보내지 않는다.** 계정에 하나뿐이라 사람이 쓰던 방일 수 있다.
   찾기만 하고 나가지도 않는다.
 - **AI 결과는 몇 번 다시 묻는다**(`aiResult`). 모델 제공처가 분당 한도로 잠깐씩 거절하기 때문이다.

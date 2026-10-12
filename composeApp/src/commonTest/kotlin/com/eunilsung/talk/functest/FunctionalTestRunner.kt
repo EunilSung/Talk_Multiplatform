@@ -44,8 +44,12 @@ object FunctionalTestRunner {
             FT.line("SCENARIO-START name=${scenario.name}")
             try {
                 scenario.body(scope)
-            } catch (_: StepFailure) {
-                /** 단계 로그에 이미 사유가 남았다. 여기서는 다음 시나리오로 넘어가기만 한다. */
+            } catch (failure: StepFailure) {
+                /** 단계 안에서 깨졌으면 사유가 이미 로그에 남았다. 단계 밖(준비)에서 깨졌으면 여기서 남긴다. */
+                if (!scope.failed) {
+                    FT.line("SCENARIO-ERROR name=${scenario.name} reason=${failure.message}")
+                    failures += scenario.name
+                }
             } catch (error: Throwable) {
                 FT.line("SCENARIO-ERROR name=${scenario.name} reason=${error::class.simpleName} ${error.message}")
                 failures += scenario.name

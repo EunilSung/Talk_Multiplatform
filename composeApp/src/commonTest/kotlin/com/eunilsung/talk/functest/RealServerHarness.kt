@@ -1,5 +1,7 @@
 package com.eunilsung.talk.functest
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.eunilsung.talk.data.mapper.SeedMapper
 import com.eunilsung.talk.data.mapper.VoteMapper
 import com.eunilsung.talk.data.mapper.ChatMapper
@@ -34,7 +36,9 @@ import com.eunilsung.talk.testsupport.FakeFileMetadataResolver
 import com.eunilsung.talk.testsupport.TestLocalSecret
 import com.eunilsung.talk.testsupport.TestMyInfo
 import com.russhwolf.settings.MapSettings
+import com.russhwolf.settings.Settings
 import io.ktor.client.HttpClient
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 
 /**
@@ -70,6 +74,8 @@ class RealServerHarness private constructor(private val baseUrl: String) {
     private val people = ServerPeopleMapper()
     private val peers = mutableListOf<Peer>()
     private val createdRoomIds = mutableListOf<String>()
+    private val viewModels = mutableListOf<ViewModel>()
+    private val otherDeviceTokens = mutableListOf<AuthTokenStore>()
 
     /** 기기에 있는 파일. [FakeFileMetadataResolver.put] 으로 올릴 파일을 만들어 둔다. */
     val deviceFiles = FakeFileMetadataResolver()
@@ -139,15 +145,35 @@ class RealServerHarness private constructor(private val baseUrl: String) {
         createdRoomIds += roomId
     }
 
+    /**
+     * 시나리오가 세운 ViewModel. 끝날 때 [close] 가 그 일을 멈춘다.
+     *
+     * 화면이 닫히지 않은 채로 남으면 서버 연결을 닫은 뒤에도 알림을 기다리며 돈다.
+     */
+    fun <T : ViewModel> own(viewModel: T): T = viewModel.also { viewModels += it }
+
+    /**
+     * 같은 서버에 붙은 다른 기기의 로그인 저장소. 이 도구의 로그인([login])과 토큰을 나누지 않는다.
+     *
+     * 같은 [settings] 로 다시 만들면 앱을 껐다 켠 같은 기기다. 끝날 때 [close] 가 그 기기의 토큰을 지운다.
+     * 로그인과 로그아웃은 내 정보(`Config.MyInfo`)를 함께 바꾼다.
+     */
+    fun otherDeviceLogin(settings: Settings = MapSettings()): LoginRepositoryImpl {
+        val tokens = AuthTokenStore(settings)
+        otherDeviceTokens += tokens
+        return LoginRepositoryImpl(settings, TalkServerClient(httpClient, tokens, baseUrl), tokens)
+    }
+
     suspend fun room(roomId: String): ChatRoom.Item? = rooms.getChatRooms().first().firstOrNull { it.id == roomId }
 
     suspend fun chatsOf(roomId: String): List<Chat.Item> = chats.getChats(roomId).first()
 
     /**
-     * 만든 방에서 모두 나가고, 이름표(`FT-`)가 붙은 그룹을 지우고, 로그아웃한다.
+     * 세운 화면을 멈추고, 만든 방에서 모두 나가고, 이름표(`FT-`)가 붙은 그룹을 지우고, 다른 기기까지 모두 로그아웃한다.
      * 시나리오가 중간에 깨져도 지난 실행의 흔적이 계정에 쌓이지 않게 한다.
      */
     suspend fun close() {
+        viewModels.forEach { it.viewModelScope.cancel() }
         createdRoomIds.forEach { roomId ->
             peers.forEach { runCatching { it.client.leaveRoom(roomId) } }
             runCatching { server.leaveRoom(roomId) }
@@ -163,6 +189,7 @@ class RealServerHarness private constructor(private val baseUrl: String) {
             }
         }
         peers.forEach { runCatching { it.client.logout(it.token) } }
+        otherDeviceTokens.map { it.token() }.filter { it.isNotBlank() }.distinct().forEach { runCatching { server.logout(it) } }
         runCatching { login.logout() }
         TestMyInfo.clear()
         httpClient.close()
@@ -186,6 +213,8 @@ class RealServerHarness private constructor(private val baseUrl: String) {
     companion object {
         const val ME = "test1"
         const val PEER = "test2"
+        /** [PEER] 의 전화번호 일부. 서버가 만들어 둔 계정 중 이 사람만 맞는다. */
+        const val PEER_PHONE = "1000-0002"
         const val THIRD = "test3"
         const val AI = "ai"
         const val PASSWORD = "1234"

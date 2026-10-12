@@ -2,6 +2,9 @@ package com.eunilsung.talk.functest
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Clock
@@ -82,6 +85,15 @@ class ScenarioScope(val scenarioName: String) {
         }
         if (reached != true) throw StepFailure("기다렸지만 되지 않았다: $what (${timeoutMs}ms)")
     }
+
+    /**
+     * 화면에 한 번만 알리는 일([events])에서 [E] 가 올 때까지 실제 시간으로 기다린다. 그 사이에 온 다른 알림은
+     * 흘려보낸다. 시간 안에 오지 않으면 [what] 을 사유로 단계를 깬다.
+     */
+    suspend inline fun <reified E : Any> awaitEvent(events: Flow<Any>, what: String, timeoutMs: Long = 8_000L): E =
+        withContext(Dispatchers.Default) {
+            withTimeoutOrNull(timeoutMs) { events.filterIsInstance<E>().first() }
+        } ?: throw StepFailure("기다렸지만 오지 않았다: $what (${timeoutMs}ms)")
 
     private companion object {
         const val AWAIT_TIMEOUT_MS = 8_000L
