@@ -4,9 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,22 +18,20 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.data.local.FilePickerProvider
 import com.eunilsung.talk.data.local.RecentPhotosProvider
-import com.eunilsung.talk.data.local.RecentPhotosResult
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 import com.eunilsung.talk.domain.usecase.ChatRoomUseCases
 import com.eunilsung.talk.util.Log
 import com.eunilsung.talk.util.chatDisplayText
-import com.eunilsung.talk.data.local.FilePickerRequestId
 import com.eunilsung.talk.domain.usecase.InviteUseCases
 import com.eunilsung.talk.domain.usecase.ChatRoomStateUseCases
 
 class ChatRoomViewModel(
     private val chatRoomUseCases: ChatRoomUseCases,
     private val stateUseCases: ChatRoomStateUseCases,
-    private val recentPhotosProvider: RecentPhotosProvider,
-    private val filePickerProvider: FilePickerProvider,
+    recentPhotosProvider: RecentPhotosProvider,
+    filePickerProvider: FilePickerProvider,
     private val chatRoomListUseCases: ChatRoomListUseCases,
     private val inviteUseCases: InviteUseCases,
 ) : ViewModel() {
@@ -49,35 +45,41 @@ class ChatRoomViewModel(
     )
     val uiState: StateFlow<ChatRoomUiState> = _uiState.asStateFlow()
 
-    private val _entryScroll = MutableSharedFlow<String?>(replay = 1, extraBufferCapacity = 1)
+    private var currentChatRoomId: String = ""
+
+    private var latestChats: List<Chat.Item> = emptyList()
+
+    private val media = ChatMediaHandler(viewModelScope, _uiState, recentPhotosProvider, filePickerProvider)
+
+    private val search = ChatSearchHandler(
+        scope = viewModelScope,
+        uiState = _uiState,
+        chatRoomUseCases = chatRoomUseCases,
+        currentRoomId = { currentChatRoomId },
+        loadedChats = { latestChats },
+    )
+
+    private val read = ChatReadHandler(
+        scope = viewModelScope,
+        chatRoomUseCases = chatRoomUseCases,
+        chatRoomListUseCases = chatRoomListUseCases,
+        stateUseCases = stateUseCases,
+        currentRoomId = { currentChatRoomId },
+    )
 
     /** 저장소가 밀어 주는 일회성 신호 — 대화 목록의 스크롤과 새 대화 배너가 쓴다. */
     val signals: ChatRoomSignals = ChatRoomSignals(
         newChat = stateUseCases.observeNewChat(),
         mySend = stateUseCases.observeMySend(),
         latestLoaded = stateUseCases.observeLatestLoaded(),
-        entryScroll = _entryScroll,
+        entryScroll = read.entryScroll,
     )
 
     private val _events = Channel<ChatRoomEvent>(Channel.BUFFERED)
     val events: Flow<ChatRoomEvent> = _events.receiveAsFlow()
 
-    /** picker 결과가 싱글톤 provider 로 broadcast 되므로, 이 VM 이 띄운 요청만 소비하기 위한 태그. */
-    private val filePickerRequestId =
-        FilePickerRequestId.next("chatroom")
-
     init {
-        viewModelScope.launch {
-            filePickerProvider.results.collect { files ->
-                if (files.isEmpty()) return@collect
-                if (filePickerProvider.lastRequestId != filePickerRequestId) return@collect
-                Log.message(
-                    "[FilePicker] received ${files.size} files: " +
-                            files.joinToString { "${it.name}(${it.sizeBytes})" }
-                )
-                onAction(ChatRoomActions.OnSendFiles(files.map { it.uri }))
-            }
-        }
+        media.collectPickedFiles { paths -> onAction(ChatRoomActions.OnSendFiles(paths)) }
         viewModelScope.launch {
             stateUseCases.observeChatSettings().collect { settings ->
                 _uiState.update { it.copy(chatSettings = settings) }
@@ -100,75 +102,6 @@ class ChatRoomViewModel(
         }
     }
 
-    private fun launchFilePicker() {
-        filePickerProvider.launchFilePicker(
-            requestId = filePickerRequestId,
-            allowMultiple = true,
-            mimeTypes = listOf("*/*"),
-        )
-    }
-
-    private var galleryJob: Job? = null
-
-    private fun updateMedia(transform: (ChatMediaUiState) -> ChatMediaUiState) {
-        _uiState.update { it.copy(media = transform(it.media)) }
-    }
-
-    /** 앨범 선택 — 해당 폴더의 사진만 다시 읽는다. */
-    private fun selectGalleryAlbum(albumId: String?) {
-        updateMedia { it.copy(selectedAlbumId = albumId, galleryPhotos = emptyList()) }
-        loadGalleryPhotos()
-    }
-
-    /**
-     * 갤러리 사진 로딩.
-     *
-     * 이전 로딩은 반드시 취소하고, 결과를 쓰기 전에 요청 당시 앨범이 아직 선택 상태인지 확인한다.
-     * iOS 는 썸네일을 디코드하며 onPartial 로 중간 결과를 계속 흘리므로, 앨범을 빠르게 오가면
-     * 이전 앨범의 늦은 콜백이 새 목록을 덮어써 엉뚱한 사진이 보인다.
-     * (취소는 즉시 전파되지 않아 이미 출발한 콜백이 남을 수 있어 확인이 따로 필요하다.)
-     */
-    private fun loadGalleryPhotos(limit: Int = 500) {
-        val albumId = _uiState.value.media.selectedAlbumId
-        updateMedia { it.copy(hasPhotoAccess = recentPhotosProvider.hasPhotoAccess()) }
-        galleryJob?.cancel()
-        galleryJob = viewModelScope.launch {
-            fun apply(r: RecentPhotosResult) {
-                if (_uiState.value.media.selectedAlbumId != albumId) return
-                val photos = when (r) {
-                    is RecentPhotosResult.Granted -> r.photos
-                    is RecentPhotosResult.Limited -> r.photos
-                    is RecentPhotosResult.Denied -> emptyList()
-                }
-                updateMedia { it.copy(galleryPhotos = photos) }
-            }
-            val result = runCatching {
-                recentPhotosProvider.fetchByAlbum(
-                    albumId = albumId,
-                    limit = limit,
-                    onPartial = ::apply,
-                )
-            }.getOrElse { RecentPhotosResult.Granted(emptyList()) }
-            if (isActive) apply(result)
-        }
-        loadGalleryAlbums()
-    }
-
-    /**
-     * 앨범 목록 조회 — 시트를 열 때 한 번만.
-     *
-     * 사진 로딩과 별도 코루틴으로 돌린다. iOS 는 사진 500장의 썸네일을 전부 디코드한 뒤에야
-     * 조회가 끝나므로, 뒤에 붙이면 필터 버튼이 한참 뒤에야 나타난다.
-     */
-    private fun loadGalleryAlbums() {
-        if (_uiState.value.media.galleryAlbums.isNotEmpty()) return
-        viewModelScope.launch {
-            val albums = runCatching { recentPhotosProvider.fetchAlbums() }
-                .getOrElse { emptyList() }
-            updateMedia { it.copy(galleryAlbums = albums) }
-        }
-    }
-
     /** 공지가 바뀔 때 저장된 표시 상태를 읽어 온다. */
     private fun loadNoticeBarState(identityKey: String) {
         val saved = stateUseCases.getNoticeBarState(identityKey)
@@ -187,15 +120,6 @@ class ChatRoomViewModel(
         _uiState.update { it.copy(noticeBar = transform(it.noticeBar)) }
     }
 
-    private fun loadRecentPhotos(limit: Int = 12) {
-        updateMedia { it.copy(hasPhotoAccess = recentPhotosProvider.hasPhotoAccess()) }
-        viewModelScope.launch {
-            val result = runCatching { recentPhotosProvider.fetchRecent(limit) }
-                .getOrElse { RecentPhotosResult.Granted(emptyList()) }
-            updateMedia { it.copy(recentPhotos = result) }
-        }
-    }
-
     override fun onCleared() {
         stateUseCases.clearCurrentRoom(currentChatRoomId)
         super.onCleared()
@@ -209,21 +133,11 @@ class ChatRoomViewModel(
 
     private var usersChangeJob: Job? = null
 
-    private var currentChatRoomId: String = ""
-
     private var noMoreChats: Boolean = false
 
     private var fetchingMore: Boolean = false
 
     private var fetchingNewer: Boolean = false
-
-    private val _firstUnreadChatId = MutableStateFlow<String?>(null)
-
-    private var latestChats: List<Chat.Item> = emptyList()
-
-    private fun updateSearch(transform: (ChatSearchState) -> ChatSearchState) {
-        _uiState.update { it.copy(search = transform(it.search)) }
-    }
 
     fun onAction(action: ChatRoomActions) {
         when (action) {
@@ -234,30 +148,21 @@ class ChatRoomViewModel(
             is ChatRoomActions.OnEnterSearch -> {
                 _uiState.update { it.copy(replyTarget = null, search = ChatSearchState(isActive = true)) }
             }
-            is ChatRoomActions.OnExitSearch -> updateSearch { ChatSearchState() }
-            is ChatRoomActions.OnSearchQueryChange -> updateSearchQuery(action.query)
-            is ChatRoomActions.OnSearch -> {
-                updateSearch { it.copy(searchedDate = null) }
-                executeSearch()
-            }
-            is ChatRoomActions.OnSearchNext -> moveSearchIndex(+1)
-            is ChatRoomActions.OnSearchPrev -> moveSearchIndex(-1)
-            is ChatRoomActions.OnSearchUserSelect -> {
-                updateSearch { it.copy(searchedUser = action.user, searchedDate = null) }
-                executeSearch()
-            }
+            is ChatRoomActions.OnExitSearch -> search.update { ChatSearchState() }
+            is ChatRoomActions.OnSearchQueryChange -> search.updateQuery(action.query)
+            is ChatRoomActions.OnSearch -> search.searchByQuery()
+            is ChatRoomActions.OnSearchNext -> search.moveIndex(+1)
+            is ChatRoomActions.OnSearchPrev -> search.moveIndex(-1)
+            is ChatRoomActions.OnSearchUserSelect -> search.selectUser(action.user)
             is ChatRoomActions.OnSelectSender -> {
                 stateUseCases.selectSender(currentChatRoomId, action.user)
                 _uiState.update { it.copy(sender = stateUseCases.getSender(currentChatRoomId)) }
             }
-            is ChatRoomActions.OnSearchUserRemove -> {
-                updateSearch { it.copy(searchedUser = null) }
-                executeSearch()
-            }
-            is ChatRoomActions.OnSearchByDate -> searchByDate(action.datePrefix)
+            is ChatRoomActions.OnSearchUserRemove -> search.removeUser()
+            is ChatRoomActions.OnSearchByDate -> search.searchByDate(action.datePrefix)
             is ChatRoomActions.OnSwipeReply -> {
                 if (_uiState.value.search.isActive) {
-                    updateSearch { ChatSearchState() }
+                    search.update { ChatSearchState() }
                 }
                 viewModelScope.launch {
                     val chat = action.chat
@@ -275,7 +180,7 @@ class ChatRoomViewModel(
             is ChatRoomActions.OnSendFiles -> sendFiles(action.paths)
             is ChatRoomActions.OnSubmitNotice -> submitNotice(action.content)
             is ChatRoomActions.OnDeleteNotice -> deleteNoticeAction()
-            is ChatRoomActions.OnFocusChat -> focusOnChat(action.chatId)
+            is ChatRoomActions.OnFocusChat -> search.focusOnChat(action.chatId)
             is ChatRoomActions.OnAddBookmark -> addBookmark(action.chat)
             is ChatRoomActions.OnDeleteBookmark -> deleteBookmark(action.chatId)
             is ChatRoomActions.OnTranslateChat -> translateChat(action.chatId, action.languageCode)
@@ -302,11 +207,11 @@ class ChatRoomViewModel(
                 stateUseCases.hideNotice(action.identityKey)
                 updateNoticeBar { it.copy(hidden = true) }
             }
-            is ChatRoomActions.OnLoadRecentPhotos -> loadRecentPhotos()
-            is ChatRoomActions.OnLoadGalleryPhotos -> loadGalleryPhotos()
-            is ChatRoomActions.OnSelectGalleryAlbum -> selectGalleryAlbum(action.albumId)
-            is ChatRoomActions.OnRequestPhotoAccess -> recentPhotosProvider.requestPhotoAccess()
-            is ChatRoomActions.OnLaunchFilePicker -> launchFilePicker()
+            is ChatRoomActions.OnLoadRecentPhotos -> media.loadRecentPhotos()
+            is ChatRoomActions.OnLoadGalleryPhotos -> media.loadGalleryPhotos()
+            is ChatRoomActions.OnSelectGalleryAlbum -> media.selectGalleryAlbum(action.albumId)
+            is ChatRoomActions.OnRequestPhotoAccess -> media.requestPhotoAccess()
+            is ChatRoomActions.OnLaunchFilePicker -> media.launchFilePicker()
             is ChatRoomActions.OnEmoticonTabSelected -> stateUseCases.setLastEmoticonTab(action.index)
         }
     }
@@ -440,7 +345,7 @@ class ChatRoomViewModel(
         noMoreChats = false
         fetchingMore = false
         fetchingNewer = false
-        _firstUnreadChatId.value = null
+        read.reset()
         _uiState.update {
             it.copy(
                 chatRoom = null,
@@ -486,7 +391,7 @@ class ChatRoomViewModel(
         collectJob = viewModelScope.launch {
             combine(
                 chatRoomUseCases.getChats(chatRoomId),
-                _firstUnreadChatId,
+                read.firstUnreadChatId,
                 searchFlow,
                 isDirectRoomFlow,
             ) { chats, marker, search, isDirect ->
@@ -527,102 +432,15 @@ class ChatRoomViewModel(
                 }
         }
 
-        viewModelScope.launch {
-            runCatching {
-                var entryEmitted = false
-
-                if (_firstUnreadChatId.value == null && currentChatRoomId == chatRoomId) {
-                    val room = chatRoomListUseCases.getChatRooms()
-                        .first()
-                        .firstOrNull { it.id == chatRoomId }
-                    val unread = room?.unReadCount?.toIntOrNull() ?: 0
-                    val serverLastChatId = room?.lastChatID.orEmpty()
-                    if (unread > 0 && serverLastChatId.isNotBlank()) {
-                        val cached = chatRoomUseCases.getChats(chatRoomId).first()
-                        if (cached.lastOrNull()?.chatID == serverLastChatId && cached.size >= unread) {
-                            _firstUnreadChatId.value = cached[cached.size - unread].chatID
-                            _entryScroll.tryEmit(_firstUnreadChatId.value)
-                            entryEmitted = true
-                        }
-                    }
-                }
-
-                chatRoomUseCases.fetchChats(chatRoomId)
-                chatRoomUseCases.fetchNewerChats(chatRoomId)
-
-                if (_firstUnreadChatId.value == null && currentChatRoomId == chatRoomId) {
-                    val room = chatRoomListUseCases.getChatRooms()
-                        .first()
-                        .firstOrNull { it.id == chatRoomId }
-                    val unread = room?.unReadCount?.toIntOrNull() ?: 0
-                    val serverLastChatId = room?.lastChatID.orEmpty()
-                    if (unread > 0) {
-                        var allChats = chatRoomUseCases.getChats(chatRoomId).first()
-
-                        if (serverLastChatId.isNotBlank() &&
-                            allChats.lastOrNull()?.chatID != serverLastChatId
-                        ) {
-                            runCatching { chatRoomUseCases.fetchChats(chatRoomId) }
-                            runCatching { chatRoomUseCases.fetchNewerChats(chatRoomId) }
-                            allChats = chatRoomUseCases.getChats(chatRoomId).first()
-                        }
-
-                        val synced = serverLastChatId.isBlank() ||
-                            allChats.lastOrNull()?.chatID == serverLastChatId
-                        if (synced && allChats.size >= unread) {
-                            _firstUnreadChatId.value = allChats[allChats.size - unread].chatID
-                        } else {
-                            Log.message(
-                                "[UnreadMarker] skip — not synced(synced=$synced " +
-                                    "localLast=${allChats.lastOrNull()?.chatID?.takeLast(8)} " +
-                                    "serverLast=${serverLastChatId.takeLast(8)}) size=${allChats.size} unread=$unread"
-                            )
-                        }
-                    }
-                }
-
-                if (!entryEmitted && currentChatRoomId == chatRoomId) {
-                    _entryScroll.tryEmit(_firstUnreadChatId.value)
-                }
-
-                if (currentChatRoomId == chatRoomId &&
-                    stateUseCases.isCurrentChatRoom(chatRoomId)
-                ) {
-                    val lastChatId = chatRoomUseCases.getChats(chatRoomId)
-                        .first()
-                        .lastOrNull { it.chatStatus != Chat.Status.SENDING && it.chatStatus != Chat.Status.FAIL }
-                        ?.chatID
-                        .orEmpty()
-
-                    if (lastChatId.isNotBlank()) {
-                        chatRoomUseCases.markChatAsRead(chatRoomId, lastChatId)
-                    }
-                }
-            }.onFailure { e ->
-                if (_uiState.value.messages is ChatMessagesUiState.Loading) {
-                    _uiState.update {
-                        it.copy(messages = ChatMessagesUiState.Error(e.message ?: "Failed to load chats"))
-                    }
+        read.syncOnEnter(chatRoomId) { e ->
+            if (_uiState.value.messages is ChatMessagesUiState.Loading) {
+                _uiState.update {
+                    it.copy(messages = ChatMessagesUiState.Error(e.message ?: "Failed to load chats"))
                 }
             }
         }
 
-        viewModelScope.launch {
-            stateUseCases.observeNewChat()
-                .filter { it == chatRoomId && currentChatRoomId == chatRoomId }
-                .collect {
-                    if (!stateUseCases.isCurrentChatRoom(chatRoomId)) return@collect
-
-                    val lastChatId = chatRoomUseCases.getChats(chatRoomId)
-                        .first()
-                        .lastOrNull { it.chatStatus != Chat.Status.SENDING && it.chatStatus != Chat.Status.FAIL }
-                        ?.chatID
-                        .orEmpty()
-                    if (lastChatId.isNotBlank()) {
-                        runCatching { chatRoomUseCases.markChatAsRead(chatRoomId, lastChatId) }
-                    }
-                }
-        }
+        read.markReadOnNewChat(chatRoomId)
     }
 
     private fun fetchMore() {
@@ -646,100 +464,6 @@ class ChatRoomViewModel(
         }
     }
 
-
-    private fun updateSearchQuery(query: String) {
-        updateSearch { it.copy(query = query) }
-        if (query.isEmpty()) {
-            executeSearch()
-        }
-    }
-
-    private fun executeSearch() {
-        val roomId = currentChatRoomId
-        if (roomId.isBlank()) return
-        val state = _uiState.value.search
-        val q = state.query
-        val u = state.searchedUser
-        val d = state.searchedDate
-
-        if (q.isEmpty() && u == null && d.isNullOrBlank()) {
-            updateSearch {
-                it.copy(
-                    committedQuery = "",
-                    matchedChatIds = emptyList(),
-                    currentIndex = -1,
-                    focusChatId = null
-                )
-            }
-            return
-        }
-
-        updateSearch { it.copy(committedQuery = q) }
-
-        viewModelScope.launch {
-            val dateFrom = if (d.isNullOrBlank()) "" else "$d 00:00:00:000"
-            val dateTo   = if (d.isNullOrBlank()) "" else "$d 23:59:59:999"
-
-            val rawDesc = runCatching {
-                chatRoomUseCases.searchChats(
-                    chatRoomId = roomId,
-                    query = q,
-                    userId = u?.id.orEmpty(),
-                    dateFrom = dateFrom,
-                    dateTo = dateTo
-                )
-            }.getOrElse { emptyList() }
-
-            val idsAsc = rawDesc.sortedBy { it.second }.map { it.first }
-
-            if (idsAsc.isEmpty()) {
-                updateSearch {
-                    it.copy(
-                        matchedChatIds = emptyList(),
-                        currentIndex = -1,
-                        focusChatId = null
-                    )
-                }
-                return@launch
-            }
-
-            val focusId = idsAsc.last()
-            updateSearch {
-                it.copy(
-                    matchedChatIds = idsAsc,
-                    currentIndex = idsAsc.lastIndex,
-                )
-            }
-            focusOnChat(focusId)
-        }
-    }
-
-    private fun searchByDate(datePrefix: String) {
-        if (datePrefix.isBlank()) return
-        updateSearch {
-            it.copy(
-                query = "",
-                searchedUser = null,
-                searchedDate = datePrefix,
-                matchedChatIds = emptyList(),
-                currentIndex = -1,
-                focusChatId = null
-            )
-        }
-        executeSearch()
-    }
-
-    private fun moveSearchIndex(delta: Int) {
-        val state = _uiState.value.search
-        if (state.matchedChatIds.isEmpty()) return
-        val newIndex = (state.currentIndex + delta)
-            .coerceIn(0, state.matchedChatIds.lastIndex)
-        if (newIndex == state.currentIndex) return
-        val targetId = state.matchedChatIds[newIndex]
-
-        updateSearch { it.copy(currentIndex = newIndex) }
-        focusOnChat(targetId)
-    }
 
     private fun addBookmark(chat: Chat.Item) {
         val roomId = currentChatRoomId
@@ -789,23 +513,4 @@ class ChatRoomViewModel(
             _uiState.update { it.copy(polish = result) }
         }
     }
-
-    private fun focusOnChat(chatId: String) {
-        val roomId = currentChatRoomId
-        if (roomId.isBlank() || chatId.isBlank()) return
-        viewModelScope.launch {
-            if (latestChats.none { it.chatID == chatId }) {
-                runCatching { chatRoomUseCases.loadChatWithContext(roomId, chatId) }
-                    .onFailure { Log.message("[Focus] loadChatWithContext failed: ${it.message}") }
-                if (currentChatRoomId != roomId) return@launch
-            }
-            updateSearch {
-                it.copy(
-                    focusChatId = chatId,
-                    focusTriggerKey = it.focusTriggerKey + 1,
-                )
-            }
-        }
-    }
 }
-

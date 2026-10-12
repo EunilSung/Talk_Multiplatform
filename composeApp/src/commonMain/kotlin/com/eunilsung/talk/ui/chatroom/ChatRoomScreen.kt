@@ -2,25 +2,15 @@ package com.eunilsung.talk.ui.chatroom
 
 import com.eunilsung.talk.ui.main.popToEmptyRoot
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -29,13 +19,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
@@ -46,30 +34,16 @@ import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import com.eunilsung.talk.Config
 import multiplatformtalk.composeapp.generated.resources.Res
-import multiplatformtalk.composeapp.generated.resources.arrow_down_icon
-import multiplatformtalk.composeapp.generated.resources.arrow_up_icon
-import multiplatformtalk.composeapp.generated.resources.emoticon_tab_face_human_down
 import multiplatformtalk.composeapp.generated.resources.move_to_last_chat_icon
-import multiplatformtalk.composeapp.generated.resources.search_date_icon
-import multiplatformtalk.composeapp.generated.resources.search_user_icon
 import multiplatformtalk.composeapp.generated.resources.cancel
 import multiplatformtalk.composeapp.generated.resources.delete
 import kotlinx.coroutines.delay
 import com.eunilsung.talk.data.local.RecentPhotosResult
 import com.eunilsung.talk.domain.model.Chat
-import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.model.User
-import com.eunilsung.talk.ui.chatroom.item.ChatRoomDrawerContent
 import com.eunilsung.talk.ui.chatroom.item.ChatUserSelectPopup
 import com.eunilsung.talk.ui.chatroom.item.FullTextDialog
 import com.eunilsung.talk.ui.chatroom.input.MentionFieldState
-import com.eunilsung.talk.ui.chatroom.input.MentionFieldSnapshot
-import com.eunilsung.talk.ui.chatroom.input.PolishButtonState
-import com.eunilsung.talk.ui.invite.InviteMode
-import com.eunilsung.talk.ui.invite.InviteScreen
-import com.eunilsung.talk.ui.main.LocalFullScreenOverlay
-import com.eunilsung.talk.ui.chatroom.vote.VoteMode
-import com.eunilsung.talk.ui.chatroom.vote.VoteScreen
 import com.eunilsung.talk.ui.main.LocalRightNavigator
 import com.eunilsung.talk.ui.main.EmoticonOverlay
 import com.eunilsung.talk.ui.main.emoticonPanelHeight
@@ -77,23 +51,16 @@ import com.eunilsung.talk.ui.main.rememberImeHeight
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.BackHandler
 import com.eunilsung.talk.ui.uikit.datepicker.DatePicker
-import com.eunilsung.talk.ui.uikit.dialog.ChatListDialog
 import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
 import com.eunilsung.talk.ui.uikit.sheet.LocalBottomSheetManager
 import com.eunilsung.talk.ui.uikit.toast.LocalToastManager
-import com.eunilsung.talk.ui.uikit.user.UserItemV2
-import com.eunilsung.talk.ui.uikit.drawer.SideDrawer
 import com.eunilsung.talk.ui.uikit.mediapicker.MediaPickerBindings
 import com.eunilsung.talk.ui.uikit.mediapicker.MediaPickerHost
 import com.eunilsung.talk.ui.uikit.mediapicker.rememberMediaPickerState
 import com.eunilsung.talk.ui.userprofile.LocalShowUserProfile
-import com.eunilsung.talk.util.chatDisplayText
-import com.eunilsung.talk.util.splitLeadingToken
 import org.jetbrains.compose.resources.painterResource
 import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.ui.uikit.emoticon.EmoticonPreview
-import com.eunilsung.talk.ui.uikit.emoticon.StaticEmoticonImage
-import com.eunilsung.talk.ui.uikit.emoticon.emoticonResourceNameForId
 import com.eunilsung.talk.ui.uikit.emoticon.EmoticonItem
 import com.eunilsung.talk.ui.uikit.emoticon.EmoticonPanelController
 import com.eunilsung.talk.ui.uikit.emoticon.rememberStableImeHeight
@@ -220,7 +187,6 @@ fun ChatRoomContent(
     val bookmarkedChatIds = remember(bookmarks) { bookmarks.map { it.chatId }.toSet() }
     val bookmarksState = rememberUpdatedState(bookmarks)
 
-    val fullScreenOverlay = LocalFullScreenOverlay.current
     val toastManager = LocalToastManager.current
     val bottomSheet = LocalBottomSheetManager.current
     val showUserProfileFromContent = LocalShowUserProfile.current
@@ -283,16 +249,11 @@ fun ChatRoomContent(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val isSearchMode = searchState.isActive
 
-    var isPolishMenuOpen by remember { mutableStateOf(false) }
-    var polishUndo by remember { mutableStateOf<PolishUndo?>(null) }
+    val polishInput = rememberPolishInputState(mentionState)
     LaunchedEffect(polish) {
         when (polish) {
             is PolishUiState.Ready -> {
-                if (mentionState.text == polish.sourceText) {
-                    val original = mentionState.snapshot()
-                    mentionState.replaceText(polish.text)
-                    polishUndo = PolishUndo(original, mentionState.text)
-                }
+                polishInput.apply(polish)
                 onAction(ChatRoomActions.OnPolishHandled)
             }
             PolishUiState.Failed -> {
@@ -301,14 +262,6 @@ fun ChatRoomContent(
             }
             else -> Unit
         }
-    }
-    val canUndoPolish = polishUndo?.polishedText == mentionState.text
-    val polishButton = when {
-        !Config.Server.IS_ENABLED -> PolishButtonState.HIDDEN
-        polish == PolishUiState.Loading -> PolishButtonState.LOADING
-        canUndoPolish -> PolishButtonState.UNDO
-        mentionState.text.trim().length >= MIN_POLISH_LENGTH -> PolishButtonState.POLISH
-        else -> PolishButtonState.HIDDEN
     }
     LaunchedEffect(replyTarget?.chatID) {
         if (replyTarget != null) {
@@ -407,16 +360,8 @@ fun ChatRoomContent(
                     searchState = searchState,
                     replyTarget = replyTarget,
                     mentionState = mentionState,
-                    polishButton = polishButton,
-                    onPolishClick = {
-                        val undo = polishUndo
-                        if (canUndoPolish && undo != null) {
-                            mentionState.restore(undo.original)
-                            polishUndo = null
-                        } else {
-                            isPolishMenuOpen = true
-                        }
-                    },
+                    polishButton = polishInput.buttonState(polish),
+                    onPolishClick = polishInput::onButtonClick,
                     emoticon = emoticon,
                     selectedEmoticon = selectedEmoticon,
                     onSelectedEmoticonChange = { selectedEmoticon = it },
@@ -494,46 +439,15 @@ fun ChatRoomContent(
                             )
                         }
 
-                        if (newChatBanner != null) {
-                            val banner = newChatBanner!!
-                            // 이모티콘 id 토큰을 떼어내 이미지로 그린다.
-                            val bannerPreview by produceState("", banner) {
-                                value = chatDisplayText(banner)
-                            }
-                            val (bannerEmoticon, bannerText) = remember(bannerPreview) {
-                                val trimmed = bannerPreview.trim()
-                                val (token, rest) = splitLeadingToken(trimmed)
-                                val resource = token?.let { emoticonResourceNameForId(it) }
-                                if (resource != null) resource to rest else null to trimmed
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .padding(horizontal = 16.dp)
-                                    .padding(bottom = 8.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(AppColors.BgSub)
-                                    .border(1.dp, AppColors.Line, RoundedCornerShape(12.dp)),
-                            ) {
-                                UserItemV2(
-                                    userId = banner.user.id,
-                                    name = banner.user.name,
-                                    content = bannerText,
-                                    leadingContent = bannerEmoticon?.let { resource ->
-                                        {
-                                            StaticEmoticonImage(
-                                                resourceName = resource,
-                                                contentDescription = null,
-                                                modifier = Modifier.height(18.dp),
-                                            )
-                                        }
-                                    },
-                                    onClick = {
-                                        onAction(ChatRoomActions.OnMoveToLatest)
-                                        newChatBanner = null
-                                    },
-                                )
-                            }
+                        newChatBanner?.let { banner ->
+                            NewChatBanner(
+                                chat = banner,
+                                onClick = {
+                                    onAction(ChatRoomActions.OnMoveToLatest)
+                                    newChatBanner = null
+                                },
+                                modifier = Modifier.align(Alignment.BottomCenter),
+                            )
                         }
 
                         if (showMoveToLatestButton && newChatBanner == null) {
@@ -637,47 +551,16 @@ fun ChatRoomContent(
             )
         }
 
-        SideDrawer(
-            isVisible = isDrawerOpen,
-            onDismiss = { isDrawerOpen = false }
-        ) {
-            val showUserProfile = LocalShowUserProfile.current
-            ChatRoomDrawerContent(
-                users = users,
-                onVoteClick = {
-                    isDrawerOpen = false
-                    fullScreenOverlay(
-                        VoteScreen(
-                            chatRoomId = currentChatRoomId,
-                            initialMode = VoteMode.LIST,
-                        )
-                    )
-                },
-                onNoticeClick = {
-                    isDrawerOpen = false
-                    val content = notice?.content
-                    if (content?.isNotBlank() == true) {
-                        noticeDialogText = content
-                    } else {
-                        toastManager.show(strings.noNotice)
-                    }
-                },
-                onInviteClick = {
-                    isDrawerOpen = false
-                    fullScreenOverlay(
-                        InviteScreen(
-                            InviteMode.InviteToChatRoom(
-                                chatRoomId = currentChatRoomId,
-                                existingUserIds = users.map { it.id },
-                                createNewRoom = chatRoom?.isDirectRoom == true,
-                                existingUsers = users.map { it.id to it.name },
-                            )
-                        )
-                    )
-                },
-                onUserClick = { showUserProfile(it) },
-            )
-        }
+        ChatRoomDrawer(
+            isOpen = isDrawerOpen,
+            chatRoom = chatRoom,
+            currentChatRoomId = currentChatRoomId,
+            users = users,
+            notice = notice,
+            strings = strings,
+            onDismiss = { isDrawerOpen = false },
+            onShowNotice = { noticeDialogText = it },
+        )
 
         noticeDialogText?.takeIf { it.isNotBlank() }?.let { content ->
             FullTextDialog(
@@ -698,18 +581,12 @@ fun ChatRoomContent(
             bindings = mediaPickerBindings,
         )
 
-        if (isPolishMenuOpen) {
-            ChatListDialog(
-                list = listOf(strings.polishCorrect, strings.polishPolite, strings.polishConcise),
-                showEmpathy = false,
-                onDismiss = { isPolishMenuOpen = false },
-                onOptionSelected = { picked ->
-                    isPolishMenuOpen = false
-                    val style = when (picked) {
-                        strings.polishPolite -> PolishStyle.POLITE
-                        strings.polishConcise -> PolishStyle.CONCISE
-                        else -> PolishStyle.CORRECT
-                    }
+        if (polishInput.isMenuOpen) {
+            PolishStyleMenu(
+                strings = strings,
+                onDismiss = { polishInput.isMenuOpen = false },
+                onStyleSelected = { style ->
+                    polishInput.isMenuOpen = false
                     onAction(ChatRoomActions.OnPolishText(mentionState.text, style))
                 },
             )
@@ -725,194 +602,3 @@ fun ChatRoomContent(
         )
     }
 }
-
-@Composable
-internal fun ChatSearchNav(
-    searchState: ChatSearchState,
-    onUserClick: () -> Unit = {},
-    onDateClick: () -> Unit = {},
-    onPrevClick: () -> Unit,
-    onNextClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        val total = searchState.totalMatches
-        val pos = searchState.currentPosition
-
-        if (Config.ChatRoom.IS_SEARCH_USER_ENABLED) {
-            IconButton(
-                modifier = Modifier.size(30.dp),
-                onClick = onUserClick,
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.search_user_icon),
-                    modifier = Modifier.size(24.dp),
-                    contentDescription = "Search user",
-                    tint = MaterialTheme.colorScheme.onBackground
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(20.dp))
-
-        if (Config.ChatRoom.IS_SEARCH_DATE_ENABLED) {
-            IconButton(
-                modifier = Modifier.size(30.dp),
-                onClick = onDateClick,
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.search_date_icon),
-                    modifier = Modifier.size(24.dp),
-                    contentDescription = "Search date",
-                    tint = MaterialTheme.colorScheme.onBackground
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Text(
-            text = if (total == 0) "0" else "$pos / $total",
-            color = AppColors.Text,
-            fontSize = 16.sp,
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
-
-        Spacer(modifier = Modifier.width(20.dp))
-
-        IconButton(
-            modifier = Modifier.size(24.dp),
-            onClick = onPrevClick,
-            enabled = total > 0 && searchState.currentIndex > 0
-        ) {
-            Icon(
-                painter = painterResource(Res.drawable.arrow_up_icon),
-                modifier = Modifier.size(24.dp),
-                contentDescription = "Prev match",
-                tint = MaterialTheme.colorScheme.onBackground
-            )
-        }
-
-        Spacer(modifier = Modifier.width(20.dp))
-
-        IconButton(
-            modifier = Modifier.size(24.dp),
-            onClick = onNextClick,
-            enabled = total > 0 && searchState.currentIndex < total - 1
-        ) {
-            Icon(
-                painter = painterResource(Res.drawable.arrow_down_icon),
-                modifier = Modifier.size(24.dp),
-                contentDescription = "Next match",
-                tint = MaterialTheme.colorScheme.onBackground
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ChatRoomScreenPreview() {
-    MaterialTheme {
-        ChatRoomContent(
-            uiState = ChatRoomUiState(
-                chatRoom = ChatRoom.Item(),
-                messages = ChatMessagesUiState.Success(groupedChats = emptyList()),
-            ),
-            onAction = {}
-        )
-    }
-}
-
-private val previewUsers = listOf(
-    User(id = "1", name = "성은일", departmentName = "개발팀", positionName = "팀장"),
-    User(id = "2", name = "홍길동", departmentName = "기획팀"),
-    User(id = "3", name = "김철수"),
-)
-
-@Preview(showBackground = true)
-@Composable
-private fun ChatRoomSearchModePreview() {
-    MaterialTheme {
-        ChatRoomContent(
-            uiState = ChatRoomUiState(
-                chatRoom = ChatRoom.Item(),
-                messages = ChatMessagesUiState.Success(groupedChats = emptyList()),
-                users = previewUsers,
-                search = ChatSearchState(
-                    isActive = true,
-                    query = "검색어",
-                    matchedChatIds = listOf("a", "b", "c", "d", "e"),
-                    currentIndex = 1,
-                ),
-            ),
-            onAction = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun ChatRoomReplyModePreview() {
-    MaterialTheme {
-        ChatRoomContent(
-            uiState = ChatRoomUiState(
-                chatRoom = ChatRoom.Item(),
-                messages = ChatMessagesUiState.Success(groupedChats = emptyList()),
-                users = previewUsers,
-                replyTarget = Chat.Item(
-                    user = User(name = "성은일"),
-                    chatContent = "답장 대상 본문입니다.",
-                ),
-            ),
-            onAction = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun ChatRoomEmoticonPreviewPreview() {
-    MaterialTheme {
-        ChatRoomContent(
-            uiState = ChatRoomUiState(
-                chatRoom = ChatRoom.Item(),
-                messages = ChatMessagesUiState.Success(groupedChats = emptyList()),
-                users = previewUsers,
-            ),
-            initialSelectedEmoticon = EmoticonItem(
-                id = "sample",
-                resource = Res.drawable.emoticon_tab_face_human_down,
-                resourcePath = "drawable/emoticon_tab_face_human_down.png",
-            ),
-            onAction = {},
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun ChatRoomDrawerPreview() {
-    MaterialTheme {
-        ChatRoomContent(
-            uiState = ChatRoomUiState(
-                chatRoom = ChatRoom.Item(),
-                messages = ChatMessagesUiState.Success(groupedChats = emptyList()),
-                users = previewUsers,
-            ),
-            initialDrawerOpen = true,
-            onAction = {},
-        )
-    }
-}
-
-
-/** 다듬기 전의 입력창과 다듬은 글. 입력창이 [polishedText] 그대로일 때만 되돌릴 수 있다. */
-private data class PolishUndo(val original: MentionFieldSnapshot, val polishedText: String)
-
-/** 이보다 짧은 글("넵", "ㅇㅇ")에는 다듬기 버튼을 내놓지 않는다. */
-private const val MIN_POLISH_LENGTH = 5
