@@ -1,9 +1,12 @@
 package com.eunilsung.talk.data.mapper
 
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import com.eunilsung.talk.data.local.LocalSecret
 import com.eunilsung.talk.db.ChatRoomEntity
+import com.eunilsung.talk.domain.model.ChatGroup
 import com.eunilsung.talk.domain.model.ChatRoom
+import com.eunilsung.talk.util.Log
 
 class ChatRoomMapper {
     private val json = Json {
@@ -57,4 +60,28 @@ class ChatRoomMapper {
             enableMode = entity.enableMode ?: ""
         )
     }
+
+    /** 대화그룹 목록 → 기기 설정에 넣을 JSON. */
+    fun encodeChatGroups(groups: List<ChatGroup>): String =
+        json.encodeToString(groups.map { ChatGroupRecord(it.id, it.name, it.kind, it.sort, it.roomIds) })
+
+    /** 기기 설정의 JSON → 대화그룹 목록. 읽지 못하면 빈 목록이다. */
+    fun decodeChatGroups(raw: String): List<ChatGroup> = runCatching {
+        json.decodeFromString<List<ChatGroupRecord>>(raw).map {
+            ChatGroup(it.id, it.name, it.kind, it.sort, it.roomIds)
+        }
+    }.getOrElse {
+        Log.message("[ChatRoomList/Local] chat group decode failed: ${it.message}")
+        emptyList()
+    }
+
+    /** [ChatGroup] 의 저장 전용 직렬화 형태. */
+    @Serializable
+    private data class ChatGroupRecord(
+        val id: String,
+        val name: String,
+        val kind: String,
+        val sort: String,
+        val roomIds: List<String>,
+    )
 }

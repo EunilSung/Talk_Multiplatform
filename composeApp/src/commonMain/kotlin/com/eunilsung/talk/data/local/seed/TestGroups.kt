@@ -3,10 +3,6 @@ package com.eunilsung.talk.data.local.seed
 /** 로컬 테스트용 그룹 구성 — 사용자별 그룹 초기 배치. */
 object TestGroups {
 
-    /** 기본그룹(미분류) 식별자. */
-    const val DEFAULT_GROUP_ID = "0"
-    const val DEFAULT_GROUP_ALINE_CODE = "-3"
-
     data class Seed(
         val id: String,
         val name: String,

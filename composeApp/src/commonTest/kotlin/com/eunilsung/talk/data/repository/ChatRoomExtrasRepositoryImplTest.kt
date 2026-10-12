@@ -1,5 +1,6 @@
 package com.eunilsung.talk.data.repository
 
+import com.eunilsung.talk.data.mapper.SeedMapper
 import com.eunilsung.talk.data.mapper.ChatMapper
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.data.mapper.ServerChatMapper
@@ -70,6 +71,7 @@ class ChatRoomExtrasRepositoryImplTest {
         val local = LocalChatRoomRepositoryImpl(
             chatMapper = ChatMapper(),
             chatRoomMapper = chatRoomMapper,
+            seedMapper = SeedMapper(),
             chatRoomListRepository = localList,
             fileMetadataResolver = deviceFiles,
             senderOverride = ChatSenderOverride(),

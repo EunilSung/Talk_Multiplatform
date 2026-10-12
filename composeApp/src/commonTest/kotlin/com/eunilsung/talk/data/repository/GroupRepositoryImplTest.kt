@@ -1,5 +1,6 @@
 package com.eunilsung.talk.data.repository
 
+import com.eunilsung.talk.data.mapper.SeedMapper
 import com.eunilsung.talk.data.mapper.GroupMapper
 import com.eunilsung.talk.data.remote.server.UserDirectory
 import com.eunilsung.talk.data.mapper.ServerPeopleMapper
@@ -44,7 +45,7 @@ class GroupRepositoryImplTest {
         val mapper = GroupMapper()
         val people = ServerPeopleMapper()
         val local = LocalGroupRepositoryImpl(
-            mapper, FakeLoginRepository(), MapSettings(), createTestDatabase(),
+            mapper, SeedMapper(), FakeLoginRepository(), MapSettings(), createTestDatabase(),
             seedsSampleGroups = false,
             findUser = { userId, groupId -> directory.find(userId)?.let { people.toGroupUser(it, groupId) } },
         )

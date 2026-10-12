@@ -1,5 +1,6 @@
 package com.eunilsung.talk.data.repository
 
+import com.eunilsung.talk.data.mapper.SeedMapper
 import com.eunilsung.talk.data.mapper.ChatMapper
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.data.mapper.ServerChatMapper
@@ -70,6 +71,7 @@ class ChatRoomRepositoryImplTest {
         val local = LocalChatRoomRepositoryImpl(
             chatMapper = ChatMapper(),
             chatRoomMapper = chatRoomMapper,
+            seedMapper = SeedMapper(),
             chatRoomListRepository = localList,
             fileMetadataResolver = deviceFiles,
             senderOverride = ChatSenderOverride(),
@@ -242,7 +244,7 @@ class ChatRoomRepositoryImplTest {
     fun 보내다_앱이_꺼져_전송_중으로_남은_대화는_다시_켜면_실패로_바뀐다() = runTest {
         repo.fetchChats(roomId)
         val local = LocalChatRoomRepositoryImpl(
-            ChatMapper(), ChatRoomMapper(),
+            ChatMapper(), ChatRoomMapper(), SeedMapper(),
             LocalChatRoomListRepositoryImpl(FakeLoginRepository(), MapSettings(), ChatRoomMapper(), database, seedsSampleRooms = false),
             deviceFiles, ChatSenderOverride(), database, seedsSampleChats = false,
         )

@@ -1,5 +1,7 @@
 package com.eunilsung.talk.data.repository
 
+import com.eunilsung.talk.data.mapper.SeedMapper
+import com.eunilsung.talk.data.mapper.VoteMapper
 import com.eunilsung.talk.data.mapper.ChatMapper
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.data.mapper.ServerChatMapper
@@ -46,6 +48,7 @@ class VoteRepositoryImplTest {
         localChats = LocalChatRoomRepositoryImpl(
             chatMapper = ChatMapper(),
             chatRoomMapper = chatRoomMapper,
+            seedMapper = SeedMapper(),
             chatRoomListRepository = LocalChatRoomListRepositoryImpl(
                 FakeLoginRepository(), MapSettings(), chatRoomMapper, database, seedsSampleRooms = false,
             ),
@@ -54,7 +57,7 @@ class VoteRepositoryImplTest {
             database = database,
             seedsSampleChats = false,
         )
-        repo = VoteRepositoryImpl(server, localChats, ServerChatMapper(ServerFileStore(MapSettings(), server, deviceFiles)))
+        repo = VoteRepositoryImpl(server, localChats, ServerChatMapper(ServerFileStore(MapSettings(), server, deviceFiles)), VoteMapper())
     }
 
     @AfterTest

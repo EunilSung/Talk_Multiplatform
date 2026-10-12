@@ -29,9 +29,6 @@ import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.arrow_left_icon
-import com.eunilsung.talk.domain.model.VoteDetail
-import com.eunilsung.talk.domain.model.VoteOption
-import com.eunilsung.talk.domain.model.VoteResult
 import com.eunilsung.talk.domain.model.VoteResultItem
 import com.eunilsung.talk.ui.main.LocalFullScreenOverlay
 import com.eunilsung.talk.ui.theme.AppColors

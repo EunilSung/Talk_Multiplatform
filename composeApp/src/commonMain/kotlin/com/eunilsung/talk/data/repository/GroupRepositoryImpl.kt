@@ -8,13 +8,10 @@ import com.eunilsung.talk.data.remote.server.TalkServer
 import com.eunilsung.talk.data.remote.server.UserDirectory
 import com.eunilsung.talk.data.remote.server.valueOrNull
 import com.eunilsung.talk.data.local.repository.LocalGroupRepositoryImpl
-import com.eunilsung.talk.domain.model.Group
 import com.eunilsung.talk.domain.model.isDefaultGroup
 import com.eunilsung.talk.domain.model.isMyProfileGroup
 import com.eunilsung.talk.domain.repository.AddUserResult
 import com.eunilsung.talk.domain.repository.GroupRepository
-import com.eunilsung.talk.shared.api.ContactGroupDto
-import com.eunilsung.talk.shared.api.UserDto
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -52,7 +49,7 @@ class GroupRepositoryImpl(
         }
         if (Config.MyInfo.userId != myId) return
         directory.replace(users)
-        local.replaceGroups(buildGroups(myId, users, groups))
+        local.replaceGroups(people.toGroups(myId, mapper.toMyProfileGroup(), users, groups))
     }
 
     override suspend fun copyUserToGroup(userId: String, targetGroupId: String): AddUserResult {
@@ -105,35 +102,5 @@ class GroupRepositoryImpl(
         }
         refreshGroups()
         true
-    }
-
-    private fun buildGroups(myId: String, users: List<UserDto>, groups: List<ContactGroupDto>): List<Group.Item> {
-        val others = users.filterNot { it.id.equals(myId, ignoreCase = true) }.associateBy { it.id }
-        val grouped = groups.flatMap { it.memberIds }.toSet()
-
-        val myProfile = mapper.toMyProfileGroup().let { group ->
-            group.copy(userData = listOf(mapper.toMyProfileUser().copy(groupId = group.id)))
-        }
-        val defaultGroup = Group.Item(
-            id = DEFAULT_GROUP_ID,
-            name = "",
-            alineCode = DEFAULT_GROUP_ALINE_CODE,
-            userData = others.values.filterNot { it.id in grouped }.map { people.toGroupUser(it, DEFAULT_GROUP_ID) },
-        )
-        val custom = groups.map { group ->
-            Group.Item(
-                id = group.id,
-                name = group.name,
-                alineCode = group.sort.toString(),
-                userData = group.memberIds.mapNotNull { member -> others[member]?.let { people.toGroupUser(it, group.id) } },
-            )
-        }
-        return listOf(myProfile, defaultGroup) + custom
-    }
-
-    companion object {
-        /** 기본 그룹(어느 그룹에도 넣지 않은 사람들)의 고정 id 와 정렬 코드. 화면이 이 값으로 기본 그룹을 알아본다. */
-        const val DEFAULT_GROUP_ID = "0"
-        const val DEFAULT_GROUP_ALINE_CODE = "-3"
     }
 }

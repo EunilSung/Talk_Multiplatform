@@ -14,8 +14,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.data.mapper.GroupMapper
+import com.eunilsung.talk.data.mapper.SeedMapper
 import com.eunilsung.talk.data.repository.SettingsKeys
 import com.eunilsung.talk.db.AppDatabase
+import com.eunilsung.talk.domain.model.DEFAULT_GROUP_ID
 import com.eunilsung.talk.domain.model.Group
 import com.eunilsung.talk.domain.repository.AddUserResult
 import com.eunilsung.talk.domain.repository.GroupRepository
@@ -27,6 +29,7 @@ import com.eunilsung.talk.data.local.seed.TestGroups
 /** [TestAccounts]·[TestGroups] 를 원본으로 쓰고 저장은 SQLDelight 로 하는 그룹 저장소. */
 class LocalGroupRepositoryImpl(
     private val mapper: GroupMapper,
+    private val seedMapper: SeedMapper,
     private val loginRepository: LoginRepository,
     private val settings: Settings,
     database: AppDatabase,
@@ -34,7 +37,7 @@ class LocalGroupRepositoryImpl(
     private val seedsSampleGroups: Boolean = true,
     /** 사용자 id 로 그 사람을 찾아 [Group.User] 로 만든다. 서버 모드에서는 서버의 사용자 목록에서 찾는다. */
     private val findUser: (userId: String, groupId: String) -> Group.User? =
-        { userId, groupId -> TestAccounts.find(userId)?.toGroupUser(groupId) },
+        { userId, groupId -> TestAccounts.find(userId)?.let { seedMapper.toGroupUser(it, groupId) } },
 ) : GroupRepository {
 
     private val dbQueries = database.appDatabaseQueries
@@ -190,22 +193,12 @@ class LocalGroupRepositoryImpl(
 
     /** 초기 배치 — 내 프로필 / 기본그룹 / 사용자 그룹. */
     private fun buildSeed(myId: String): List<Group.Item> {
-        val myProfile = mapper.toMyProfileGroup().let { group ->
-            group.copy(userData = listOf(mapper.toMyProfileUser().copy(groupId = group.id)))
-        }
-        val defaultGroup = Group.Item(
-            id = TestGroups.DEFAULT_GROUP_ID,
-            name = "",
-            alineCode = TestGroups.DEFAULT_GROUP_ALINE_CODE,
-            userData = usersOf(TestGroups.DEFAULT_GROUP_MEMBER_IDS, TestGroups.DEFAULT_GROUP_ID, myId),
+        val myProfile = mapper.toMyProfileGroup()
+        val defaultGroup = seedMapper.toDefaultGroup(
+            usersOf(TestGroups.DEFAULT_GROUP_MEMBER_IDS, DEFAULT_GROUP_ID, myId),
         )
         val custom = TestGroups.CUSTOM.map { seed ->
-            Group.Item(
-                id = seed.id,
-                name = seed.name,
-                alineCode = seed.alineCode,
-                userData = usersOf(seed.memberIds, seed.id, myId),
-            )
+            seedMapper.toGroup(seed, usersOf(seed.memberIds, seed.id, myId))
         }
         return listOf(myProfile, defaultGroup) + custom
     }
@@ -254,20 +247,3 @@ class LocalGroupRepositoryImpl(
         _groups.value = groups
     }
 }
-
-private fun TestAccounts.Account.toGroupUser(groupId: String) = Group.User(
-    groupId = groupId,
-    userId = userId,
-    userName = userName,
-    email = email,
-    phoneNumber = phoneNumber,
-    birthday = birthday,
-    departmentName = organName,
-    positionName = positionName,
-    positionSortCode = positionSortCode,
-    statusMessage = statusMessage,
-    pcStatus = pcStatus,
-    mobileStatus = mobileStatus,
-    etcStatus = "0",
-    userType = "0",
-)

@@ -2,14 +2,12 @@ package com.eunilsung.talk.data.local.repository
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import com.eunilsung.talk.Config
+import com.eunilsung.talk.data.mapper.VoteMapper
 import com.eunilsung.talk.db.AppDatabase
-import com.eunilsung.talk.db.VoteEntity
 import com.eunilsung.talk.domain.model.VoteData
 import com.eunilsung.talk.domain.model.VoteDataItem
 import com.eunilsung.talk.domain.model.VoteForm
@@ -30,10 +28,10 @@ import com.eunilsung.talk.data.local.seed.TestAccounts
 class LocalVoteRepositoryImpl(
     private val chatRoomRepository: LocalChatRoomRepositoryImpl,
     database: AppDatabase,
+    private val mapper: VoteMapper,
 ) : VoteRepository {
 
     private val dbQueries = database.appDatabaseQueries
-    private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun fetchVotes(chatRoomId: String): List<VoteSummary> =
         withContext(Dispatchers.Default) {
@@ -41,19 +39,7 @@ class LocalVoteRepositoryImpl(
             if (myId.isBlank()) return@withContext emptyList()
 
             dbQueries.selectVotesByRoom(myId, chatRoomId).executeAsList()
-                .map { it.toData() }
-                .map { data ->
-                    VoteSummary(
-                        id = data.id,
-                        title = data.title,
-                        itemCount = data.items.size,
-                        participantCount = data.participantCount,
-                        isClosed = data.isClosed,
-                        endTime = data.endTime,
-                        isMine = data.writeUserId.equals(myId, ignoreCase = true),
-                        hasVoted = data.hasVoted(myId),
-                    )
-                }
+                .map { mapper.toSummary(mapper.toData(it), myId) }
         }
 
     override suspend fun fetchVote(chatRoomId: String, voteId: String): VoteData? =
@@ -214,82 +200,13 @@ class LocalVoteRepositoryImpl(
     private fun load(chatRoomId: String, voteId: String): VoteData? {
         val myId = Config.MyInfo.userId
         if (myId.isBlank()) return null
-        return dbQueries.selectVoteById(myId, chatRoomId, voteId).executeAsOneOrNull()?.toData()
+        return dbQueries.selectVoteById(myId, chatRoomId, voteId).executeAsOneOrNull()?.let(mapper::toData)
     }
 
     private fun save(myId: String, chatRoomId: String, data: VoteData) {
-        dbQueries.insertVote(
-            VoteEntity(
-                myId = myId,
-                chatRoomId = chatRoomId,
-                voteId = data.id,
-                title = data.title,
-                isClosed = data.isClosed.toDb(),
-                useEndTime = data.useEndTime.toDb(),
-                endTime = data.endTime,
-                writeUserId = data.writeUserId,
-                multiSelect = data.multiSelect.toDb(),
-                allowAddItem = data.allowAddItem.toDb(),
-                itemsJson = json.encodeToString(data.items.map { it.toRecord() }),
-                votersJson = json.encodeToString(data.voters.map { it.toRecord() }),
-            )
-        )
+        dbQueries.insertVote(mapper.toEntity(myId, chatRoomId, data))
     }
-
-    private fun VoteEntity.toData(): VoteData {
-        val items = decode<ItemRecord>(itemsJson).map { it.toModel() }
-        val voters = decode<VoterRecord>(votersJson).map { it.toModel() }
-        return VoteData(
-            id = voteId,
-            title = title,
-            isClosed = isClosed.toBool(),
-            useEndTime = useEndTime.toBool(),
-            endTime = endTime.orEmpty(),
-            participantCount = voters.map { it.userID }.distinct().size,
-            writeUserId = writeUserId,
-            multiSelect = multiSelect.toBool(),
-            allowAddItem = allowAddItem.toBool(),
-            items = items,
-            voters = voters,
-        )
-    }
-
-    private inline fun <reified T> decode(raw: String): List<T> =
-        runCatching { json.decodeFromString<List<T>>(raw) }.getOrElse {
-            Log.message("[Vote/Local] decode failed: ${it.message}")
-            emptyList()
-        }
-
-    // ---- 저장 전용 형태 (도메인 모델에는 직렬화 애너테이션이 없다) ----
-
-    @Serializable
-    private data class ItemRecord(
-        val idx: Int,
-        val seq: Int,
-        val content: String,
-        val nVote: Int,
-        val writeUserId: String,
-    ) {
-        fun toModel() = VoteDataItem(idx, seq, content, nVote, writeUserId)
-    }
-
-    @Serializable
-    private data class VoterRecord(
-        val itemIdx: Int,
-        val userID: String,
-        val userName: String,
-        val voteDate: String,
-    ) {
-        fun toModel() = VoteVoter(itemIdx, userID, userName, voteDate)
-    }
-
-    private fun VoteDataItem.toRecord() = ItemRecord(idx, seq, content, nVote, writeUserId)
-    private fun VoteVoter.toRecord() = VoterRecord(itemIdx, userID, userName, voteDate)
 }
-
-/** 기존 테이블(isRecalled 등)과 맞춘 'true'/'false' 문자열 표현. */
-private fun Boolean.toDb(): String = if (this) "true" else "false"
-private fun String?.toBool(): Boolean = this.equals("true", ignoreCase = true)
 
 /** 내 표를 모두 제거 — 항목별 득표수도 함께 되돌린다. */
 private fun VoteData.withoutVoter(myId: String): VoteData {

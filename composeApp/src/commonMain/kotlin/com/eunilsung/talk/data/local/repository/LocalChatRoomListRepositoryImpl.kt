@@ -18,8 +18,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.data.local.LocalSecret
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
@@ -49,7 +47,6 @@ class LocalChatRoomListRepositoryImpl(
     private val _chatRooms = MutableStateFlow<List<ChatRoom.Item>>(emptyList())
     private val _chatGroups = MutableStateFlow<List<ChatGroup>>(emptyList())
     private val _newChatRoomPush = MutableSharedFlow<String>()
-    private val json = Json { ignoreUnknownKeys = true }
     private var activeRoomId: String? = null
 
     init {
@@ -304,34 +301,14 @@ class LocalChatRoomListRepositoryImpl(
 
     private fun readChatGroups(myId: String): List<ChatGroup> {
         val raw = settings.getStringOrNull(chatGroupsKey(myId)) ?: return emptyList()
-        return runCatching {
-            json.decodeFromString<List<ChatGroupRecord>>(raw).map {
-                ChatGroup(it.id, it.name, it.kind, it.sort, it.roomIds)
-            }
-        }.getOrElse {
-            Log.message("[ChatRoomList/Local] chat group decode failed: ${it.message}")
-            emptyList()
-        }
+        return mapper.decodeChatGroups(raw)
     }
 
     private fun writeChatGroups(myId: String, groups: List<ChatGroup>) {
-        val raw = json.encodeToString(
-            groups.map { ChatGroupRecord(it.id, it.name, it.kind, it.sort, it.roomIds) }
-        )
-        settings.putString(chatGroupsKey(myId), raw)
+        settings.putString(chatGroupsKey(myId), mapper.encodeChatGroups(groups))
     }
 
     private fun pinKey(myId: String, roomId: String): String = "pin_${myId}_$roomId"
 
     private fun chatGroupsKey(myId: String): String = "local_chat_groups_$myId"
-
-    /** [ChatGroup] 의 저장 전용 직렬화 형태. */
-    @Serializable
-    private data class ChatGroupRecord(
-        val id: String,
-        val name: String,
-        val kind: String,
-        val sort: String,
-        val roomIds: List<String>,
-    )
 }

@@ -42,9 +42,13 @@ sealed class Group {
     )
 }
 
-/** 기본그룹(서버 미분류 사용자) 여부 — id "0" + alineCode "-3". */
+/** 기본그룹(어느 그룹에도 넣지 않은 사람들)의 고정 id 와 정렬 코드. 화면이 이 값으로 기본그룹을 알아본다. */
+const val DEFAULT_GROUP_ID = "0"
+const val DEFAULT_GROUP_ALINE_CODE = "-3"
+
+/** 기본그룹(서버 미분류 사용자) 여부 — [DEFAULT_GROUP_ID] + [DEFAULT_GROUP_ALINE_CODE]. */
 val Group.Item.isDefaultGroup: Boolean
-    get() = id == "0" && alineCode == "-3"
+    get() = id == DEFAULT_GROUP_ID && alineCode == DEFAULT_GROUP_ALINE_CODE
 
 /** 내 프로필 그룹의 고정 id — 목록 최상단에 오는 특수 그룹. */
 const val MY_PROFILE_GROUP_ID = "myprofile"

@@ -19,18 +19,18 @@ class GroupMapper {
         )
     }
 
-    /** 내 프로필 그룹 — 항상 최상단. name 은 비워두고 UI 에서 표시. */
+    /** 내 프로필 그룹 — 항상 최상단이고 본인 한 명만 들어 있다. name 은 비워두고 UI 에서 표시. */
     fun toMyProfileGroup(): Group.Item {
         return Group.Item(
             id = MY_PROFILE_GROUP_ID,
             name = "",
             alineCode = Config.GroupType.BASE_GROUP_MYPROFILE,
-            userData = emptyList()
+            userData = listOf(toMyProfileUser())
         )
     }
 
     /** 내 프로필 그룹의 단일 사용자 = 본인. */
-    fun toMyProfileUser(): Group.User {
+    private fun toMyProfileUser(): Group.User {
         return Group.User(
             groupId = MY_PROFILE_GROUP_ID,
             userId = Config.MyInfo.userId,
