@@ -21,6 +21,7 @@ fun main() {
         firebaseCredentialsJson = ServerConfig.firebaseCredentialsFromEnv(),
         aiApiKey = ServerConfig.aiApiKeyFromEnv(),
         aiModel = ServerConfig.aiModelFromEnv(),
+        aiPerUserHourly = ServerConfig.aiPerUserHourlyFromEnv(),
     )
     println("로컬 DB — ${config.db.url} (user=${config.db.user}, 비밀번호 없음)")
     embeddedServer(Netty, port = port) { module(config) }.start(wait = true)

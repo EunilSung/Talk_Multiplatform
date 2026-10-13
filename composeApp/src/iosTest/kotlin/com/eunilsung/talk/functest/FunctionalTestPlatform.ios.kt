@@ -12,6 +12,9 @@ import platform.posix.getenv
 @OptIn(ExperimentalForeignApi::class)
 actual fun functionalTestServerUrl(): String? = getenv("TALK_FUNCTEST_URL")?.toKString()?.takeIf { it.isNotBlank() }
 
+@OptIn(ExperimentalForeignApi::class)
+actual fun functionalTestRequiresAi(): Boolean = getenv("TALK_FUNCTEST_REQUIRE_AI")?.toKString() == "true"
+
 actual fun functionalTestHttpClient(): HttpClient = HttpClient(Darwin) { install(WebSockets) }
 
 /** native 드라이버는 메모리 DB 도 동시에 쓸 수 있다. 다른 테스트와 같은 것을 쓴다. */

@@ -251,10 +251,18 @@ val functionalTestUrl: String = when {
     else -> providers.environmentVariable("TALK_FUNCTEST_URL").orNull.orEmpty()
 }
 
+/**
+ * AI 를 꼭 확인하는 실행(`-PrequireAi=true`). 서버에 `GEMINI_API_KEY` 가 있을 때 쓴다.
+ * 기능 테스트는 AI 를 쓸 수 없어 건너뛰던 단계를 실패로 세고, 실화면 흐름은 `ai` 이름표가 붙은 흐름까지 돌린다.
+ * 평소에는 키가 없는 PC 에서도 검증이 통과하도록 AI 단계를 건너뛰고 AI 흐름을 빼 둔다.
+ */
+val requireAi: Boolean = providers.gradleProperty("requireAi").orNull == "true"
+
 tasks.withType<Test>().configureEach {
     inputs.property("functestUrl", functionalTestUrl)
     if (functionalTestUrl.isNotBlank()) {
         environment("TALK_FUNCTEST_URL", functionalTestUrl)
+        if (requireAi) environment("TALK_FUNCTEST_REQUIRE_AI", "true")
         outputs.upToDateWhen { false }
         if (functionalTestUrl == localServerUrl) dependsOn(":server:startLocalServer")
     }
@@ -274,6 +282,7 @@ val iosTestDevice: String? = providers.environmentVariable("TALK_IOS_DEVICE").or
 tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest>().configureEach {
     if (functionalTestUrl.isNotBlank()) {
         environment("SIMCTL_CHILD_TALK_FUNCTEST_URL", functionalTestUrl)
+        if (requireAi) environment("SIMCTL_CHILD_TALK_FUNCTEST_REQUIRE_AI", "true")
         outputs.upToDateWhen { false }
         if (functionalTestUrl == localServerUrl) dependsOn(":server:startLocalServer")
     }
@@ -292,6 +301,7 @@ val e2eAndroid by tasks.registering(Exec::class) {
     dependsOn("assembleDebug", ":server:startLocalServer")
     commandLine("bash", maestroRunner, "android", layout.buildDirectory.file("outputs/apk/debug/composeApp-debug.apk").get().asFile.absolutePath)
     environment("TALK_SERVER_BASE_URL", serverBaseUrlProperty)
+    if (requireAi) environment("TALK_E2E_AI", "true")
 }
 
 val e2eIos by tasks.registering(Exec::class) {
@@ -300,6 +310,7 @@ val e2eIos by tasks.registering(Exec::class) {
     dependsOn(":server:startLocalServer")
     commandLine("bash", maestroRunner, "ios")
     environment("TALK_SERVER_BASE_URL", serverBaseUrlProperty)
+    if (requireAi) environment("TALK_E2E_AI", "true")
 }
 
 /**
@@ -331,6 +342,9 @@ if (requestedTasks.any { it == "verifyAll" || it == "e2eAndroid" || it == "e2eIo
 }
 if ("verifyAll" in requestedTasks) {
     check(functionalTestUrl.isNotBlank()) { "verifyAll 은 기능 테스트를 켜고 돌린다: -PfunctionalTest=true" }
+}
+if (requireAi) {
+    check(functionalTestUrl.isNotBlank()) { "-PrequireAi=true 는 기능 테스트를 켜고 쓴다: -PfunctionalTest=true" }
 }
 
 /** 도메인 모델에서 뗀 `@Immutable` 을 대신한다 — 안정적인 값이라는 사실을 설정 파일로 알려 화면 건너뛰기를 유지한다. */

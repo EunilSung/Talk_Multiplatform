@@ -221,7 +221,7 @@ TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:verifyAll -Pfun
 | Xcode, iOS 시뮬레이터 | iOS 테스트와 iOS 실화면 흐름 |
 | Android 에뮬레이터 | Android 실화면 흐름 |
 | [Maestro](https://maestro.mobile.dev) | 실화면 흐름. `curl -fsSL https://get.maestro.mobile.dev \| bash` 로 설치 |
-| Gemini API 키 (선택) | AI 단계. 없으면 그 단계만 건너뛰고 실패로 치지 않습니다 |
+| Gemini API 키 (선택) | AI 단계. 없으면 그 단계만 건너뛰고 실패로 치지 않습니다. 키가 있을 때 `-PrequireAi=true` 를 주면 AI 를 꼭 확인합니다 |
 
 새 Mac 에서는 이 순서로 준비합니다. 저장소에 없는 파일은 `local.properties` 하나뿐입니다(Firebase 설정 파일은 저장소에
 들어 있습니다).
@@ -274,6 +274,9 @@ flowchart LR
 
 - 하나가 깨져도 끝까지 돌고, 깨진 단계를 마지막에 모아 보여 줍니다(`--continue`).
 - 기능 테스트가 꺼져 있거나 앱이 로컬 서버가 아닌 주소로 빌드되면, 오래 돈 뒤가 아니라 시작하자마자 이유와 함께 멈춥니다.
+- **AI 까지 확인하려면** 서버를 띄우는 환경에 `GEMINI_API_KEY` 를 두고 `-PrequireAi=true` 를 더합니다. AI 를 쓸 수 없어 건너뛰던
+  단계를 실패로 세고, 실화면 흐름에 번역·다듬기 흐름(`ai` 이름표)이 더해집니다. 키는 저장소나 실행 구성 파일에 넣지 않습니다
+  (Android Studio 에서는 실행 구성의 환경변수에 로컬로만 넣습니다).
 
 | 결과 | 보는 곳 |
 |---|---|
@@ -320,6 +323,7 @@ flowchart LR
 - 푸시의 실제 도착 — 서비스 계정 키와 실기기가 있어야 합니다.
 - 핀치줌 같은 멀티터치, 카메라 촬영 — 시뮬레이터와 Maestro 로 재현하기 어렵습니다.
 - iOS 한글 입력 — 실화면 흐름의 입력은 영문·숫자로 합니다.
+- AI 의 답·번역·다듬기 — Gemini 키가 없는 환경에서는 건너뜁니다. 키를 두고 `-PrequireAi=true` 로 돌려야 확인됩니다.
 
 ---
 

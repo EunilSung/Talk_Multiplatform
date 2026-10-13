@@ -173,6 +173,7 @@ fun ChatInputBar(
                         if (polishButton == PolishButtonState.UNDO) Res.string.chat_polish_undo else Res.string.chat_polish
                     ),
                     modifier = Modifier
+                        .testTag(if (polishButton == PolishButtonState.UNDO) TestTags.CHAT_POLISH_UNDO else TestTags.CHAT_POLISH)
                         .alpha(if (isBusy) 0.4f else 1f)
                         .then(if (isBusy) Modifier else Modifier.clickable(cornerRadius = 12.dp, onClick = onPolishClick))
                         .padding(horizontal = 8.dp, vertical = 6.dp),

@@ -26,7 +26,7 @@ object FT {
 /** 단계가 깨졌다. 사유는 이미 로그에 남았고, 이 예외는 시나리오의 남은 단계를 건너뛰게 할 뿐이다. */
 class StepFailure(message: String) : AssertionError(message)
 
-/** 이 단계는 지금 서버에서 확인할 수 없다 — 예를 들어 AI 키가 없는 서버. 실패가 아니다. */
+/** 이 단계는 지금 서버에서 확인할 수 없다 — 예를 들어 AI 키가 없는 서버. 실패가 아니다([ScenarioScope.skipsAreFailures] 가 아니면). */
 class StepSkipped(message: String) : RuntimeException(message)
 
 /**
@@ -35,7 +35,7 @@ class StepSkipped(message: String) : RuntimeException(message)
  * 한 단계가 깨지면 그 시나리오의 뒤 단계는 돌지 않는다 — 앞 단계가 만든 상태에 기대고 있기 때문이다.
  * 다른 시나리오는 계속 돈다([FunctionalTestRunner]).
  */
-class ScenarioScope(val scenarioName: String) {
+class ScenarioScope(val scenarioName: String, private val skipsAreFailures: Boolean = false) {
 
     var failed = false
         private set
@@ -70,7 +70,13 @@ class ScenarioScope(val scenarioName: String) {
         if (expected != actual) throw StepFailure("$what — 기대=$expected 실제=$actual")
     }
 
-    fun skip(reason: String): Nothing = throw StepSkipped(reason)
+    /**
+     * 이 단계를 건너뛴다. 건너뛰는 까닭은 지금 AI 를 쓸 수 없다는 것뿐이라, AI 를 꼭 확인하는 실행([skipsAreFailures])에서는
+     * 건너뛰지 않고 깬다. 그러지 않으면 키가 빠진 서버에서도 전체 검증이 통과로 끝난다.
+     */
+    fun skip(reason: String): Nothing =
+        if (skipsAreFailures) throw StepFailure("AI 를 꼭 확인하는 실행이라 건너뛸 수 없다(-PrequireAi=true): $reason")
+        else throw StepSkipped(reason)
 
     /**
      * [condition] 이 참이 될 때까지 실제 시간으로 기다린다. 서버의 알림과 저장소의 반영은 요청이 끝난

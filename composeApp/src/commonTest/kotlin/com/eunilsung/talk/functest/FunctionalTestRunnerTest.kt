@@ -96,6 +96,19 @@ class FunctionalTestRunnerTest {
     }
 
     @Test
+    fun AI_를_꼭_확인하는_실행에서는_건너뜀이_실패다() = runTest {
+        TestMyInfo.loginAs()
+
+        val passed = FunctionalTestRunner.run(
+            "AI 확인",
+            listOf(scenario("AI 없는 서버") { step("건너뛰는 단계") { skip("AI 가 꺼져 있다") } }),
+            skipsAreFailures = true,
+        )
+
+        assertFalse(passed)
+    }
+
+    @Test
     fun 기다려도_되지_않으면_그_단계가_깨진다() = runTest {
         TestMyInfo.loginAs()
 

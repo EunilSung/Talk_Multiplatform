@@ -12,6 +12,7 @@ import com.eunilsung.talk.ui.chatroom.input.MentionFieldSnapshot
 import com.eunilsung.talk.ui.chatroom.input.MentionFieldState
 import com.eunilsung.talk.ui.chatroom.input.PolishButtonState
 import com.eunilsung.talk.ui.uikit.dialog.ChatListDialog
+import com.eunilsung.talk.ui.uikit.TestTags
 
 /**
  * 입력창의 글 다듬기 — 다듬기 방식 메뉴, 다듬은 글 반영, 되돌리기.
@@ -71,6 +72,7 @@ internal fun PolishStyleMenu(
     ChatListDialog(
         list = listOf(strings.polishCorrect, strings.polishPolite, strings.polishConcise),
         showEmpathy = false,
+        optionTags = mapOf(strings.polishCorrect to TestTags.POLISH_CORRECT),
         onDismiss = onDismiss,
         onOptionSelected = { picked ->
             val style = when (picked) {

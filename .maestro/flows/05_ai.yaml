@@ -1,0 +1,53 @@
+appId: com.eunilsung.talk
+name: AI 번역과 다듬기
+tags:
+  - ai
+onFlowComplete:
+  - runScript:
+      file: ../scripts/peer.js
+      env:
+        ACTION: cleanup
+---
+- runScript:
+    file: ../scripts/peer.js
+    env:
+      ACTION: setup
+- runFlow: ../common/login.yaml
+- tapOn:
+    id: tab_chat
+- tapOn: ${output.title}
+- assertVisible:
+    text: ${output.peerText}
+    label: 방 화면이 다 뜬 뒤에 누른다
+- longPressOn: ${output.peerText}
+- tapOn:
+    id: chat_menu_translate
+- extendedWaitUntil:
+    visible:
+      id: chat_translation
+    timeout: 40000
+    label: 받은 말 아래에 번역문이 붙는다
+- tapOn:
+    id: chat_input
+- inputText: ${output.draftText}
+- tapOn:
+    id: chat_polish
+- tapOn:
+    id: polish_correct
+- extendedWaitUntil:
+    visible:
+      id: chat_polish_undo
+    timeout: 40000
+    label: 입력창이 다듬은 글로 바뀌고 되돌리기가 뜬다
+- tapOn:
+    id: chat_send
+- retry:
+    maxRetries: 3
+    commands:
+      - runScript:
+          file: ../scripts/peer.js
+          env:
+            ACTION: checkPolished
+      - assertTrue:
+          condition: ${output.ok}
+          label: 상대에게 간 말이 다듬은 글이다

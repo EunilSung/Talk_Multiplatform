@@ -16,6 +16,8 @@ import com.eunilsung.talk.ui.theme.AppColors
 import multiplatformtalk.composeapp.generated.resources.Res
 import multiplatformtalk.composeapp.generated.resources.chat_translating
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.platform.testTag
+import com.eunilsung.talk.ui.uikit.TestTags
 
 /** 말풍선 바로 아래에 붙는 번역. 받는 동안에는 진행 문구를 보여 준다. */
 @Composable
@@ -31,6 +33,7 @@ fun TranslationItem(
             is ChatTranslationUiState.Ready -> translation.text
         },
         modifier = Modifier
+            .then(if (isLoading) Modifier else Modifier.testTag(TestTags.CHAT_TRANSLATION))
             .padding(top = 3.dp)
             .widthIn(max = maxWidth)
             .background(AppColors.Gray50Bg, RoundedCornerShape(8.dp))
