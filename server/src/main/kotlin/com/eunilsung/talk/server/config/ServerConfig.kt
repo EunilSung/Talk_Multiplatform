@@ -21,6 +21,8 @@ data class ServerConfig(
     val aiApiKey: String = "",
     /** AI 가 쓸 모델(`AI_MODEL`). 무료 한도가 넉넉한 가벼운 모델을 기본으로 둔다. */
     val aiModel: String = DEFAULT_AI_MODEL,
+    /** 한 사람이 한 시간에 AI 를 부를 수 있는 횟수(`AI_PER_USER_HOURLY`). 비면 [com.eunilsung.talk.server.ai.AiUsageLimiter] 의 기본값이다. */
+    val aiPerUserHourly: Int? = null,
 ) {
     companion object {
         const val DEFAULT_PORT = 8080
@@ -29,6 +31,8 @@ data class ServerConfig(
         fun aiApiKeyFromEnv(): String = env("GEMINI_API_KEY").orEmpty()
 
         fun aiModelFromEnv(): String = env("AI_MODEL") ?: DEFAULT_AI_MODEL
+
+        fun aiPerUserHourlyFromEnv(): Int? = env("AI_PER_USER_HOURLY")?.toIntOrNull()
 
         fun fromEnv(): ServerConfig = ServerConfig(
             port = env("PORT")?.toIntOrNull() ?: DEFAULT_PORT,
@@ -42,6 +46,7 @@ data class ServerConfig(
             firebaseCredentialsJson = firebaseCredentialsFromEnv(),
             aiApiKey = aiApiKeyFromEnv(),
             aiModel = aiModelFromEnv(),
+            aiPerUserHourly = aiPerUserHourlyFromEnv(),
         )
 
         private fun env(name: String): String? = System.getenv(name)?.takeIf { it.isNotBlank() }

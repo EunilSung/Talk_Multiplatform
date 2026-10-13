@@ -99,7 +99,9 @@ abstract class LocalServerService : BuildService<BuildServiceParameters.None>, A
         process = ProcessBuilder(
             javaExecutable, "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8",
             "@${argFile.absolutePath}", MAIN_CLASS,
-        ).directory(workingDir).redirectErrorStream(true).redirectOutput(logFile).start()
+        ).directory(workingDir)
+            .apply { environment().putIfAbsent("AI_PER_USER_HOURLY", VERIFY_AI_PER_USER_HOURLY) }
+            .redirectErrorStream(true).redirectOutput(logFile).start()
 
         val deadline = System.currentTimeMillis() + START_TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
@@ -142,6 +144,12 @@ abstract class LocalServerService : BuildService<BuildServiceParameters.None>, A
 
     private companion object {
         const val MAIN_CLASS = "com.eunilsung.talk.server.local.LocalServerKt"
+        /**
+         * 검증 빌드가 띄우는 서버의 AI 사용 한도(사람당 시간당). 전체 검증 한 번이 test1 로 AI 를 20번 넘게 부른다
+         * (JVM·iOS 기능 테스트와 실화면 흐름). 운영 한도(20)에 걸려 AI 단계가 건너뛰어지지 않게 넉넉히 준다.
+         * 환경에 `AI_PER_USER_HOURLY` 가 있으면 그 값을 쓴다.
+         */
+        const val VERIFY_AI_PER_USER_HOURLY = "200"
         const val LOCAL_DB_DIRECTORY = ".localdb"
         const val HEALTH_URL = "http://localhost:8090/health"
         const val START_TIMEOUT_MS = 180_000L

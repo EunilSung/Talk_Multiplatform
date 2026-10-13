@@ -69,6 +69,7 @@ fun Application.module(config: ServerConfig) {
         fileStorage = FileStorage(File(config.filesDirectory)),
         pushSender = fcmSenderOf(config.firebaseCredentialsJson),
         aiClient = aiClientOf(config.aiApiKey, config.aiModel),
+        aiUsageLimiter = config.aiPerUserHourly?.let { AiUsageLimiter(perUserHourly = it) } ?: AiUsageLimiter(),
     )
 }
 
@@ -112,6 +113,7 @@ fun Application.module(
     fileStorage: FileStorage,
     pushSender: PushSender? = null,
     aiClient: AiClient? = null,
+    aiUsageLimiter: AiUsageLimiter = AiUsageLimiter(),
 ) {
     val log = LoggerFactory.getLogger("Application")
 
@@ -135,7 +137,7 @@ fun Application.module(
     val files = FileRepository(dataSource)
     SeedAccounts.ensure(users)
     AiAssistant.ensureAccount(users)
-    val assistant = AiAssistant(chats, chatHub, aiClient, AiUsageLimiter(), this)
+    val assistant = AiAssistant(chats, chatHub, aiClient, aiUsageLimiter, this)
     chatHub.onNewMessage(assistant::onNewMessage)
 
     routing {
