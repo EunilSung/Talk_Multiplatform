@@ -9,6 +9,7 @@ import com.eunilsung.talk.Config
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.ui.uikit.dialog.ChatListDialog
 import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
+import com.eunilsung.talk.ui.uikit.TestTags
 
 /**
  * 대화 롱프레스 메뉴 — 복사·답장·번역·공지등록·책갈피·회수 + 공감 선택.
@@ -54,6 +55,7 @@ fun ChatActionMenu(
         list = actionItems,
         destructiveItems = setOf(strings.menuRecall),
         showEmpathy = Config.ChatRoom.IS_EMPATHY_ENABLED,
+        optionTags = mapOf(strings.menuTranslate to TestTags.CHAT_MENU_TRANSLATE),
         onDismiss = onDismiss,
         onOptionSelected = { picked ->
             onDismiss()

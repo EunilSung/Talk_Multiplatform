@@ -6,6 +6,7 @@
  * - checkReply / checkEmpathy: 내가 보낸 말과 누른 공감이 서버에 남았는지
  * - checkVote / checkVoteClosed: 내 표가 들어갔는지, 투표가 마감됐는지
  * - checkLeft: 내가 방에서 나갔는지
+ * - checkPolished: 내가 마지막으로 보낸 말이 다듬기 전 글(output.draftText)과 다른지
  * - cleanup: 셋 모두 방에서 나가고 이번에 받은 토큰을 지운다
  */
 const BASE = 'http://localhost:8090'
@@ -46,6 +47,7 @@ function setup() {
     output.peerMessageId = said.id
     output.replyText = tag + ' reply'
     output.voteTitle = tag + ' lunch'
+    output.draftText = 'pls chek the meting time tmrw'
 }
 
 function checkReply() {
@@ -76,6 +78,12 @@ function checkLeft() {
     output.ok = !room.members.some(m => m.id === ME && !m.hasLeft)
 }
 
+function checkPolished() {
+    const mine = messages(output.peerToken).filter(m => m.senderId === ME && m.kind === 'text')
+    const last = mine[mine.length - 1]
+    output.ok = !!last && last.content.trim() !== '' && last.content !== output.draftText
+}
+
 function cleanup() {
     if (!output.room) return
     ;[ME, PEER, THIRD].forEach(id => {
@@ -85,6 +93,6 @@ function cleanup() {
     })
 }
 
-const actions = { setup, checkReply, checkEmpathy, checkVote, checkVoteClosed, checkLeft, cleanup }
+const actions = { setup, checkReply, checkEmpathy, checkVote, checkVoteClosed, checkLeft, checkPolished, cleanup }
 if (!actions[ACTION]) throw new Error('모르는 ACTION: ' + ACTION)
 actions[ACTION]()

@@ -21,6 +21,13 @@ object TestTags {
     const val CHAT_INPUT = "chat_input"
     const val CHAT_SEND = "chat_send"
     const val CHAT_EMPATHY = "chat_empathy"
+    const val CHAT_MENU_TRANSLATE = "chat_menu_translate"
+    /** 받아 온 번역문. 받는 중에는 붙지 않는다. */
+    const val CHAT_TRANSLATION = "chat_translation"
+    const val CHAT_POLISH = "chat_polish"
+    /** 다듬은 글로 바뀐 뒤의 되돌리기 버튼. */
+    const val CHAT_POLISH_UNDO = "chat_polish_undo"
+    const val POLISH_CORRECT = "polish_correct"
 
     const val DRAWER_VOTE = "drawer_vote"
 

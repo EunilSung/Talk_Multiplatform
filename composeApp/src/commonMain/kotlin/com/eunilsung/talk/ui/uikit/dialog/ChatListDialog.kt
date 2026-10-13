@@ -53,6 +53,7 @@ fun ChatListDialog(
     onOptionSelected: (String) -> Unit,
     onEmpathyClick: (Int) -> Unit = {},
     showEmpathy: Boolean = true,
+    optionTags: Map<String, String> = emptyMap(),
 ) {
 
 
@@ -97,6 +98,7 @@ fun ChatListDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
+                            .then(optionTags[option]?.let { Modifier.testTag(it) } ?: Modifier)
                             .clickable {
                                 onOptionSelected(option)
                             },
