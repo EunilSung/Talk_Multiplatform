@@ -9,6 +9,7 @@
 #   TALK_ANDROID_AVD / e2e.androidAvd  에뮬레이터 이름. 꺼져 있으면 켠다
 #   TALK_IOS_DEVICE  / e2e.iosDevice   시뮬레이터 UDID 또는 이름. 꺼져 있으면 켠다
 # 앱은 TALK_SERVER_BASE_URL(기본 http://localhost:8090)의 서버에 붙게 빌드되고, 그 서버가 떠 있어야 한다.
+# `ai` 이름표가 붙은 흐름은 TALK_E2E_AI=true 일 때만 돈다(AI 키가 있는 서버에서만 뜻이 있다).
 # 결과는 build/maestro/<플랫폼>/report.xml(JUnit)과 같은 폴더의 스크린샷·로그로 남는다.
 set -euo pipefail
 
@@ -34,7 +35,9 @@ run_flows() {
     rm -rf "$OUT"
     mkdir -p "$OUT"
     log "$PLATFORM($1) 에서 흐름을 돌린다"
-    "$MAESTRO" --device "$1" test "$ROOT/.maestro" --format junit --output "$OUT/report.xml" --test-output-dir "$OUT"
+    local tags=--exclude-tags=ai
+    [ "${TALK_E2E_AI:-}" = true ] && tags=
+    "$MAESTRO" --device "$1" test "$ROOT/.maestro" $tags --format junit --output "$OUT/report.xml" --test-output-dir "$OUT"
 }
 
 android_avd_of() { "$ADB" -s "$1" emu avd name 2>/dev/null | head -1 | tr -d '\r'; }

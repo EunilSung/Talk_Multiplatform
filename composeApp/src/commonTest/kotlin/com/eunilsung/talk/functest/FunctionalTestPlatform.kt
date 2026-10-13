@@ -11,6 +11,12 @@ import io.ktor.client.HttpClient
  */
 expect fun functionalTestServerUrl(): String?
 
+/**
+ * AI 를 꼭 확인하는 실행인지(`TALK_FUNCTEST_REQUIRE_AI`, Gradle 의 `-PrequireAi=true`).
+ * 이때는 AI 를 쓸 수 없어 건너뛰던 단계를 실패로 센다.
+ */
+expect fun functionalTestRequiresAi(): Boolean
+
 /** 앱이 쓰는 것과 같은 엔진과 설정의 HTTP 클라이언트. */
 expect fun functionalTestHttpClient(): HttpClient
 

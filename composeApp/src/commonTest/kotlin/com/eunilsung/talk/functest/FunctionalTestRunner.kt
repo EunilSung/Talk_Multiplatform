@@ -26,7 +26,11 @@ object FunctionalTestRunner {
      *
      * @return 전부 통과하면 true.
      */
-    suspend fun run(suiteName: String, scenarios: List<Scenario>): Boolean {
+    suspend fun run(
+        suiteName: String,
+        scenarios: List<Scenario>,
+        skipsAreFailures: Boolean = functionalTestRequiresAi(),
+    ): Boolean {
         val me = Config.MyInfo.userId
         if (me !in ALLOWED_ACCOUNTS) {
             FT.line("ABORT suite=$suiteName reason=테스트 계정이 아니다 userId=$me")
@@ -39,7 +43,7 @@ object FunctionalTestRunner {
         var skipped = 0
 
         scenarios.forEach { scenario ->
-            val scope = ScenarioScope(scenario.name)
+            val scope = ScenarioScope(scenario.name, skipsAreFailures)
             val scenarioStartedAt = nowMillis()
             FT.line("SCENARIO-START name=${scenario.name}")
             try {

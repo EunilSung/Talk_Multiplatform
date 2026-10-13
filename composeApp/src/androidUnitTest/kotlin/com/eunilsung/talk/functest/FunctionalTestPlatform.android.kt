@@ -15,6 +15,8 @@ import kotlin.concurrent.withLock
 
 actual fun functionalTestServerUrl(): String? = System.getenv("TALK_FUNCTEST_URL")?.takeIf { it.isNotBlank() }
 
+actual fun functionalTestRequiresAi(): Boolean = System.getenv("TALK_FUNCTEST_REQUIRE_AI") == "true"
+
 actual fun functionalTestHttpClient(): HttpClient = HttpClient(OkHttp) { install(WebSockets) }
 
 actual fun createFunctionalTestDatabase(): AppDatabase {
