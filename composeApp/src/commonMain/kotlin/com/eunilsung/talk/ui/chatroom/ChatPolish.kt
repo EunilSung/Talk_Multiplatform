@@ -72,7 +72,7 @@ internal fun PolishStyleMenu(
     ChatListDialog(
         list = listOf(strings.polishCorrect, strings.polishPolite, strings.polishConcise),
         showEmpathy = false,
-        optionTags = mapOf(strings.polishCorrect to TestTags.POLISH_CORRECT),
+        optionTags = mapOf(strings.polishPolite to TestTags.POLISH_POLITE),
         onDismiss = onDismiss,
         onOptionSelected = { picked ->
             val style = when (picked) {
