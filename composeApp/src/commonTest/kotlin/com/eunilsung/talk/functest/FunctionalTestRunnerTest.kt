@@ -89,6 +89,7 @@ class FunctionalTestRunnerTest {
                     step("뒤 단계") { after = true }
                 },
             ),
+            skipsAreFailures = false,
         )
 
         assertTrue(passed)

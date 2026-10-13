@@ -27,7 +27,7 @@ object TestTags {
     const val CHAT_POLISH = "chat_polish"
     /** 다듬은 글로 바뀐 뒤의 되돌리기 버튼. */
     const val CHAT_POLISH_UNDO = "chat_polish_undo"
-    const val POLISH_CORRECT = "polish_correct"
+    const val POLISH_POLITE = "polish_polite"
 
     const val DRAWER_VOTE = "drawer_vote"
 

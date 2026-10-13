@@ -33,7 +33,8 @@ onFlowComplete:
 - tapOn:
     id: chat_polish
 - tapOn:
-    id: polish_correct
+    id: polish_polite
+    label: 공손하게 다듬는다. 맞춤법 방식은 영어 줄임말을 고치지 않아 글이 그대로 돌아온다
 - extendedWaitUntil:
     visible:
       id: chat_polish_undo
