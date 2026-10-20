@@ -24,6 +24,8 @@ rsync -az --delete --exclude .env -e "$ssh_cmd" "$stage/" "$host:talk/"
 $ssh_cmd "$host" 'bash -s' <<'REMOTE'
 set -euo pipefail
 cd ~/talk
+docker network create edge >/dev/null 2>&1 || true
+mkdir -p ~/caddy-sites
 docker compose up -d --build --remove-orphans
 for _ in $(seq 90); do
   if curl -fs http://127.0.0.1:8080/health; then echo; echo "배포 완료"; exit 0; fi

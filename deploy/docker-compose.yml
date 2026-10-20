@@ -1,5 +1,6 @@
 # 운영 구성 — PostgreSQL + 서버 + Caddy(HTTPS). 값은 같은 폴더의 .env 에서 읽는다(.env.example 참고).
 # 1GB 인스턴스에 맞춰 DB 와 JVM 메모리를 작게 잡았다.
+# Caddy 는 같은 인스턴스의 다른 앱 사이트(~/caddy-sites)도 함께 맡는다 — 80·443 은 Caddy 하나만 쓸 수 있다.
 x-logging: &logging
   driver: json-file
   options:
@@ -64,7 +65,15 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      - ../caddy-sites:/etc/caddy/sites:ro
+    networks:
+      - default
+      - edge
     logging: *logging
+
+networks:
+  edge:
+    external: true
 
 volumes:
   db:
