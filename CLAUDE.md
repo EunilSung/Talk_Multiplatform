@@ -236,6 +236,7 @@ DEPLOY_HOST=ubuntu@168.110.2.222 deploy/deploy.sh   # 빌드 → 올리기 → �
   프로젝트의 것이니 건드리지 않는다.
 - **Gradle 빌드는 배포하는 PC 에서 한다.** 인스턴스 메모리가 1GB 라 서버에서는 실행본(`installDist`)을 담은 이미지만
   만든다. JVM 힙(256MB)·DB 커넥션(5)·Postgres 메모리를 작게 잡았고 스왑 2GB 를 둔다.
+- **테스트 서버는 AI(Gemini)·푸시(Firebase `talk-multiplatform`)가 켜져 있다.** AI 한도는 운영 기본값(사람당 시간당 20회)이다.
 - **비밀값은 서버의 `~/talk/.env` 에만 있다**(`deploy/.env.example` 참고). `deploy.sh` 는 이 파일을 건드리지 않는다.
   AI·푸시 키를 넣으려면 `.env` 를 고치고 `docker compose up -d` 를 다시 한다.
 - **새 인스턴스는 한 번 준비한다** — `sudo bash setup-host.sh`(스왑, Docker, iptables 80·443, DB 백업 cron).

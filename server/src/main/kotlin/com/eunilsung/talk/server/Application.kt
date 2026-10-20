@@ -52,6 +52,7 @@ import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import java.io.File
+import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 import kotlin.time.Duration.Companion.seconds
 
@@ -101,7 +102,10 @@ private fun aiClientOf(apiKey: String, model: String): AiClient? {
         return null
     }
     log.info("AI 사용 — model={}", model)
-    return GeminiClient(HttpClient(OkHttp), apiKey, model)
+    val httpClient = HttpClient(OkHttp) {
+        engine { config { readTimeout(AI_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS) } }
+    }
+    return GeminiClient(httpClient, apiKey, model)
 }
 
 /**
@@ -158,3 +162,9 @@ val ServerJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
 /** 중간 장비가 조용한 연결을 끊기 전에 살아 있음을 알리는 간격. */
 private const val WEBSOCKET_PING_SECONDS = 15
+
+/**
+ * 모델의 답을 기다리는 시간. OkHttp 의 기본값(10초)은 대화 맥락을 함께 보내는 방 안 답변에 모자라
+ * [GeminiClient] 가 정한 전체 제한(30초)보다 먼저 끊긴다. 그 제한에 맞춘다.
+ */
+private const val AI_READ_TIMEOUT_SECONDS = 30L
