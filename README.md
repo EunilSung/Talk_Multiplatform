@@ -6,7 +6,7 @@
 ![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.11.1-4285F4?logo=jetpackcompose&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-24%2B-3DDC84?logo=android&logoColor=white)
 ![iOS](https://img.shields.io/badge/iOS-arm64%20%2B%20sim-000000?logo=apple&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-271%20passing-success)
+![Tests](https://img.shields.io/badge/tests-323%20passing-success)
 
 사내 메신저를 개발한 경험을 바탕으로 다시 만든 쇼케이스 프로젝트입니다. 두 가지 모드로 빌드됩니다.
 
@@ -52,7 +52,7 @@
 
 ### 그 외
 - 내그룹(연락처) · 사용자 프로필 · **화면잠금**(PIN / 패턴 / 생체) · 공유(Share Intent)
-- **다크모드** · **태블릿 · 폴더블 2-pane** · 한국어/영어 (문자열 369개, 양쪽 완전 일치)
+- **다크모드** · **태블릿 · 폴더블 2-pane** · 한국어/영어 (문자열 407개, 양쪽 완전 일치)
 - **전송 주체 전환** — 로컬 모드에서는 상대 대화를 만들 수 없으므로, 보내는 사람을 바꿔 대화 흐름을 재현하는 시연용 기능 (서버 모드에서는 숨김)
 
 ---
@@ -71,7 +71,8 @@
 | 직렬화 · 시간 | kotlinx.serialization 1.11.0, kotlinx-datetime 0.6.1 |
 | 네트워크 | Ktor 3.4.2 클라이언트 (REST · WebSocket) |
 | 서버 | Ktor 3.4.2 (Netty · WebSocket), HikariCP, Flyway, PostgreSQL 16 |
-| Android 전용 | Firebase Messaging · Crashlytics, AndroidX Biometric |
+| Firebase | Messaging(푸시) · Crashlytics — Android · iOS |
+| Android 전용 | AndroidX Biometric |
 
 **타깃** — Android `minSdk 24` / `targetSdk 36`, iOS `iosArm64` · `iosSimulatorArm64`
 
@@ -104,7 +105,7 @@ flowchart TD
 
 ```
 composeApp/src/
-├── commonMain/          326 files — 화면·도메인·데이터 대부분
+├── commonMain/          387 files — 화면·도메인·데이터 대부분
 │   ├── kotlin/com/eunilsung/talk/
 │   │   ├── ui/          화면 (chatroom, chatroomlist, group, invite, setting …)
 │   │   ├── domain/      model · repository(interface 15) · usecase(57)
@@ -112,12 +113,13 @@ composeApp/src/
 │   │   └── di/          Koin 모듈
 │   ├── sqldelight/      AppDatabase.sq
 │   └── composeResources/ strings(ko·en) · drawable
-├── androidMain/          32 files — actual 구현
-├── iosMain/              32 files — actual 구현
-└── commonTest/           29 files — 로직 + DB 통합 + 서버 모드 저장소 테스트
+├── androidMain/          33 files — actual 구현
+├── iosMain/              33 files — actual 구현
+└── commonTest/           59 files — 로직 + DB 통합 + 서버 모드 저장소 + 기능 테스트
 shared/                    3 files — 앱·서버가 함께 쓰는 요청·응답 모델
-server/                   29 files — Ktor 서버 (+ 테스트 15 files, 마이그레이션 9개)
-.maestro/                 실화면 흐름 4개 — Android·iOS 에 같은 파일을 돌린다
+server/                   33 files — Ktor 서버 (+ 테스트 17 files, 마이그레이션 9개)
+deploy/                   운영 배포 — Docker Compose(PostgreSQL · 서버 · Caddy) · 배포·서버 준비·백업 스크립트
+.maestro/                 실화면 흐름 5개 — Android·iOS 에 같은 파일을 돌린다
 ```
 
 **화면 패턴** — 10개 ViewModel 이 `sealed UiState` 를 노출하고, 9개 화면이 `sealed Actions` 로 이벤트를 단방향 전달합니다.
@@ -165,13 +167,59 @@ server/                   29 files — Ktor 서버 (+ 테스트 15 files, 마이
 | AI | 방에 초대해 `@AI` 로 부르는 참여자, 말풍선 번역, 보내기 전 글 다듬기(교정·정중하게·간결하게). 부른 사람이 볼 수 있는 대화만 모델에 보냄 |
 | 로그인 | 틀린 비밀번호가 연달아 5번이면 5분 잠금 |
 
-배포는 `deploy/` 의 Docker Compose(PostgreSQL · 서버 · Caddy 자동 HTTPS)로 Oracle Cloud Always Free 인스턴스(1GB)에 올립니다 — `DEPLOY_HOST=ubuntu@<IP> deploy/deploy.sh`. 푸시는 Firebase 서비스 계정 키를 넣어야 실제로 나갑니다. AI 는 Google Gemini 키(`GEMINI_API_KEY`)를 넣어야 답합니다.
+푸시는 Firebase 서비스 계정 키를, AI 는 Google Gemini 키(`GEMINI_API_KEY`)를 서버에 넣어야 동작합니다. 키가 없으면 그 기능만 꺼지고 서버는 그대로 뜹니다.
+
+---
+
+## 배포
+
+`deploy/` 의 Docker Compose 로 PostgreSQL · 서버 · Caddy(자동 HTTPS)를 한 대에 띄웁니다. 메모리 1GB 인스턴스
+(Oracle Cloud Always Free `VM.Standard.E2.1.Micro`)에서 돌도록 맞췄습니다.
+
+```mermaid
+flowchart LR
+    APP["앱"] -->|HTTPS · WSS| CADDY["Caddy<br/>Let's Encrypt"]
+    CADDY --> SERVER["Talk 서버<br/>JVM 힙 256MB"]
+    SERVER --> DB[("PostgreSQL 16")]
+    SERVER --> FILES[("올린 파일")]
+```
+
+- **빌드는 배포하는 PC 에서 합니다.** 1GB 에서는 Gradle 이 돌지 않아, `installDist` 로 만든 실행본만 올려 이미지로 감쌉니다.
+- **비밀값은 서버의 `~/talk/.env` 에만 둡니다**(`deploy/.env.example`). 배포 스크립트는 이 파일을 건드리지 않습니다.
+- **도메인이 없으면** `<공인 IP>.sslip.io` 를 `DOMAIN` 에 넣으면 그 이름으로 인증서를 받습니다.
+
+처음 한 번 — 새 인스턴스(Ubuntu 24.04)를 준비합니다.
+
+```bash
+ssh ubuntu@<공인 IP> 'mkdir -p talk'
+scp deploy/setup-host.sh deploy/backup.sh deploy/.env.example ubuntu@<공인 IP>:talk/
+ssh ubuntu@<공인 IP> 'sudo bash talk/setup-host.sh'   # 스왑 2GB · Docker · iptables 80/443 · 매일 DB 백업
+ssh ubuntu@<공인 IP> 'cp talk/.env.example talk/.env' # 또는 직접 만들고 DOMAIN · DB_PASSWORD 등을 채운다
+```
+
+클라우드 쪽 방화벽(Oracle Cloud 는 VCN 보안 목록)에서도 80·443 을 열어 둡니다.
+
+배포 — 빌드 · 올리기 · 다시 띄우기 · `/health` 확인까지 한 번에 합니다.
+
+```bash
+DEPLOY_HOST=ubuntu@<공인 IP> DEPLOY_KEY=~/.ssh/<키 파일> deploy/deploy.sh
+```
+
+| `.env` 값 | 용도 |
+|---|---|
+| `DOMAIN` | HTTPS 인증서를 받을 이름 |
+| `DB_PASSWORD` | PostgreSQL 비밀번호 (`openssl rand -hex 24`) |
+| `GEMINI_API_KEY` · `AI_MODEL` | AI. 비우면 AI 만 꺼진다 |
+| `FIREBASE_CREDENTIALS_B64` | Firebase 서비스 계정 JSON 을 base64 한 줄로. 비우면 푸시만 꺼진다 |
+
+앱은 `local.properties` 의 `server.baseUrl=https://<DOMAIN>` 으로 빌드하면 배포한 서버에 붙습니다. iOS 푸시는 Apple 의 APNs
+인증 키가 Firebase 프로젝트에 등록돼 있어야 옵니다.
 
 ---
 
 ## 테스트
 
-**앱 218개 + 서버 112개, 진짜 서버에 붙여 도는 기능 테스트 22묶음(시나리오 51개), 그리고 Android·iOS 실화면 흐름 4개.**
+**앱 211개 + 서버 112개, 진짜 서버에 붙여 도는 기능 테스트 22묶음(시나리오 51개), 그리고 Android·iOS 실화면 흐름 5개.**
 
 ```bash
 ./gradlew :composeApp:testDebugUnitTest   # 앱 (Android JVM)
@@ -197,7 +245,7 @@ TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:verifyAll -Pfun
 | 서버 저장소 | 실제 PostgreSQL 쿼리로 방·읽음·공감·회수·투표·그룹 규칙 |
 | 기능 테스트 | 앱의 실제 REST·WebSocket 코드로 진짜 서버에 붙어 로그인·대화방·대화·읽음·공감/회수/공지/책갈피·파일·투표·그룹·초대·AI 와 화면 7곳(대화방·대화함·로그인·투표·초대·내 그룹·프로필) ViewModel 의 상태를 끝에서 끝까지. 주소를 줬을 때만 돈다 |
 | 서버 경로 | HTTP 와 WebSocket 을 거쳐 인증·권한·알림·푸시 대상 |
-| 실화면 흐름 | Maestro 로 Android 에뮬레이터·iOS 시뮬레이터에서 로그인 실패·대화 주고받기와 공감·투표 만들고 참여하고 마감·방 나가기를 실제로 누른다. 상대는 REST 스크립트가 움직이고, 화면에서 한 일이 서버에 남았는지도 확인한다 |
+| 실화면 흐름 | Maestro 로 Android 에뮬레이터·iOS 시뮬레이터에서 로그인 실패·대화 주고받기와 공감·투표 만들고 참여하고 마감·방 나가기, AI 키가 있으면 번역·다듬기까지 실제로 누른다. 상대는 REST 스크립트가 움직이고, 화면에서 한 일이 서버에 남았는지도 확인한다 |
 
 화면 하나씩 그려 보는 Compose UI 테스트는 넣지 않았습니다. **화면 로직은 ViewModel 을 진짜 서버에 붙여**
 보고, 버튼과 액션의 연결은 실화면 흐름이 기기에서 직접 눌러 봅니다. 흐름은 화면 문구 대신
@@ -310,6 +358,8 @@ flowchart LR
 - 상대(test2·test3)는 `.maestro/scripts/peer.js` 가 REST 로 움직입니다. 흐름마다 새 방을 만들어 말을 걸고, 화면에서
   한 일(답장·공감·표·마감·나가기)이 서버에 남았는지 확인하고, 끝나면 모두 나갑니다.
 - 기기 고르기·켜기·앱 설치·`adb reverse`·Maestro 실행은 `.maestro/run.sh` 가 합니다.
+- 배포한 서버에도 같은 흐름을 돌릴 수 있습니다. `TALK_SERVER_BASE_URL=https://<도메인> .maestro/run.sh android <apk>`(또는 `ios`)로
+  앱과 상대 스크립트가 함께 그 서버에 붙습니다. 기능 테스트는 `-PfunctionalTestUrl=https://<도메인>` 입니다.
 - 플랫폼 차이는 흐름 안에서 갈랐습니다. iOS 는 첫 실행의 알림 권한 팝업을 누르고, 키보드는 Android 는 뒤로 가기로,
   iOS 는 return 으로 내립니다.
 
@@ -320,7 +370,7 @@ flowchart LR
 
 ### 자동으로 확인하지 못하는 것
 
-- 푸시의 실제 도착 — 서비스 계정 키와 실기기가 있어야 합니다.
+- 푸시의 실제 도착 — 서비스 계정 키와 실기기가 있어야 합니다. 배포한 서버에서 Android 실기기 도착은 손으로 확인했습니다.
 - 핀치줌 같은 멀티터치, 카메라 촬영 — 시뮬레이터와 Maestro 로 재현하기 어렵습니다.
 - iOS 한글 입력 — 실화면 흐름의 입력은 영문·숫자로 합니다.
 - AI 의 답·번역·다듬기 — Gemini 키가 없는 환경에서는 건너뜁니다. 키를 두고 `-PrequireAi=true` 로 돌려야 확인됩니다.
@@ -351,7 +401,7 @@ open iosApp/iosApp.xcodeproj              # iOS — Xcode 에서 시뮬레이터
 server.baseUrl=http://10.0.2.2:8090
 ```
 
-이 줄을 지우면 로컬 모드로 돌아갑니다.
+이 줄을 지우면 로컬 모드로 돌아갑니다. 배포한 서버에 붙이려면 `https://<도메인>` 을 넣습니다([배포](#배포)).
 
 ### 로그인
 
@@ -395,10 +445,10 @@ OS 키보드와 이모티콘 패널이 번갈아 뜰 때 하단바가 흔들리�
 
 | 항목 | 값 |
 |---|---|
-| Kotlin 파일 | 469개 (앱 419 · 공유 3 · 서버 44, 테스트 포함) |
-| 코드 라인 | 49,079줄 |
+| Kotlin 파일 | 570개 (앱 517 · 공유 3 · 서버 50, 테스트 포함) |
+| 코드 라인 | 56,044줄 |
 | Repository 인터페이스 / UseCase | 15 / 57 |
 | ViewModel / Actions | 10 / 9 |
 | 기기 DB 테이블 / 서버 DB 테이블 | 11개 / 18개 |
-| 문자열 리소스 | 369개 (ko · en) |
-| 테스트 | 330개 (앱 218 · 서버 112) + 기능 테스트 22묶음 + 실화면 흐름 4개 |
+| 문자열 리소스 | 407개 (ko · en) |
+| 테스트 | 323개 (앱 211 · 서버 112) + 기능 테스트 22묶음 + 실화면 흐름 5개 |
