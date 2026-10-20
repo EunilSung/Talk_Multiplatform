@@ -19,8 +19,6 @@ class SeedMapper {
             name = name.ifBlank { account?.userName ?: id },
             departmentName = account?.organName,
             positionName = account?.positionName,
-            presencePc = account?.pcStatus,
-            presenceMobile = account?.mobileStatus,
         )
     }
 
