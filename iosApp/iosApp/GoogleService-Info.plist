@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyBc8gJmtxUmpeAsaIWuAiPXJShZe8YLwBc</string>
+	<string>AIzaSyDLbmJ6DSd4HbJmo1TnXl7JoQ4bfxiYgZY</string>
 	<key>GCM_SENDER_ID</key>
-	<string>511316176800</string>
+	<string>125968036945</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.eunilsung.talk</string>
 	<key>PROJECT_ID</key>
-	<string>multiplatformtalk</string>
+	<string>talk-multiplatform</string>
 	<key>STORAGE_BUCKET</key>
-	<string>multiplatformtalk.firebasestorage.app</string>
+	<string>talk-multiplatform.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:511316176800:ios:a550ac683cad313b523ec5</string>
+	<string>1:125968036945:ios:4aec4341e8b4f458f03470</string>
 </dict>
 </plist>

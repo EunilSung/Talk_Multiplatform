@@ -200,7 +200,7 @@ iosApp/        Xcode 프로젝트
    e2e.iosDevice=<시뮬레이터 UDID 또는 이름>
    ```
 3. **Firebase 서비스 계정 키** — 서버가 푸시를 보낼 때만 필요하다. 저장소에 없으니 Firebase 콘솔
-   (`multiplatformtalk` 프로젝트)에서 받아 `FIREBASE_CREDENTIALS=<파일 경로>` 로 넘긴다.
+   (`talk-multiplatform` 프로젝트)에서 받아 `FIREBASE_CREDENTIALS=<파일 경로>` 로 넘긴다.
    없으면 푸시만 꺼지고 나머지는 그대로 동작한다.
 4. **Gemini API 키** — AI 참여자·말풍선 번역·글 다듬기에만 필요하다. Google AI Studio 에서 받아 서버를 띄우는
    환경에 `GEMINI_API_KEY` 로 넘긴다(모델은 `AI_MODEL`, 기본 `gemini-3.5-flash-lite`).
@@ -361,5 +361,5 @@ TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:verifyAll -Pfun
 - **로컬 서버 포트는 8090 이다.** 운영 기본값 8080 을 피한 것으로, 같은 PC 에서 다른 프로젝트의
   서버와 겹치지 않게 하려는 것이다.
 - **파일 하나는 20MB 까지다**(`MAX_FILE_BYTES`). 받는 쪽 앱은 파일을 기기 캐시에 내려받아 쓴다.
-- **푸시는 실제 발송을 확인하지 못했다.** 토큰 등록과 누구에게 보낼지의 판단까지만 테스트돼 있다.
-  서비스 계정 키를 넣고 실기기에서 확인해야 한다. iOS 는 APNs 키도 Firebase 에 등록돼 있어야 한다.
+- **푸시는 Android 실기기에서만 도착을 확인했다**(테스트 서버, 2026-10-20). Firebase 프로젝트는 `talk-multiplatform`
+  이고 테스트 서버 `.env` 에 서비스 계정 키가 들어 있다. iOS 는 APNs 키가 Firebase 에 등록되지 않아 아직 오지 않는다.
