@@ -55,7 +55,7 @@ object TestChatRooms {
                 title = "개발팀 회의",
                 me = me,
                 memberIds = listOf("test2", "test3", "test4").map { partner(it) }.distinct(),
-                lastChat = "빌드 통과했습니다 👍",
+                lastChat = "좋네요. 검색창 위 여백만 조금 줄여 주세요",
                 minutesAgo = 95,
                 pinned = true,
             ),

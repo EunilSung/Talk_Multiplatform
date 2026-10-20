@@ -7,14 +7,21 @@ import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.ChatRoom
+import com.eunilsung.talk.domain.model.Emoticon
+import com.eunilsung.talk.domain.model.EmpathyChat
+import com.eunilsung.talk.domain.model.ReplyChat
 import com.eunilsung.talk.domain.util.UserListCodec
 import com.eunilsung.talk.domain.model.User
+import multiplatformtalk.composeapp.generated.resources.Res
 
 /** 대화방별 초기 대화 내용. */
 object TestChats {
 
     /** 대화 간격 — 마지막 대화부터 이 간격만큼 거슬러 올라가며 배치. */
     private const val GAP_MINUTES = 7L
+
+    /** 시안 공유 대화에 쓰는 사진 — 앱의 내 그룹 화면을 캡처한 것. */
+    private const val SEED_DESIGN_IMAGE = "drawable/seed_group_design.png"
 
     fun seed(room: ChatRoom.Item, myId: String): List<Chat.Item> {
         val members = UserListCodec.decode(room.totalUserList)
@@ -27,16 +34,20 @@ object TestChats {
 
         val lastMillis = parseMillis(room.lastChatDate) ?: return emptyList()
 
-        /** 마지막 줄이 방의 lastChatDate 와 같은 시각이 되도록 역순으로 시간을 매긴다. */
-        return lines.mapIndexed { index, line ->
+        val speakers = lines.map { line ->
+            if (line.mine || others.isEmpty()) myId to myName else others[line.speakerIndex % others.size]
+        }
+        val everyone = listOf(myId to myName) + others
+
+        /** 마지막 줄이 방의 lastChatDate 와 같은 시각이 되도록 역순으로 시간을 매긴다. 답장은 앞의 대화를 가리키므로 앞에서부터 만든다. */
+        val chats = mutableListOf<Chat.Item>()
+        lines.forEachIndexed { index, line ->
             val fromEnd = lines.lastIndex - index
             val millis = lastMillis - fromEnd * GAP_MINUTES * 60_000L
-            val speaker =
-                if (line.mine || others.isEmpty()) myId to myName
-                else others[line.speakerIndex % others.size]
-
-            Chat.Item(
-                chatID = chatIdAt(millis, speaker.first, index),
+            val speaker = speakers[index]
+            val chatId = chatIdAt(millis, speaker.first, index)
+            val base = Chat.Item(
+                chatID = chatId,
                 chatType = Chat.Type.TEXT,
                 chatContent = line.text,
                 chatStatus = Chat.Status.COMPLETE,
@@ -44,8 +55,62 @@ object TestChats {
                 unReadCount = "0",
                 user = User(id = speaker.first, name = speaker.second),
                 isMe = speaker.first == myId,
+                empathy = empathyOf(chatId, line.empathy, everyone.filterNot { it == speaker }),
             )
+            chats += when (val body = line.body) {
+                Body.Text -> base
+                is Body.Picture -> base.copy(
+                    chatType = Chat.Type.IMAGE,
+                    chatContent = "",
+                    imagePath = resourceUri(body.resourcePath),
+                    imageSize = body.size,
+                )
+                is Body.Attachment -> base.copy(
+                    chatType = Chat.Type.FILE,
+                    chatContent = body.sizeLabel,
+                    originalFileName = body.fileName,
+                )
+                is Body.Sticker -> base.copy(chatType = Chat.Type.EMOTICON, emoticon = Emoticon(id = body.emoticonId))
+                is Body.Reply -> chats[body.toIndex].let { origin ->
+                    base.copy(
+                        chatType = Chat.Type.REPLY,
+                        replyChat = ReplyChat(
+                            chatID = origin.chatID,
+                            chatType = origin.chatType,
+                            chatContent = origin.chatContent,
+                            user = origin.user,
+                            emoticon = origin.emoticon,
+                            imagePath = origin.imagePath,
+                        ),
+                    )
+                }
+            }
         }
+        return chats
+    }
+
+    /**
+     * 앱에 든 리소스의 주소. JVM 단위 테스트에는 Android 컨텍스트가 없어 주소를 못 구하므로 경로를 그대로 둔다 —
+     * 테스트는 대화 수·종류만 보고 사진을 그리지 않는다.
+     */
+    private fun resourceUri(path: String): String = runCatching { Res.getUri(path) }.getOrDefault(path)
+
+    /** 공감 아이콘 번호(0~5)별로 누른 사람 수만큼 [reactors] 앞에서부터 채운다. */
+    private fun empathyOf(chatId: String, counts: Map<Int, Int>, reactors: List<Pair<String, String>>): EmpathyChat {
+        if (counts.isEmpty()) return EmpathyChat()
+        var cursor = 0
+        val byIcon = counts.mapValues { (_, count) ->
+            List(count) { reactors[(cursor++) % reactors.size] }.map { User(id = it.first, name = it.second) }
+        }
+        return EmpathyChat(
+            chatID = chatId,
+            empathy0 = byIcon[0].orEmpty(),
+            empathy1 = byIcon[1].orEmpty(),
+            empathy2 = byIcon[2].orEmpty(),
+            empathy3 = byIcon[3].orEmpty(),
+            empathy4 = byIcon[4].orEmpty(),
+            empathy5 = byIcon[5].orEmpty(),
+        )
     }
 
     /**
@@ -74,7 +139,27 @@ object TestChats {
         return lines.takeLastWhile { !it.mine }
     }
 
-    private data class Line(val text: String, val mine: Boolean, val speakerIndex: Int = 0)
+    /**
+     * 대본 한 줄. [body] 로 대화 종류를 고르고, [empathy] 는 공감 아이콘 번호 → 누른 사람 수다.
+     * 문자 대화가 아니면 [text] 는 비워 둔다(답장은 답장 본문).
+     */
+    private data class Line(
+        val text: String,
+        val mine: Boolean,
+        val speakerIndex: Int = 0,
+        val body: Body = Body.Text,
+        val empathy: Map<Int, Int> = emptyMap(),
+    )
+
+    /** 문자 말고 시연할 대화 종류. 사진은 앱에 든 리소스를 쓰고, 파일은 이름과 크기만 보인다. */
+    private sealed interface Body {
+        data object Text : Body
+        data class Picture(val resourcePath: String, val size: String) : Body
+        data class Attachment(val fileName: String, val sizeLabel: String) : Body
+        data class Sticker(val emoticonId: String) : Body
+        /** [toIndex] 번째 줄에 대한 답장. */
+        data class Reply(val toIndex: Int) : Body
+    }
 
     private fun scriptFor(
         room: ChatRoom.Item,
@@ -89,12 +174,15 @@ object TestChats {
                 Line("메모: 배포 전 체크리스트 확인", mine = true),
             )
 
+            /** 스크린샷 시연용 — 사진·파일·이모티콘·답장·멘션·공감이 한 화면에 들어오게 짰다. */
             room.id == "room_group_dev" -> listOf(
                 Line("오늘 스프린트 리뷰 3시에 시작합니다", mine = true),
-                Line("네 준비하겠습니다", mine = false, speakerIndex = 0),
-                Line("저는 로그인 쪽 작업 공유드릴게요", mine = false, speakerIndex = 1),
-                Line("좋습니다. 빌드도 한번 돌려주세요", mine = true),
-                Line("빌드 통과했습니다 👍", mine = false, speakerIndex = 0),
+                Line("", mine = false, speakerIndex = 0, body = Body.Sticker("(손말_안녕하세오)")),
+                Line("", mine = false, speakerIndex = 1, body = Body.Picture(SEED_DESIGN_IMAGE, "414:230"), empathy = mapOf(0 to 2, 1 to 1)),
+                Line("@$myName 내 그룹 화면 시안입니다. 확인 부탁드려요", mine = false, speakerIndex = 1),
+                Line("", mine = false, speakerIndex = 2, body = Body.Attachment("QA_체크리스트_v2.xlsx", "248KB")),
+                Line("", mine = false, speakerIndex = 0, body = Body.Sticker("(손말_오케이)")),
+                Line("좋네요. 검색창 위 여백만 조금 줄여 주세요", mine = true, body = Body.Reply(toIndex = 3), empathy = mapOf(1 to 2, 2 to 1)),
             )
 
             /** 스크롤·페이징 확인용 긴 방 — 총 35줄, 마지막 10줄이 상대 대화라 안읽음 10. */
