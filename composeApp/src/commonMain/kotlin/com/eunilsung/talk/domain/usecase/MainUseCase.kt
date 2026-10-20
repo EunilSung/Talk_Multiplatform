@@ -30,8 +30,6 @@ data class MainUseCases(
     val setAppBadge: SetAppBadgeUseCase,
     val isImageCacheClearedOn: IsImageCacheClearedOnUseCase,
     val markImageCacheCleared: MarkImageCacheClearedUseCase,
-    val getUnseenNoticeVersion: GetUnseenNoticeVersionUseCase,
-    val markNoticeShown: MarkNoticeShownUseCase,
     val observeProfileImages: ObserveProfileImagesUseCase,
     val downloadFile: DownloadFileUseCase,
     val openFile: OpenFileUseCase,
@@ -89,16 +87,4 @@ class IsImageCacheClearedOnUseCase(private val repository: AppMaintenanceReposit
 
 class MarkImageCacheClearedUseCase(private val repository: AppMaintenanceRepository) {
     operator fun invoke(date: String) = repository.setImageCacheClearedDate(date)
-}
-
-/** 지금 깔린 버전의 안내를 아직 안 봤으면 그 버전, 이미 봤거나 버전을 모르면 null. */
-class GetUnseenNoticeVersionUseCase(private val repository: AppMaintenanceRepository) {
-    operator fun invoke(): String? {
-        val version = repository.currentVersionName().takeIf { it.isNotBlank() } ?: return null
-        return version.takeIf { it != repository.noticeShownVersion() }
-    }
-}
-
-class MarkNoticeShownUseCase(private val repository: AppMaintenanceRepository) {
-    operator fun invoke(version: String) = repository.setNoticeShownVersion(version)
 }

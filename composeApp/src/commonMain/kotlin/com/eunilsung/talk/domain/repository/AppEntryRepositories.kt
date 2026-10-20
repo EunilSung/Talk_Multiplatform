@@ -44,18 +44,10 @@ interface NoticeUiStateRepository {
     fun setDetailsShown(identityKey: String, shown: Boolean)
 }
 
-/** 앱을 켤 때마다 확인하는 기록 — 이미지 캐시를 언제 비웠는지, 어느 버전의 안내까지 보여 줬는지. */
+/** 앱을 켤 때마다 확인하는 기록 — 이미지 캐시를 언제 비웠는지. */
 interface AppMaintenanceRepository {
     /** 이미지 캐시를 마지막으로 비운 날. 비운 적이 없으면 null. */
     fun imageCacheClearedDate(): String?
 
     fun setImageCacheClearedDate(date: String)
-
-    /** 지금 깔린 앱의 버전 이름. 알 수 없으면 빈 문자열. */
-    fun currentVersionName(): String
-
-    /** 안내 팝업을 보여 준 마지막 버전. 보여 준 적이 없으면 null. */
-    fun noticeShownVersion(): String?
-
-    fun setNoticeShownVersion(version: String)
 }

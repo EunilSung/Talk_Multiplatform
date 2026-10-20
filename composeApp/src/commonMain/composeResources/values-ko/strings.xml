@@ -443,7 +443,6 @@
     <string name="contact_label_extension">내선</string>
     <string name="contact_label_mobile">휴대폰</string>
     <string name="toast_no_number_to_call">전화할 번호가 없습니다</string>
-    <string name="main_notice_message">안내\n이 앱은 서버 없이 동작하는 샘플입니다.\n모든 계정·대화·그룹은 단말에 저장된 테스트 데이터입니다.\n대화방 우측 상단의 사람 아이콘으로 전송 주체를 바꿔볼 수 있습니다.</string>
 
     <!-- 알림음 이름 (NotificationSoundCatalog 순서) -->
     <string name="notification_sound_ding">띵동</string>

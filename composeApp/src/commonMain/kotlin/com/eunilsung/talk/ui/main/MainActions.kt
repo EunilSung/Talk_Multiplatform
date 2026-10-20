@@ -12,9 +12,6 @@ sealed interface MainActions {
     /** [MainScreenEvent.ClearImageCache] 를 받아 캐시를 비웠다. */
     data class OnImageCacheCleared(val date: String) : MainActions
 
-    /** 버전 안내를 확인했다. 같은 버전에서는 다시 띄우지 않는다. */
-    data class OnNoticeConfirmed(val version: String) : MainActions
-
     data object Logout : MainActions
 
     /** 파일 상세 시트에서 받기를 눌렀다. [source] 는 서버 파일 이름, [displayName] 은 저장할 이름이다. */
@@ -28,8 +25,6 @@ sealed interface MainActions {
 sealed interface MainScreenEvent {
     /** 오늘 아직 이미지 캐시를 비우지 않았다. 비운 뒤 [MainActions.OnImageCacheCleared] 로 알린다. */
     data class ClearImageCache(val date: String) : MainScreenEvent
-
-    data class ShowNotice(val version: String) : MainScreenEvent
 
     /** 서버가 이 기기의 로그인을 끊었다. 안내를 확인하면 로그아웃한다. */
     data class ForcedLogout(val message: String) : MainScreenEvent

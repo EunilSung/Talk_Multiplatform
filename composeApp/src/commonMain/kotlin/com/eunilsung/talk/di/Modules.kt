@@ -147,8 +147,6 @@ val appModule = module {
     singleOf(::SetAppBadgeUseCase)
     singleOf(::IsImageCacheClearedOnUseCase)
     singleOf(::MarkImageCacheClearedUseCase)
-    singleOf(::GetUnseenNoticeVersionUseCase)
-    singleOf(::MarkNoticeShownUseCase)
     singleOf(::ObserveProfileImagesUseCase)
     singleOf(::MainUseCases)
     /** 강제 로그아웃은 발생하지 않는다. */
@@ -242,7 +240,7 @@ val appModule = module {
     single<CurrentChatRoomRepository> { CurrentChatRoomTracker }
     single<PendingPushNavigationRepository> { PendingPushNavigation }
     single<PendingShareNavigationRepository> { PendingShareNavigation }
-    single<AppMaintenanceRepository> { AppMaintenanceRepositoryImpl(get(), get()) }
+    single<AppMaintenanceRepository> { AppMaintenanceRepositoryImpl(get()) }
 
     singleOf(::ChatMapper)
     /**

@@ -43,9 +43,6 @@ object SettingsKeys {
     /** 패턴 입력 궤적 표시 */
     const val KEY_LOCK_PATTERN_VISIBLE = "screen_lock_pattern_visible"
 
-    /** 공지를 '확인'한 앱 버전명 — 이 값 != 현재 버전명이면 로그인 후 공지 1회 노출. */
-    const val KEY_NOTICE_SHOWN_VERSION = "notice_shown_version"
-
     /** 이미지(Coil) 캐시를 마지막으로 비운 날짜("yyyy-MM-dd"). 하루 1회 초기화 판단용. */
     const val KEY_IMAGE_CACHE_CLEAR_DATE = "image_cache_clear_date"
 }

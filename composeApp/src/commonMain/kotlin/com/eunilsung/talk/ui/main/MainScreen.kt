@@ -5,7 +5,6 @@ import multiplatformtalk.composeapp.generated.resources.toast_download_done
 import multiplatformtalk.composeapp.generated.resources.toast_download_failed
 import multiplatformtalk.composeapp.generated.resources.toast_file_open_failed
 import multiplatformtalk.composeapp.generated.resources.Res
-import multiplatformtalk.composeapp.generated.resources.main_notice_message
 import org.jetbrains.compose.resources.getString
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.animation.AnimatedContent
@@ -135,10 +134,6 @@ private fun MainEventHandler(viewModel: MainViewModel, rightNavigator: Navigator
                     }
                     viewModel.onAction(MainActions.OnImageCacheCleared(event.date))
                 }
-                is MainScreenEvent.ShowNotice -> dialog.alert(
-                    message = getString(Res.string.main_notice_message),
-                    onConfirm = { viewModel.onAction(MainActions.OnNoticeConfirmed(event.version)) },
-                )
                 is MainScreenEvent.ForcedLogout -> dialog.alert(
                     message = event.message,
                     onConfirm = { viewModel.onAction(MainActions.Logout) },

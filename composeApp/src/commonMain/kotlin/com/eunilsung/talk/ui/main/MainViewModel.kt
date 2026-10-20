@@ -74,7 +74,6 @@ class MainViewModel(
                     Log.message("Login success — prefetching tab data")
                     launch { runCatching { groupUseCases.fetchGroups() } }
                     launch { runCatching { chatRoomListUseCases.fetchChatRooms() } }
-                    unseenNoticeVersion()?.let { _events.send(MainScreenEvent.ShowNotice(it)) }
                 }
         }
 
@@ -127,7 +126,6 @@ class MainViewModel(
                 mainUseCases.markImageCacheCleared(action.date)
                 Log.message("Image cache cleared date=${action.date} keepDaily=${Config.UserProfile.IS_KEEP_CACHE_DAY}")
             }
-            is MainActions.OnNoticeConfirmed -> mainUseCases.markNoticeShown(action.version)
             is MainActions.Logout -> loginUseCases.logout()
             is MainActions.OnDownloadFile -> downloadFile(action.source, action.displayName)
             is MainActions.OnOpenFile -> openFile(action.source, action.displayName)
@@ -169,16 +167,6 @@ class MainViewModel(
             return
         }
         _events.trySend(MainScreenEvent.ClearImageCache(today))
-    }
-
-    /**
-     * 이번 버전의 안내 팝업을 아직 안 봤으면 버전 문자열, 이미 봤거나 버전을 모르면 null.
-     *
-     * 안내는 "서버 없이 기기 안 데이터로 도는 샘플"이라는 내용이라 서버 모드에서는 띄우지 않는다.
-     */
-    private fun unseenNoticeVersion(): String? {
-        if (Config.Server.IS_ENABLED) return null
-        return mainUseCases.getUnseenNoticeVersion()
     }
 
     /**
