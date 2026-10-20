@@ -6,8 +6,6 @@ data class User(
     val departmentName: String? = null,
     val positionName: String? = null,
     val nickname: String? = null,
-    val presencePc: String? = null,
-    val presenceMobile: String? = null
 )
 
 /** 서버가 보낸 알림 대화의 보낸 사람인지. id 에 [NOTIFICATION_ID_MARK] 가 들어 있다. */

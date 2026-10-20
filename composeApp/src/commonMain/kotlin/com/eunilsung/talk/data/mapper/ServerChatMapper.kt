@@ -230,14 +230,12 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
         roomIds = group.roomIds,
     )
 
-    /** 방의 참여자 → 화면의 사람. 부서·직위·접속 여부는 사용자 목록([person])에서 입힌다. 모르는 사람이면 비워 둔다. */
+    /** 방의 참여자 → 화면의 사람. 부서·직위는 사용자 목록([person])에서 입힌다. 모르는 사람이면 비워 둔다. */
     fun toRoomUser(member: RoomMemberDto, person: UserDto?) = User(
         id = member.id,
         name = member.name,
         departmentName = person?.organName,
         positionName = person?.positionName,
-        presencePc = ServerPeopleMapper.STATUS_OFFLINE,
-        presenceMobile = if (person?.isOnline == true) ServerPeopleMapper.STATUS_ONLINE else ServerPeopleMapper.STATUS_OFFLINE,
     )
 
     fun toBookmark(roomId: String, bookmark: BookmarkDto): Bookmark = Bookmark(

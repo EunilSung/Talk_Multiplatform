@@ -251,8 +251,6 @@ private fun groupUserOf(member: Group.User): User {
         departmentName = member.departmentName,
         positionName = member.positionName,
         nickname = member.alias?.takeIf { it.isNotBlank() } ?: member.statusMessage,
-        presencePc = member.pcStatus?.takeIf { it.isNotBlank() },
-        presenceMobile = member.mobileStatus?.takeIf { it.isNotBlank() },
     )
 }
 
