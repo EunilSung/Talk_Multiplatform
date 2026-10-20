@@ -13,21 +13,12 @@
 - **로컬 모드** — 백엔드나 계정 없이 `installDebug` 한 번이면 실행됩니다. 대화·투표·공지가 기기 안 데이터베이스를 오가며 동작합니다.
 - **서버 모드** — 같은 저장소의 Ktor 서버에 붙어 여러 사람이 실제로 주고받습니다. 화면과 도메인 계층은 로컬 모드와 같은 코드를 씁니다.
 
----
-
-## 스크린샷
-
-### 태블릿 — 가로 2-pane
-
-![tablet](docs/screenshots/android-tablet.png)
-
-화면이 넓어지면 대화함과 대화방을 나란히 배치합니다. 폴더블도 같은 레이아웃을 씁니다.
-
-### 폰
-
-| 대화함 | 대화방 |
-|---|---|
-| ![대화함](docs/screenshots/android-phone-list.png) | ![대화방](docs/screenshots/android-phone.png) |
+<p align="center">
+  <img src="docs/screenshots/android-tablet.png" height="280" alt="태블릿 2-pane — 대화함 · 대화방">
+  <img src="docs/screenshots/android-phone-list.png" height="280" alt="폰 — 대화함">
+  <img src="docs/screenshots/android-phone.png" height="280" alt="폰 — 대화방">
+</p>
+<p align="center"><sub>태블릿은 대화함과 대화방을 나란히(폴더블도 같은 레이아웃), 폰은 한 화면씩. 사진 · 파일 · 이모티콘 · 답장 · 공감 · 멘션이 한 대화방에 보입니다.</sub></p>
 
 ---
 
