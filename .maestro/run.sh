@@ -37,7 +37,7 @@ run_flows() {
     log "$PLATFORM($1) 에서 흐름을 돌린다"
     local tags=--exclude-tags=ai
     [ "${TALK_E2E_AI:-}" = true ] && tags=
-    "$MAESTRO" --device "$1" test "$ROOT/.maestro" $tags --format junit --output "$OUT/report.xml" --test-output-dir "$OUT"
+    "$MAESTRO" --device "$1" test -e TALK_SERVER="$SERVER_URL" "$ROOT/.maestro" $tags --format junit --output "$OUT/report.xml" --test-output-dir "$OUT"
 }
 
 android_avd_of() { "$ADB" -s "$1" emu avd name 2>/dev/null | head -1 | tr -d '\r'; }
@@ -85,7 +85,9 @@ run_android() {
 
     log "$serial 에 설치한다"
     "$ADB" -s "$serial" install -r "$apk" >/dev/null
-    "$ADB" -s "$serial" reverse "tcp:$SERVER_PORT" "tcp:$SERVER_PORT" >/dev/null
+    case "$SERVER_URL" in
+        http://localhost:*) "$ADB" -s "$serial" reverse "tcp:$SERVER_PORT" "tcp:$SERVER_PORT" >/dev/null ;;
+    esac
     run_flows "$serial"
 }
 

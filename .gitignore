@@ -23,3 +23,6 @@ server/.localdb/
 
 # 로컬 개발용 업로드 파일
 server/.localfiles/
+
+# 서버 배포 비밀값
+deploy/.env
