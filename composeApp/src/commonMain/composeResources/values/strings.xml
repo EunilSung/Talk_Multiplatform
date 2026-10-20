@@ -443,7 +443,6 @@
     <string name="contact_label_extension">Extension</string>
     <string name="contact_label_mobile">Mobile</string>
     <string name="toast_no_number_to_call">There is no number to call</string>
-    <string name="main_notice_message">Notice\nThis app is a sample that runs without a server.\nAll accounts, chats and groups are test data stored on this device.\nUse the person icon at the top right of a chat room to switch the sender.</string>
 
     <!-- 알림음 이름 (NotificationSoundCatalog 순서) -->
     <string name="notification_sound_ding">Ding-dong</string>
