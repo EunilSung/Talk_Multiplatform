@@ -8,8 +8,10 @@
  * - checkLeft: 내가 방에서 나갔는지
  * - checkPolished: 내가 마지막으로 보낸 말이 다듬기 전 글(output.draftText)과 다른지
  * - cleanup: 셋 모두 방에서 나가고 이번에 받은 토큰을 지운다
+ *
+ * 서버 주소는 run.sh 가 `-e TALK_SERVER=` 로 넘긴다. 없으면 로컬 서버다.
  */
-const BASE = 'http://localhost:8090'
+const BASE = typeof TALK_SERVER === 'undefined' ? 'http://localhost:8090' : TALK_SERVER
 const PASSWORD = '1234'
 const ME = 'test1'
 const PEER = 'test2'

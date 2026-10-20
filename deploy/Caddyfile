@@ -1,0 +1,8 @@
+# DOMAIN 으로 Let's Encrypt 인증서를 받아 HTTPS 를 붙인다. WebSocket 도 그대로 넘어간다.
+{$DOMAIN} {
+	encode gzip
+	request_body {
+		max_size 25MB
+	}
+	reverse_proxy server:8080
+}

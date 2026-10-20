@@ -165,7 +165,7 @@ server/                   29 files — Ktor 서버 (+ 테스트 15 files, 마이
 | AI | 방에 초대해 `@AI` 로 부르는 참여자, 말풍선 번역, 보내기 전 글 다듬기(교정·정중하게·간결하게). 부른 사람이 볼 수 있는 대화만 모델에 보냄 |
 | 로그인 | 틀린 비밀번호가 연달아 5번이면 5분 잠금 |
 
-배포 구성(Docker · HTTPS 프록시)은 아직 없습니다. 푸시는 Firebase 서비스 계정 키를 넣어야 실제로 나갑니다. AI 는 Google Gemini 키(`GEMINI_API_KEY`)를 넣어야 답합니다.
+배포는 `deploy/` 의 Docker Compose(PostgreSQL · 서버 · Caddy 자동 HTTPS)로 Oracle Cloud Always Free 인스턴스(1GB)에 올립니다 — `DEPLOY_HOST=ubuntu@<IP> deploy/deploy.sh`. 푸시는 Firebase 서비스 계정 키를 넣어야 실제로 나갑니다. AI 는 Google Gemini 키(`GEMINI_API_KEY`)를 넣어야 답합니다.
 
 ---
 

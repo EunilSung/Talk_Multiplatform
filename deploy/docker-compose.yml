@@ -1,0 +1,73 @@
+# 운영 구성 — PostgreSQL + 서버 + Caddy(HTTPS). 값은 같은 폴더의 .env 에서 읽는다(.env.example 참고).
+# 1GB 인스턴스에 맞춰 DB 와 JVM 메모리를 작게 잡았다.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: talk
+      POSTGRES_USER: talk
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD 가 .env 에 없다}
+    command: >
+      postgres
+      -c shared_buffers=48MB
+      -c max_connections=20
+      -c work_mem=2MB
+      -c maintenance_work_mem=32MB
+      -c effective_cache_size=128MB
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talk -d talk"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: *logging
+
+  server:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/talk
+      DB_USER: talk
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_POOL_SIZE: "5"
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
+      FIREBASE_CREDENTIALS_B64: ${FIREBASE_CREDENTIALS_B64:-}
+    volumes:
+      - files:/data/files
+    ports:
+      - "127.0.0.1:8080:8080"
+    logging: *logging
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - server
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN 이 .env 에 없다}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging: *logging
+
+volumes:
+  db:
+  files:
+  caddy_data:
+  caddy_config:
