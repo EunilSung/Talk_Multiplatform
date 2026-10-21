@@ -3,6 +3,11 @@
     <string name="id">아이디</string>
     <string name="pw">비밀번호</string>
     <string name="save_pw">비밀번호 저장</string>
+    <string name="login_demo_hint">시연용 계정: test1 ~ test10 · 비밀번호 1234</string>
+    <string name="app_name">Talk</string>
+    <string name="login_tagline">함께 일하는 메신저</string>
+    <string name="login_show_password">비밀번호 보기</string>
+    <string name="login_hide_password">비밀번호 가리기</string>
     <string name="login">로그인</string>
     <string name="login_fail">로그인 실패</string>
     <string name="login_invalid_credentials">아이디 또는 비밀번호가 올바르지 않습니다</string>

@@ -10,7 +10,13 @@ data class LoginUiState(
     val input: Login.LoginRequest = Login.LoginRequest(),
     /** 버전 확인 결과. 확인 전이거나 확인하지 못했으면 null. */
     val versionInfo: VersionInfo? = null,
-)
+    /** 비밀번호 칸의 글자를 그대로 보일지. */
+    val isPasswordVisible: Boolean = false,
+) {
+    /** 아이디와 비밀번호를 다 넣었고 로그인 중이 아니면 로그인 버튼을 누를 수 있다. */
+    val canSubmit: Boolean
+        get() = input.id.isNotBlank() && input.pw.isNotBlank() && status !is LoginStatus.Loading
+}
 
 /** 로그인 진행 단계. */
 sealed interface LoginStatus {

@@ -40,6 +40,7 @@ class LoginViewModel(
             is LoginActions.OnIdChange -> updateInput { it.copy(id = action.id.trim()) }
             is LoginActions.OnPwChange -> updateInput { it.copy(pw = action.pw.trim()) }
             is LoginActions.OnToggleSavePw -> toggleSavePw(action.isSave)
+            LoginActions.OnTogglePasswordVisible -> _uiState.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
             is LoginActions.OnLoginClick -> performLogin(action.input)
             is LoginActions.OnDuplicateLoginConfirm -> duplicateLogin(action.input)
             LoginActions.OnResetState -> resetUiState()

@@ -3,6 +3,11 @@
     <string name="id">ID</string>
     <string name="pw">PW</string>
     <string name="save_pw">Save Password</string>
+    <string name="login_demo_hint">Demo accounts: test1 – test10 · password 1234</string>
+    <string name="app_name">Talk</string>
+    <string name="login_tagline">Messenger for teams</string>
+    <string name="login_show_password">Show password</string>
+    <string name="login_hide_password">Hide password</string>
     <string name="login">Login</string>
     <string name="login_fail">Login Fail</string>
     <string name="login_invalid_credentials">Incorrect ID or password</string>
