@@ -109,6 +109,8 @@ iosApp/        Xcode 프로젝트
 - Clean Architecture(data/domain/ui) + MVI 변형(Action → ViewModel → `StateFlow<UiState>`)
 - DI = Koin, 네비게이션 = Voyager, 이미지 = coil3, 통신 = ktor, 기기 DB = SQLDelight
 - 의존성은 안쪽으로만 흐른다. `domain` 은 `ui`·`data` 를 모르고 Compose 타입도 쓰지 않는다
+- 작업별 세부는 그 폴더의 `CLAUDE.md` 에 있다 — `deploy/`(배포·테스트 서버), `.maestro/`(실화면 흐름),
+  `composeApp/src/commonTest/.../functest/`(기능 테스트). 그 폴더의 파일을 다룰 때 함께 읽힌다.
 
 ### 계층 규칙
 
@@ -231,21 +233,9 @@ open iosApp/iosApp.xcodeproj           # iOS 는 Xcode 에서 시뮬레이터 �
 DEPLOY_HOST=ubuntu@168.110.2.222 deploy/deploy.sh   # 빌드 → 올리기 → 다시 띄우기 → /health 확인
 ```
 
-- **테스트 서버** — Oracle Cloud 도쿄 `test-server`(`VM.Standard.E2.1.Micro`, Always Free, Ubuntu 24.04 Minimal).
-  주소는 `https://168.110.2.222.sslip.io`, SSH 키는 `~/.ssh/oracle_test_server`. 같은 계정의 `gnt-server` 는 다른
-  프로젝트의 것이니 건드리지 않는다.
-- **Gradle 빌드는 배포하는 PC 에서 한다.** 인스턴스 메모리가 1GB 라 서버에서는 실행본(`installDist`)을 담은 이미지만
-  만든다. JVM 힙(256MB)·DB 커넥션(5)·Postgres 메모리를 작게 잡았고 스왑 2GB 를 둔다.
-- **테스트 서버는 AI(Gemini)·푸시(Firebase `talk-multiplatform`)가 켜져 있다.** AI 한도는 운영 기본값(사람당 시간당 20회)이다.
-- **비밀값은 서버의 `~/talk/.env` 에만 있다**(`deploy/.env.example` 참고). `deploy.sh` 는 이 파일을 건드리지 않는다.
-  AI·푸시 키를 넣으려면 `.env` 를 고치고 `docker compose up -d` 를 다시 한다.
-- **새 인스턴스는 한 번 준비한다** — `sudo bash setup-host.sh`(스왑, Docker, iptables 80·443, DB 백업 cron).
-  OCI 의 Ubuntu 이미지는 iptables 가 22 번 말고 모두 막는다. VCN 보안 목록에도 80·443 이 열려 있어야 한다.
-- **DB 백업** — 매일 03:30(UTC) `~/backups` 에 7개까지 남는다.
-- **도메인이 없어 `sslip.io` 를 쓴다.** 공인 IP 가 바뀌면 `.env` 의 `DOMAIN` 과 앱의 `server.baseUrl` 을 함께 바꾼다.
-- 서버는 1/8 OCPU 라 뜨는 데 40초쯤 걸린다. 그동안 Caddy 는 502 를 준다.
-- **배포한 서버 확인** — 기능 테스트는 `-PfunctionalTestUrl=https://168.110.2.222.sslip.io`, 실화면 흐름은 앱을 그 주소로
-  빌드해 `TALK_SERVER_BASE_URL=<주소> .maestro/run.sh android <apk>`(또는 `ios`). `peer.js` 도 같은 주소로 움직인다.
+- **테스트 서버**는 `https://168.110.2.222.sslip.io` 다. 같은 Oracle Cloud 계정의 `gnt-server` 는 다른 프로젝트의
+  것이니 건드리지 않는다.
+- 테스트 서버 사양·비밀값·인스턴스 준비·배포한 서버 확인 방법은 `deploy/CLAUDE.md` 에 있다.
 
 ## 검증 방법
 
@@ -276,39 +266,10 @@ DEPLOY_HOST=ubuntu@168.110.2.222 deploy/deploy.sh   # 빌드 → 올리기 → �
 ./gradlew :composeApp:testDebugUnitTest -PfunctionalTest=true --tests "*functest*"
 ```
 
-- **Android Studio 에서는 실행 구성 `기능테스트 (실 서버)` 를 고르고 실행 버튼을 누르면 된다**(`.run` 폴더).
-  서버 없이 도는 테스트만 돌리려면 `테스트 (서버 없이)` 를 고른다.
-- **로컬 서버는 알아서 뜬다.** 떠 있지 않으면 빌드가 띄웠다가 끝날 때 내리고(로그는
-  `server/build/local-server/server.log`), 이미 떠 있으면 그대로 쓰고 건드리지 않는다. 다른 서버에
-  돌리려면 `-PfunctionalTestUrl=<주소>` 를 준다.
 - **`-PfunctionalTest=true` 가 없으면 돌지 않는다.** 평소 `testDebugUnitTest` 에서는 서버로 아무것도 나가지
   않고 통과한다. 서버를 건드렸거나 `:shared` 의 계약을 바꿨으면 켜고 돌린다.
-- **결과는 `[FT]` 로그로 본다.** `composeApp/build/test-results/testDebugUnitTest/*functest*.xml` 에서
-  `STEP-FAIL` 을 찾으면 어느 시나리오의 어느 단계에서 무엇이 달랐는지 나온다. 단계 밖(준비)에서 깨지면
-  `SCENARIO-ERROR` 로 남는다. 콘솔은 한글이 깨져 보일 수 있다.
-- **묶음** — 로그인 · 대화방 목록 · 대화 · 읽음 · 공감/회수/공지/책갈피 · 파일 · 투표 · 대화그룹 · 사람 ·
-  초대 · 전달 · AI, 그리고 갈래들(`DetailScenarioTest`: 이모티콘·사진·둘만의 방·나와의 대화·그룹 순서·투표 옵션·
-  AI 의 나머지 방식). 새 기능을 서버에 붙였으면 해당 묶음에 시나리오를 더한다.
-- **화면 상태는 ViewModel 묶음으로 본다**(`*ViewModelScenarioTest` — 대화방·대화함·로그인·투표·초대·내 그룹·
-  프로필). 화면이 하는 일을 액션으로 넣고 상태와 한 번만 알리는 일(`events`)이 진짜 서버의 응답으로 맞게
-  만들어지는지 본다. ViewModel 은 `FunctionalViewModels.kt` 의 `harness.xViewModel()` 로 세우고, 메인 스레드
-  대역은 한 번에 하나만 도는 `viewModelMainThread` 를 쓴다. 버튼을 실제로 누르지는 않는다 — 버튼과 액션의
-  연결은 에뮬레이터에서 확인한다.
-- **둘만의 방과 나와의 대화방에는 아무것도 보내지 않는다.** 계정에 하나뿐이라 사람이 쓰던 방일 수 있다.
-  찾기만 하고 나가지도 않는다.
-- **AI 결과는 몇 번 다시 묻는다**(`aiResult`). 모델 제공처가 분당 한도로 잠깐씩 거절하기 때문이다.
-  한 번 돌릴 때 모델을 열 번쯤 부른다.
-- **테스트 계정끼리만 주고받는다.** 러너는 로그인한 계정이 `test1`~`test10` 이 아니면 실행을 거부한다.
-  시나리오가 상대로 쓰는 계정도 그 안에서만 고른다.
-- **둘만의 방을 쓰지 않는다.** 같은 상대와의 방은 서버가 있던 방을 돌려주므로 지난 실행의 대화가
-  섞인다. `harness.newRoom` 으로 매번 새 단체방을 만들고, 끝나면 모두 나간다.
-- **상대는 서버 호출로만 움직인다.** 내 정보(`Config.MyInfo`)가 프로세스에 하나라 앱을 둘 세울 수 없다.
-- **AI 단계는 건너뛸 수 있다.** 키가 없는 서버나 사용량 한도(사람당 시간당 20회)에 걸린 서버에서는
-  `STEP-SKIP` 으로 남고 실패가 아니다. 그래서 키 없이 돌린 검증이 초록이어도 AI 는 확인되지 않은 것이다.
-  AI 를 확인할 때는 서버를 띄우는 환경에 `GEMINI_API_KEY` 를 두고 `-PrequireAi=true` 를 준다 — 건너뜀을 실패로 세고
-  실화면 AI 흐름까지 돈다. 검증 빌드가 띄우는 로컬 서버는 AI 한도를 사람당 시간당 200회로 준다(`AI_PER_USER_HOURLY`).
-- 배포한 서버에 돌리면 테스트 계정으로 방·대화·파일이 실제로 만들어진다. 방에서는 나가지만 대화와
-  파일은 서버에 남는다.
+- 새 기능을 서버에 붙였으면 해당 묶음에 시나리오를 더한다.
+- 실행 구성·결과 읽는 법·묶음 목록·시나리오 작성 규칙은 `functest/CLAUDE.md` 에 있다.
 
 ### 실화면 흐름 — Maestro
 
@@ -319,25 +280,12 @@ Android 와 iOS 에 그대로 돌린다(`.maestro`).
 TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:e2eAndroid   # 또는 :composeApp:e2eIos
 ```
 
-- **기기 고르기·켜기·앱 설치·Maestro 실행은 `.maestro/run.sh` 가 한다.** Gradle 작업은 APK 를 만들고 로컬 서버를 띄운 뒤
-  이 스크립트를 부른다. 서버가 떠 있으면 스크립트만 따로 돌려도 된다(`.maestro/run.sh android <apk>`, `.maestro/run.sh ios`).
-  결과는 `build/maestro/<플랫폼>/report.xml`(JUnit)과 같은 폴더의 스크린샷·로그다.
-- **앱은 로컬 서버 주소(`http://localhost:8090`)로 빌드한다.** `adb reverse` 를 걸면 Android 도 같은 주소를 쓰므로
-  플랫폼마다 `local.properties` 를 바꿔 가며 빌드하지 않아도 된다. `TALK_SERVER_BASE_URL` 이 `server.baseUrl` 보다 먼저라
-  평소 설정을 건드리지 않는다. 기기는 지정해서 설치한다(`installDebug` 금지).
 - **요소는 `TestTags`(`ui/uikit/TestTags.kt`)의 이름을 `id` 로 찾는다.** 화면 문구는 기기 언어마다 다르고 같은 문구가
   여러 곳에 나온다(로그인의 "비밀번호" 라벨과 입력칸 안내). 흐름이 누르는 요소를 새로 만들면 태그를 붙이고
   흐름 파일에도 같은 이름을 쓴다. 상대가 보낸 말·방 이름처럼 흐름이 만든 영문 글자는 글자로 찾아도 된다.
 - **다이얼로그는 Surface 에 `exposeTestTags()` 를 붙인다.** Android 는 다이얼로그가 창이 따로라 앱 루트의 설정이
   닿지 않는다. iOS 는 testTag 가 그대로 접근성 식별자로 나간다.
-- **상대는 `scripts/peer.js` 가 REST 로 움직인다.** 흐름마다 test2 가 test1·test3 와 새 단체방(`E2E-<시각>`)을 만들고
-  말을 건다. 앱에서 한 일이 서버에 남았는지도 같은 스크립트로 확인하고, 흐름이 끝나면(`onFlowComplete`) 셋 다 나간다.
-- **Android 의 `hideKeyboard` 는 뒤로 가기를 누른다.** 키보드가 떠 있을 때만 쓴다. 떠 있지 않으면 화면이 닫힌다.
-- **입력은 영문·숫자로 한다.** iOS 시뮬레이터에서 한글 입력이 안정적이지 않다.
-- **로그인 입력칸은 1초 동안 미끄러져 올라온다.** 도중에 넣은 글자는 사라질 수 있어 `launch.yaml` 이 다 멈출 때까지 기다린다.
-- **태블릿 AVD(`MPT_Tablet`)는 키보드 높이를 앱에 알리지 않는다.** 키보드가 입력바·버튼을 가려 대화·투표 흐름이 깨진다.
-  `e2e.androidAvd` 는 폰 AVD 로 고른다. 로그인 버튼은 Android 에서 키보드를 내린 뒤 누른다(`login.yaml`).
-- **`ai` 이름표가 붙은 흐름(번역·다듬기)은 `-PrequireAi=true` 일 때만 돈다.** 키가 없는 서버에서는 뜻이 없어 평소에는 뺀다.
+- 실행 스크립트·상대 역할·기기별 주의점은 `.maestro/CLAUDE.md` 에 있다.
 
 ### 전체 검증 — 실행 구성 하나로
 
