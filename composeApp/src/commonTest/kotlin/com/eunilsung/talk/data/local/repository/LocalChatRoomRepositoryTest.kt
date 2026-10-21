@@ -239,4 +239,42 @@ class LocalChatRoomRepositoryTest {
         repo.fetchChats(roomId)
         assertTrue(chats().first { it.chatID == target.chatID }.isRecalled)
     }
+
+    @Test
+    fun 모아보기는_기기에_파일이_있는_첨부만_준다() = runTest {
+        seedRoom()
+
+        val media = repo.getMediaChats(roomId)
+
+        assertEquals(listOf(Chat.Type.IMAGE), media.map { it.chatType })
+        assertTrue(chats().any { it.chatType == Chat.Type.FILE && it.imagePath.isBlank() }, "시드의 파일은 기기 파일이 없다")
+    }
+
+    @Test
+    fun 회수한_첨부는_모아보기에서_빠진다() = runTest {
+        seedRoom()
+        val photo = chats().first { it.chatType == Chat.Type.IMAGE }
+
+        repo.recallChat(roomId, photo.chatID)
+
+        assertTrue(repo.getMediaChats(roomId).isEmpty())
+    }
+
+    @Test
+    fun 로컬_모드_전달은_받을_방에_내_대화로_바로_들어간다() = runTest {
+        seedRoom()
+        val target = "room_group_plan"
+        repo.fetchChats(target)
+        val photo = chats().first { it.chatType == Chat.Type.IMAGE }
+        val mention = chats().first { it.chatContent.contains("<mention>") || it.chatContent.startsWith("@") }
+
+        repo.forwardChat(target, roomId, photo)
+        repo.forwardChat(target, roomId, mention)
+
+        val received = repo.getChats(target).first().takeLast(2)
+        assertEquals(listOf(Chat.Type.IMAGE, Chat.Type.TEXT), received.map { it.chatType })
+        assertTrue(received.all { it.isMe && it.chatStatus == Chat.Status.COMPLETE })
+        assertEquals(photo.imagePath, received.first().imagePath)
+        assertFalse(received.last().chatContent.contains("<mention>"))
+    }
 }

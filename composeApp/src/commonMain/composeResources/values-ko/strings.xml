@@ -279,6 +279,11 @@
     <string name="chat_menu_reply">답장</string>
     <string name="chat_menu_forward">전달</string>
     <string name="chat_forward_title">전달하기</string>
+    <string name="chat_media">모아보기</string>
+    <string name="chat_media_tab_photo_video">사진/동영상</string>
+    <string name="chat_media_tab_file">파일</string>
+    <string name="chat_media_empty_photo_video">사진이나 동영상이 없습니다</string>
+    <string name="chat_media_empty_file">파일이 없습니다</string>
     <string name="chat_menu_notice">공지등록</string>
     <string name="chat_menu_recall">회수</string>
     <string name="chat_bookmark_set">책갈피 설정</string>

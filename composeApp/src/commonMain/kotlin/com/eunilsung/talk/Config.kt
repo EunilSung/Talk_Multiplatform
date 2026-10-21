@@ -89,6 +89,9 @@ object Config {
         /** 투표 — 대화방 서랍의 "투표" 메뉴(목록·만들기) (대화 속 투표 말풍선 표시·참여는 유지) */
         const val IS_VOTE_ENABLED: Boolean = true
 
+        /** 모아보기 — 대화방 서랍의 "모아보기"(사진/동영상 · 파일) */
+        const val IS_MEDIA_ENABLED: Boolean = true
+
         /** 이모티콘 — 입력바 이모티콘 버튼/패널 */
         const val IS_EMOTICON_ENABLED: Boolean = true
 

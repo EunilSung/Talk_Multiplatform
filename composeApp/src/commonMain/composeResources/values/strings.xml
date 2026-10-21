@@ -279,6 +279,11 @@
     <string name="chat_menu_reply">Reply</string>
     <string name="chat_menu_forward">Forward</string>
     <string name="chat_forward_title">Forward</string>
+    <string name="chat_media">Media &amp; Files</string>
+    <string name="chat_media_tab_photo_video">Photos/Videos</string>
+    <string name="chat_media_tab_file">Files</string>
+    <string name="chat_media_empty_photo_video">No photos or videos</string>
+    <string name="chat_media_empty_file">No files</string>
     <string name="chat_menu_notice">Set as notice</string>
     <string name="chat_menu_recall">Recall</string>
     <string name="chat_bookmark_set">Add bookmark</string>

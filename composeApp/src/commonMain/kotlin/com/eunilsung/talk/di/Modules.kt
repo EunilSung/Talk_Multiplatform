@@ -61,6 +61,7 @@ import com.eunilsung.talk.ui.chatroomlist.group.ChatRoomGroupManageViewModel
 import com.eunilsung.talk.ui.invite.InviteViewModel
 import com.eunilsung.talk.ui.invite.tab.group.InviteGroupViewModel
 import com.eunilsung.talk.ui.share.ShareViewModel
+import com.eunilsung.talk.ui.chatroom.media.ChatMediaViewModel
 import com.eunilsung.talk.ui.login.LoginViewModel
 import com.eunilsung.talk.ui.main.MainViewModel
 import com.eunilsung.talk.ui.group.GroupViewModel
@@ -274,6 +275,9 @@ val appModule = module {
     singleOf(::LoadLatestChatsUseCase)
     singleOf(::SendFileUseCase)
     singleOf(::ForwardChatUseCase)
+    singleOf(::GetMediaChatsUseCase)
+    singleOf(::ChatMediaUseCases)
+    viewModelOf(::ChatMediaViewModel)
     singleOf(::MarkChatAsReadUseCase)
     singleOf(::RefreshChatUnreadCountsUseCase)
     singleOf(::AddNoticeUseCase)

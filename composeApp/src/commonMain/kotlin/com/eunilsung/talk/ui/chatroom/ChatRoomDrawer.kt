@@ -5,6 +5,7 @@ import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.ui.chatroom.item.ChatRoomDrawerContent
+import com.eunilsung.talk.ui.chatroom.media.ChatMediaScreen
 import com.eunilsung.talk.ui.chatroom.vote.VoteMode
 import com.eunilsung.talk.ui.chatroom.vote.VoteScreen
 import com.eunilsung.talk.ui.invite.InviteMode
@@ -15,7 +16,7 @@ import com.eunilsung.talk.ui.uikit.toast.LocalToastManager
 import com.eunilsung.talk.ui.userprofile.LocalShowUserProfile
 
 /**
- * 대화방 오른쪽 서랍 — 투표·공지·초대와 참여자 목록. 어느 항목을 누르든 서랍은 닫힌다.
+ * 대화방 오른쪽 서랍 — 투표·모아보기·공지·초대와 참여자 목록. 어느 항목을 누르든 서랍은 닫힌다.
  *
  * @param onShowNotice 걸린 공지의 본문을 전문 보기로 띄운다. 공지가 없으면 부르지 않고 안내만 한다.
  */
@@ -50,6 +51,10 @@ internal fun ChatRoomDrawer(
                         initialMode = VoteMode.LIST,
                     )
                 )
+            },
+            onMediaClick = {
+                onDismiss()
+                fullScreenOverlay(ChatMediaScreen(chatRoomId = currentChatRoomId))
             },
             onNoticeClick = {
                 onDismiss()

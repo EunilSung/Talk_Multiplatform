@@ -89,7 +89,10 @@ fun AppHosts(
                         DialogHost {
                             BottomSheetHost {
                                 UserProfileSheetBinding {
-                                    FileDetailSheetBinding(onAction) {
+                                    FileDetailSheetBinding(
+                                        onDownload = { source, name -> onAction(MainActions.OnDownloadFile(source, name)) },
+                                        onOpen = { source, name -> onAction(MainActions.OnOpenFile(source, name)) },
+                                    ) {
                                         content()
                                     }
                                 }
@@ -147,8 +150,16 @@ private fun ConnectionStatusBar(visible: Boolean) {
     }
 }
 
+/**
+ * 파일 상세 시트를 [LocalShowFileDetail] 로 내려 준다. 받기·열기는 부르는 쪽의 ViewModel 이 한다.
+ * 전체 화면 오버레이는 앱 본문의 시트 연결 바깥에 그려지므로, 시트를 쓰는 오버레이 화면은 이것으로 직접 감싼다.
+ */
 @Composable
-private fun FileDetailSheetBinding(onAction: (MainActions) -> Unit, content: @Composable () -> Unit) {
+internal fun FileDetailSheetBinding(
+    onDownload: (source: String, displayName: String) -> Unit,
+    onOpen: (source: String, displayName: String) -> Unit,
+    content: @Composable () -> Unit,
+) {
     val sheet = LocalBottomSheetManager.current
 
     var photoDetail by remember { mutableStateOf<MultimediaRecentPhoto?>(null) }
@@ -162,7 +173,7 @@ private fun FileDetailSheetBinding(onAction: (MainActions) -> Unit, content: @Co
                     fileName = displayName,
                     senderLabel = senderLabel,
                     onClose = { sheet.hide() },
-                    onDownload = { onAction(MainActions.OnDownloadFile(serverFileName, displayName)) },
+                    onDownload = { onDownload(serverFileName, displayName) },
                     onOpen = {
                         if (isImageFile(displayName) || isImageFile(serverFileName)) {
                             sheet.hide()
@@ -173,7 +184,7 @@ private fun FileDetailSheetBinding(onAction: (MainActions) -> Unit, content: @Co
                                 originalFileName = displayName,
                             )
                         } else {
-                            onAction(MainActions.OnOpenFile(serverFileName, displayName))
+                            onOpen(serverFileName, displayName)
                         }
                     },
                 )

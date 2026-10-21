@@ -25,6 +25,10 @@ object TestTags {
     const val CHAT_MENU_FORWARD = "chat_menu_forward"
     const val SHARE_SUBMIT = "share_submit"
     const val SHARE_TAB_CHATROOM = "share_tab_chatroom"
+    const val DRAWER_MEDIA = "drawer_media"
+    const val CHAT_MEDIA_BACK = "chat_media_back"
+    fun chatMediaTab(name: String) = "chat_media_tab_$name"
+    fun chatMediaItem(chatId: String) = "chat_media_item_$chatId"
     /** 받아 온 번역문. 받는 중에는 붙지 않는다. */
     const val CHAT_TRANSLATION = "chat_translation"
     const val CHAT_POLISH = "chat_polish"
