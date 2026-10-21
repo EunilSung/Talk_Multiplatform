@@ -192,7 +192,7 @@ fun LoginContent(
 
             Box(modifier = Modifier
                 .size(150.dp)
-                .background(shape = RoundedCornerShape(24.dp), color = AppColors.White)
+                .background(shape = RoundedCornerShape(24.dp), color = AppColors.Transparent)
             ){
                 Image(
                     painter = painterResource(Res.drawable.logo),
