@@ -7,5 +7,5 @@ import /etc/caddy/sites/*.caddy
 	request_body {
 		max_size 25MB
 	}
-	reverse_proxy server:8080
+	reverse_proxy talk-server:8080
 }
