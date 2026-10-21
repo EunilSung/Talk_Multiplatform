@@ -139,6 +139,19 @@ data class SendMessageRequest(
     val payload: MessagePayloadDto? = null,
 )
 
+/**
+ * 대화 전달 — [sourceRoomId] 방의 [sourceMessageId] 대화를 새 대화 [id] 로 이 방에 보낸다.
+ *
+ * 서버가 원본을 내가 볼 수 있는지 확인하고, 첨부는 파일을 이 방으로 복사해 싣는다. 답장은 글로, 멘션은 이름만 남긴다.
+ * [id] 는 앱이 만들고 다시 보내도 바꾸지 않는다 — 같은 id 로 다시 오면 이미 만든 대화를 돌려준다.
+ */
+@Serializable
+data class ForwardMessageRequest(
+    val id: String,
+    val sourceRoomId: String,
+    val sourceMessageId: String,
+)
+
 @Serializable
 data class MessagesResponse(val messages: List<MessageDto> = emptyList())
 

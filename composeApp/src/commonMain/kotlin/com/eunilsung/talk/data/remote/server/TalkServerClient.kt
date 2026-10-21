@@ -2,6 +2,7 @@ package com.eunilsung.talk.data.remote.server
 
 import com.eunilsung.talk.Config
 import com.eunilsung.talk.shared.api.ApiError
+import com.eunilsung.talk.shared.api.ForwardMessageRequest
 import com.eunilsung.talk.shared.api.BallotRequest
 import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.BookmarkRequest
@@ -141,6 +142,9 @@ interface TalkServer {
 
     /** 대화를 보낸다. 같은 [SendMessageRequest.id] 로 다시 보내도 서버에는 한 번만 들어간다. */
     suspend fun sendMessage(roomId: String, request: SendMessageRequest): ServerResult<MessageDto>
+
+    /** 다른 방의 대화를 이 방에 전달한다. 첨부는 서버가 이 방으로 복사한다. 같은 id 로 다시 보내도 한 번만 들어간다. */
+    suspend fun forwardMessage(roomId: String, request: ForwardMessageRequest): ServerResult<MessageDto>
 
     suspend fun markRead(roomId: String, messageId: String): ServerResult<Unit>
 
@@ -327,6 +331,14 @@ class TalkServerClient(
             httpClient.post("${roomUrl(roomId)}/messages") {
                 auth()
                 jsonBody(SendMessageRequest.serializer(), request)
+            }
+        }
+
+    override suspend fun forwardMessage(roomId: String, request: ForwardMessageRequest): ServerResult<MessageDto> =
+        request("대화 전달", MessageDto.serializer()) {
+            httpClient.post("${roomUrl(roomId)}/forward") {
+                auth()
+                jsonBody(ForwardMessageRequest.serializer(), request)
             }
         }
 

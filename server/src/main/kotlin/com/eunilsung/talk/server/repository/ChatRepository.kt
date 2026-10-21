@@ -766,9 +766,6 @@ class ChatRepository(private val dataSource: DataSource) {
         const val DIRECT_ROOM_MAX_MEMBERS = 2
         const val DIRECT_KEY_SEPARATOR = "|"
 
-        /** 앱이 멘션을 감싸는 태그. 안쪽이 `@이름` 이다. */
-        val MENTION_TAG = Regex("""<mention>([\s\S]*?)</mention>""", RegexOption.IGNORE_CASE)
-
         /** 대화를 읽지 않는 참여자(AI). 안읽음 수에 넣으면 AI 가 있는 방의 모든 대화가 영원히 "1" 로 남는다. */
         const val NON_READER_ID = "ai"
 
@@ -796,3 +793,6 @@ class ChatRepository(private val dataSource: DataSource) {
                 "FROM chat_message g JOIN app_user u ON u.id = g.sender_id"
     }
 }
+
+/** 앱이 멘션을 감싸는 태그. 안쪽이 `@이름` 이다. */
+internal val MENTION_TAG = Regex("""<mention>([\s\S]*?)</mention>""", RegexOption.IGNORE_CASE)

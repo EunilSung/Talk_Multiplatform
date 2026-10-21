@@ -380,4 +380,46 @@ class ChatRoomRepositoryImplTest {
         assertTrue(result.isFailure)
         assertEquals(100, chats().size)
     }
+
+    @Test
+    fun 받은_사진을_다른_방에_전달하면_서버가_복사한_파일로_완료되고_다시_내려받지_않는다() = runTest {
+        server.addRoom("room-b", "test3" to "박도윤")
+        val photo = ByteArray(128) { 7 }
+        val original = server.receiveFile(roomId, "test2", "이서연", "image", "cat.png", photo)
+        repo.fetchChats(roomId)
+        awaitUntil { chats().single().imagePath.isNotBlank() }
+        val source = chats().single()
+        repo.fetchChats("room-b")
+
+        repo.forwardChat("room-b", roomId, source)
+
+        val stored = server.messagesOf("room-b").single()
+        val copiedId = "copy-${original.payload?.fileId}"
+        assertEquals("image", stored.kind)
+        assertEquals(copiedId, stored.payload?.fileId)
+        val forwarded = repo.getChats("room-b").first().single()
+        assertEquals(Chat.Status.COMPLETE, forwarded.chatStatus)
+        assertEquals(Chat.Type.IMAGE, forwarded.chatType)
+        assertTrue(forwarded.isMe)
+        assertEquals(source.imagePath, forwarded.imagePath)
+        assertTrue("download:$copiedId" !in server.calls)
+    }
+
+    @Test
+    fun 글을_전달하면_멘션_태그를_벗겨_보이고_서버에_닿지_못하면_실패로_남는다() = runTest {
+        server.addRoom("room-b", "test3" to "박도윤")
+        peerSays("<mention>@김민준</mention> 확인 부탁드려요")
+        repo.fetchChats(roomId)
+        val source = chats().single()
+        repo.fetchChats("room-b")
+        server.isReachable = false
+
+        repo.forwardChat("room-b", roomId, source)
+
+        val failed = repo.getChats("room-b").first().single()
+        assertEquals(Chat.Status.FAIL, failed.chatStatus)
+        assertEquals(Chat.Type.TEXT, failed.chatType)
+        assertEquals("@김민준 확인 부탁드려요", failed.chatContent)
+        assertTrue(server.messagesOf("room-b").isEmpty())
+    }
 }

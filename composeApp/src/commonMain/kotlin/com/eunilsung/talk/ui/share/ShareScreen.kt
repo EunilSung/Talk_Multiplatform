@@ -36,10 +36,14 @@ import multiplatformtalk.composeapp.generated.resources.close_icon
 import multiplatformtalk.composeapp.generated.resources.group
 import multiplatformtalk.composeapp.generated.resources.send
 import multiplatformtalk.composeapp.generated.resources.share
+import multiplatformtalk.composeapp.generated.resources.chat_forward_title
 import kotlinx.coroutines.flow.MutableStateFlow
 import com.eunilsung.talk.ui.main.tab.CurrentAppTab
 import com.eunilsung.talk.ui.main.tab.rememberAppTabState
 import com.eunilsung.talk.domain.model.User
+import com.eunilsung.talk.domain.model.Chat
+import com.eunilsung.talk.ui.uikit.TestTags
+import androidx.compose.ui.platform.testTag
 import com.eunilsung.talk.domain.model.SharedContent
 import com.eunilsung.talk.ui.chatroom.ChatRoomScreen
 import com.eunilsung.talk.ui.invite.InviteController
@@ -63,8 +67,14 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import com.eunilsung.talk.ui.main.LocalRightNavigator
 
+/**
+ * 공유하기 — 다른 앱에서 받은 [content] 를, 또는 대화방 롱클릭 "전달"로 연 [forwardChat]([forwardSourceRoomId] 방의 대화)을
+ * 고른 사람·방에 보낸다. 사람을 고르면 방을 만들거나 있던 방으로 들어간 뒤 보낸다.
+ */
 class ShareScreen(
-    private val content: SharedContent,
+    private val content: SharedContent = SharedContent(),
+    private val forwardChat: Chat.Item? = null,
+    private val forwardSourceRoomId: String = "",
 ) : Screen {
     override val key: ScreenKey = uniqueScreenKey
 
@@ -77,8 +87,12 @@ class ShareScreen(
         val toastManager = LocalToastManager.current
         val txtSendFailed = stringResource(Res.string.toast_send_failed)
 
-        LaunchedEffect(content) {
-            viewModel.onAction(ShareActions.Init(content))
+        LaunchedEffect(content, forwardChat) {
+            if (forwardChat != null) {
+                viewModel.onAction(ShareActions.InitForward(forwardChat, forwardSourceRoomId))
+            } else {
+                viewModel.onAction(ShareActions.Init(content))
+            }
         }
 
         LaunchedEffect(viewModel) {
@@ -156,7 +170,7 @@ fun ShareScreenContent(
     ) {
         Column(modifier = Modifier.fillMaxSize().navigationBarsPadding()) {
             TopBarV1(
-                title = stringResource(Res.string.share),
+                title = stringResource(if (uiState.forwardChat != null) Res.string.chat_forward_title else Res.string.share),
                 navigationIcon = {
                     IconButton(
                         modifier = Modifier.size(28.dp),
@@ -177,6 +191,7 @@ fun ShareScreenContent(
                         else -> stringResource(Res.string.send)
                     }
                     TextButton(
+                        modifier = Modifier.testTag(TestTags.SHARE_SUBMIT),
                         enabled = enabled,
                         onClick = { onAction(ShareActions.OnSubmit) },
                         colors = ButtonDefaults.textButtonColors(
@@ -207,6 +222,7 @@ fun ShareScreenContent(
                         text = chatRoomTitle,
                         isSelected = tabState.current == ShareChatRoomTab,
                         onClick = { tabState.current = ShareChatRoomTab },
+                        testTag = TestTags.SHARE_TAB_CHATROOM,
                     ),
                 )
             )

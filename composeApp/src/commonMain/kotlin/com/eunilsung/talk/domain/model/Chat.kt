@@ -109,6 +109,18 @@ sealed class Chat {
     }
 }
 
+/**
+ * 다른 방으로 전달할 수 있는 대화인지 — 보내기가 끝났고 회수되지 않은 글·답장·이모티콘·사진·동영상·파일.
+ * 투표·공지·초대/나감 같은 알림 대화는 전달하지 않는다. 첨부는 기기에 받아 둔 파일이 있어야 한다.
+ */
+val Chat.Item.isForwardable: Boolean
+    get() = chatStatus == Chat.Status.COMPLETE && !isRecalled && when (chatType) {
+        Chat.Type.TEXT, Chat.Type.REPLY -> chatContent.isNotBlank()
+        Chat.Type.EMOTICON -> chatContent.isNotBlank() || emoticon.id.isNotBlank()
+        Chat.Type.IMAGE, Chat.Type.VIDEO, Chat.Type.FILE -> imagePath.isNotBlank()
+        else -> false
+    }
+
 /** 공감 — chatID 별로 이모지(0..5)를 누른 사용자. */
 data class EmpathyChat(
     val chatID: String = "",

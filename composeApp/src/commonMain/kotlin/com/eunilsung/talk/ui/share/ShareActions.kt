@@ -1,11 +1,15 @@
 package com.eunilsung.talk.ui.share
 
+import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.model.SharedContent
 import com.eunilsung.talk.domain.model.ChatRoom
 
 sealed interface ShareActions {
     data class Init(val content: SharedContent) : ShareActions
+
+    /** 대화방 롱클릭 "전달"로 열었다 — 고른 곳에 [sourceRoomId] 방의 [chat] 을 전달한다. */
+    data class InitForward(val chat: Chat.Item, val sourceRoomId: String) : ShareActions
 
     data class OnUserToggle(val user: User) : ShareActions
 

@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,6 +28,8 @@ data class TabItem1(
     val isSelected: Boolean,
     val hasBadge: Boolean = false,
     val onClick: () -> Unit,
+    /** 실화면 흐름이 이 탭을 찾는 이름([com.eunilsung.talk.ui.uikit.TestTags]). */
+    val testTag: String? = null,
 )
 
 @Composable
@@ -57,6 +60,7 @@ fun TabRow1(
     ) {
         items.forEach { item ->
             Tab(
+                modifier = item.testTag?.let { Modifier.testTag(it) } ?: Modifier,
                 selected = item.isSelected,
                 onClick = item.onClick,
                 selectedContentColor = AppColors.PrimaryMain,

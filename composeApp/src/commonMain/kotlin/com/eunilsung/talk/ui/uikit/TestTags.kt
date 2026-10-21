@@ -22,6 +22,9 @@ object TestTags {
     const val CHAT_SEND = "chat_send"
     const val CHAT_EMPATHY = "chat_empathy"
     const val CHAT_MENU_TRANSLATE = "chat_menu_translate"
+    const val CHAT_MENU_FORWARD = "chat_menu_forward"
+    const val SHARE_SUBMIT = "share_submit"
+    const val SHARE_TAB_CHATROOM = "share_tab_chatroom"
     /** 받아 온 번역문. 받는 중에는 붙지 않는다. */
     const val CHAT_TRANSLATION = "chat_translation"
     const val CHAT_POLISH = "chat_polish"

@@ -277,6 +277,8 @@
     <string name="chat_recall_message">메시지를 회수하시겠습니까?</string>
     <string name="chat_menu_copy">복사</string>
     <string name="chat_menu_reply">답장</string>
+    <string name="chat_menu_forward">전달</string>
+    <string name="chat_forward_title">전달하기</string>
     <string name="chat_menu_notice">공지등록</string>
     <string name="chat_menu_recall">회수</string>
     <string name="chat_bookmark_set">책갈피 설정</string>

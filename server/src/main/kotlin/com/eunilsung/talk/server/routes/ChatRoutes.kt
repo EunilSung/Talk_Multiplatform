@@ -5,6 +5,7 @@ import com.eunilsung.talk.server.repository.AuthTokenRepository
 import com.eunilsung.talk.server.files.FileStorage
 import com.eunilsung.talk.server.repository.ChatRepository
 import com.eunilsung.talk.server.repository.FileRepository
+import com.eunilsung.talk.server.repository.MENTION_TAG
 import com.eunilsung.talk.server.repository.RoomChange
 import com.eunilsung.talk.shared.api.ApiError
 import com.eunilsung.talk.shared.api.ApiErrorCode
@@ -12,10 +13,12 @@ import com.eunilsung.talk.shared.api.BookmarkRequest
 import com.eunilsung.talk.shared.api.BookmarksResponse
 import com.eunilsung.talk.shared.api.ChatErrorCode
 import com.eunilsung.talk.shared.api.CreateRoomRequest
+import com.eunilsung.talk.shared.api.ForwardMessageRequest
 import com.eunilsung.talk.shared.api.InviteRequest
 import com.eunilsung.talk.shared.api.MarkReadRequest
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MessageKind
+import com.eunilsung.talk.shared.api.MessagePayloadDto
 import com.eunilsung.talk.shared.api.MessagesResponse
 import com.eunilsung.talk.shared.api.MuteRoomRequest
 import com.eunilsung.talk.shared.api.PinRoomRequest
@@ -184,6 +187,39 @@ fun Route.chatRoutes(
                 call.respond(message)
             }
 
+            /**
+             * 대화 전달 — 원본을 내가 볼 수 있고 이 방에 참여 중일 때만 새 대화로 넣는다. 그렇지 않으면 없는 대화처럼 답한다.
+             * 첨부는 파일을 이 방으로 복사해 싣는다. 원본 방의 파일 id 를 그대로 실으면 이 방 사람에게 그 파일이 새어 나간다.
+             */
+            post("/forward") {
+                val userId = call.callerUserId(tokens) ?: return@post
+                val request = call.receiveOrNull<ForwardMessageRequest>()
+                if (request == null || !request.isValid()) return@post call.respondBadRequest()
+                val roomId = call.roomId()
+                db { chats.message(roomId, userId, request.id) }?.let { return@post call.respond(it) }
+                val source = db { chats.message(request.sourceRoomId, userId, request.sourceMessageId) }
+                    ?: return@post call.respondMessageNotFound()
+                if (source.isRecalled || source.kind !in MessageKind.SENDABLE) return@post call.respondBadRequest()
+                val payload = if (source.kind in MessageKind.WITH_FILE) {
+                    db { copyFileTo(roomId, userId, source.payload, files, fileStorage) }
+                        ?: return@post call.respondMessageNotFound()
+                } else {
+                    source.payload?.emoticonId?.let { MessagePayloadDto(emoticonId = it) }
+                }
+                val kind = if (source.kind == MessageKind.REPLY) MessageKind.TEXT else source.kind
+                val content = source.content.replace(MENTION_TAG, "$1")
+                val message = db { chats.send(roomId, userId, request.id, kind, content, payload) }
+                if (message == null) {
+                    payload?.fileId?.let { copied -> db { files.delete(copied); fileStorage.delete(copied) } }
+                    return@post call.respondRoomNotFound()
+                }
+                hub.send(
+                    db { chats.activeMemberIds(message.roomId) },
+                    ServerEvent(ServerEvent.TYPE_MESSAGE, message.roomId, message),
+                )
+                call.respond(message)
+            }
+
             post("/reactions") {
                 val userId = call.callerUserId(tokens) ?: return@post
                 val request = call.receiveOrNull<ToggleReactionRequest>() ?: return@post call.respondBadRequest()
@@ -313,6 +349,32 @@ private fun SendMessageRequest.isValid(): Boolean =
         kind in MessageKind.SENDABLE &&
         content.length <= MAX_CONTENT_LENGTH &&
         (content.isNotBlank() || !payload?.emoticonId.isNullOrBlank() || kind in MessageKind.WITH_FILE)
+
+private fun ForwardMessageRequest.isValid(): Boolean =
+    id.isNotBlank() && id.length <= MAX_ID_LENGTH && sourceRoomId.isNotBlank() && sourceMessageId.isNotBlank()
+
+/**
+ * 원본 첨부를 [roomId] 방으로 복사해 그 파일을 가리키는 부가 정보를 만든다.
+ * 원본 파일을 내가 받을 수 없거나(방에서 나갔거나 회수됐다) 그 방의 참여자가 아니면 null.
+ */
+private fun copyFileTo(
+    roomId: String,
+    userId: String,
+    sourcePayload: MessagePayloadDto?,
+    files: FileRepository,
+    fileStorage: FileStorage,
+): MessagePayloadDto? {
+    val original = sourcePayload?.fileId?.let { files.find(it, userId) } ?: return null
+    val bytes = fileStorage.read(original.id) ?: return null
+    val copied = files.register(roomId, userId, original.name, original.size) ?: return null
+    fileStorage.save(copied.id, bytes)
+    return MessagePayloadDto(
+        fileId = copied.id,
+        fileName = copied.name,
+        fileSize = copied.size,
+        imageSize = sourcePayload.imageSize,
+    )
+}
 
 private fun ApplicationCall.roomId(): String = parameters["roomId"].orEmpty()
 

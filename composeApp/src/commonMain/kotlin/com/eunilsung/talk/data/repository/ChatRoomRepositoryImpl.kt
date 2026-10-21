@@ -17,6 +17,7 @@ import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.model.Notice
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.domain.repository.ChatRoomRepository
+import com.eunilsung.talk.shared.api.ForwardMessageRequest
 import com.eunilsung.talk.shared.api.ChatErrorCode
 import com.eunilsung.talk.shared.api.MAX_FILE_BYTES
 import com.eunilsung.talk.shared.api.MessageDto
@@ -321,6 +322,29 @@ class ChatRoomRepositoryImpl(
         sendingIds.update { it + chat.chatID }
         local.appendMyChat(chatRoomId, chat)
         deliverFile(chatRoomId, chat)
+    }
+
+    /**
+     * 대화 전달 — 받을 방에 '전송 중'으로 먼저 보이고 서버가 받아 주면 완료가 된다. 첨부는 서버가 받을 방으로 복사한다.
+     * 실패하면 실패로 남는다. 다시 보내기는 일반 대화처럼 보낸다 — 첨부는 기기의 파일을 다시 올린다.
+     */
+    override suspend fun forwardChat(chatRoomId: String, sourceRoomId: String, source: Chat.Item) {
+        val chat = local.buildForwardChat(chatRoomId, source, Chat.Status.SENDING) ?: return
+        sendingIds.update { it + chat.chatID }
+        local.appendMyChat(chatRoomId, chat)
+        val request = ForwardMessageRequest(id = chat.chatID, sourceRoomId = sourceRoomId, sourceMessageId = source.chatID)
+        val settled = when (val result = server.forwardMessage(chatRoomId, request)) {
+            is ServerResult.Success -> {
+                /** 복사된 파일도 원본과 같은 파일이다. 기기에 있는 원본 경로를 적어 두어 다시 내려받지 않게 한다. */
+                val copiedId = result.value.payload?.fileId
+                val path = chat.localPath.ifBlank { chat.imagePath }
+                if (copiedId != null && path.isNotBlank()) fileStore.remember(copiedId, path)
+                mapper.toChat(result.value)
+            }
+            else -> chat.copy(chatStatus = Chat.Status.FAIL)
+        }
+        local.storeChats(chatRoomId, listOf(settled))
+        sendingIds.update { it - chat.chatID }
     }
 
     private suspend fun deliverFile(chatRoomId: String, chat: Chat.Item) {

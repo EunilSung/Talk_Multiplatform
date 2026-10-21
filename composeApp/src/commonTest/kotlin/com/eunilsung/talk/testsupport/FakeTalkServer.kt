@@ -21,6 +21,7 @@ import com.eunilsung.talk.shared.api.RoomDto
 import com.eunilsung.talk.shared.api.RoomMemberDto
 import com.eunilsung.talk.shared.api.PolishResponse
 import com.eunilsung.talk.shared.api.SendMessageRequest
+import com.eunilsung.talk.shared.api.ForwardMessageRequest
 import com.eunilsung.talk.shared.api.TranslationResponse
 import com.eunilsung.talk.shared.api.UnreadCountDto
 import com.eunilsung.talk.shared.api.UserDto
@@ -195,6 +196,21 @@ class FakeTalkServer : TalkServer {
             if (roomId !in rooms) return@answer roomNotFound()
             val existing = messagesOf(roomId).firstOrNull { it.id == request.id }
             ServerResult.Success(existing ?: append(roomId, USER.id, USER.name, request))
+        }
+
+    /** 진짜 서버처럼 원본을 찾아 새 대화로 넣는다. 첨부는 새 파일 id 로 바꿔 복사한 것처럼 싣는다. */
+    override suspend fun forwardMessage(roomId: String, request: ForwardMessageRequest): ServerResult<MessageDto> =
+        answer("forward:$roomId:${request.id}") {
+            if (roomId !in rooms) return@answer roomNotFound()
+            messagesOf(roomId).firstOrNull { it.id == request.id }?.let { return@answer ServerResult.Success(it) }
+            val source = messagesOf(request.sourceRoomId).firstOrNull { it.id == request.sourceMessageId }
+                ?: return@answer roomNotFound()
+            val payload = when {
+                source.kind in MessageKind.WITH_FILE -> source.payload?.copy(fileId = "copy-${source.payload?.fileId}")
+                else -> source.payload?.emoticonId?.let { MessagePayloadDto(emoticonId = it) }
+            }
+            val kind = if (source.kind == MessageKind.REPLY) MessageKind.TEXT else source.kind
+            ServerResult.Success(append(roomId, USER.id, USER.name, SendMessageRequest(request.id, source.content, kind, payload)))
         }
 
     override suspend fun markRead(roomId: String, messageId: String): ServerResult<Unit> = answer("read:$roomId:$messageId") {
