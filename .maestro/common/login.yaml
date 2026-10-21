@@ -9,6 +9,12 @@ name: test1 로 로그인
 - tapOn:
     id: login_pw
 - inputText: "1234"
+- runFlow:
+    when:
+      platform: Android
+    label: 키보드 높이를 알려 주지 않는 에뮬레이터에서는 버튼이 키보드 뒤에 가리므로 키보드를 내리고 누른다
+    commands:
+      - hideKeyboard
 - tapOn:
     id: login_submit
 - extendedWaitUntil:

@@ -17,3 +17,11 @@ name: 앱을 처음 상태로 띄운다
       - tapOn:
           text: "허용|Allow"
           optional: true
+- extendedWaitUntil:
+    visible:
+      id: login_id
+    timeout: 10000
+    label: 로그인 입력칸이 나타날 때까지 기다린다
+- waitForAnimationToEnd:
+    timeout: 3000
+    label: 입력칸이 1초 동안 미끄러져 올라오므로 다 멈춘 뒤에 누른다 — 도중에 넣은 글자는 사라질 수 있다

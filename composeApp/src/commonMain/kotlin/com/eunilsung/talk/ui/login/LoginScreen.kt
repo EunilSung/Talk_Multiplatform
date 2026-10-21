@@ -71,6 +71,12 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.ui.platform.testTag
 import com.eunilsung.talk.ui.uikit.TestTags
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.relocation.BringIntoViewRequester
 import multiplatformtalk.composeapp.generated.resources.visibility_off_icon
 import multiplatformtalk.composeapp.generated.resources.visibility_icon
 import multiplatformtalk.composeapp.generated.resources.login_hide_password
@@ -256,6 +262,18 @@ private fun LoginInputForm(
         keyboardController?.hide()
         onAction(LoginActions.OnLoginClick(inputState))
     }
+    /**
+     * 비밀번호 칸에 들어오면 키보드가 다 올라온 뒤 로그인 버튼까지 보이게 올린다. 가로 태블릿처럼 키보드 위 높이가 작으면
+     * 버튼이 키보드 뒤에 가린다. 아이디 칸은 그 칸만 보이면 된다 — 아래까지 끌어올리면 아이디 칸이 화면 밖으로 밀린다.
+     */
+    val submitArea = remember { BringIntoViewRequester() }
+    val scope = rememberCoroutineScope()
+    val revealSubmit: () -> Unit = {
+        scope.launch {
+            delay(KEYBOARD_SETTLE_MS)
+            submitArea.bringIntoView()
+        }
+    }
     Column(
         modifier = Modifier.widthIn(max = 400.dp).fillMaxWidth().padding(top = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -276,6 +294,7 @@ private fun LoginInputForm(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { if (uiState.canSubmit) submit() }),
             testTag = TestTags.LOGIN_PW,
+            onFocused = revealSubmit,
             visualTransformation = if (uiState.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 Icon(
@@ -310,7 +329,11 @@ private fun LoginInputForm(
             Text(text = stringResource(Res.string.save_pw), color = AppColors.Text, fontSize = 14.sp)
         }
 
-        LoginButton(enabled = uiState.canSubmit, onClick = submit)
+        LoginButton(
+            enabled = uiState.canSubmit,
+            onClick = submit,
+            modifier = Modifier.bringIntoViewRequester(submitArea),
+        )
 
         /** 회원가입이 없어 로컬·서버 모드 모두 이 계정으로만 들어온다. */
         Text(
@@ -338,6 +361,7 @@ private fun LoginField(
     keyboardOptions: KeyboardOptions,
     keyboardActions: KeyboardActions,
     testTag: String,
+    onFocused: () -> Unit = {},
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: (@Composable () -> Unit)? = null,
 ) {
@@ -360,15 +384,18 @@ private fun LoginField(
             unfocusedTextColor = AppColors.Text,
             unfocusedLabelColor = AppColors.TextSub,
         ),
-        modifier = Modifier.fillMaxWidth().testTag(testTag),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(testTag)
+            .onFocusChanged { if (it.isFocused) onFocused() },
     )
 }
 
 /** 로그인 버튼 — 아이디·비밀번호를 다 넣어야 눌린다. */
 @Composable
-private fun LoginButton(enabled: Boolean, onClick: () -> Unit) {
+private fun LoginButton(enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .padding(top = 4.dp)
             .fillMaxWidth()
             .height(52.dp)
@@ -426,3 +453,5 @@ private fun LoginInputFormPreview() {
     }
 }
 
+/** 키보드가 다 올라와 영역이 줄어든 뒤에 스크롤해야 버튼이 키보드 위에 온다. */
+private const val KEYBOARD_SETTLE_MS = 350L
