@@ -49,6 +49,11 @@ services:
       - files:/data/files
     ports:
       - "127.0.0.1:8080:8080"
+    # Caddy 는 공용 네트워크 edge 에도 붙어 있다. 다른 앱의 서비스도 이름이 server 라 겹치지 않는 별칭으로 부른다
+    networks:
+      default:
+        aliases:
+          - talk-server
     logging: *logging
 
   caddy:

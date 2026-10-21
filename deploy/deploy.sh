@@ -27,6 +27,8 @@ cd ~/talk
 docker network create edge >/dev/null 2>&1 || true
 mkdir -p ~/caddy-sites
 docker compose up -d --build --remove-orphans
+# Caddyfile 은 파일 하나만 마운트해서, rsync 로 바뀐 파일을 실행 중인 Caddy 가 보지 못한다. 다시 만들어 읽힌다
+docker compose up -d --force-recreate --no-deps caddy
 for _ in $(seq 90); do
   if curl -fs http://127.0.0.1:8080/health; then echo; echo "배포 완료"; exit 0; fi
   sleep 2
