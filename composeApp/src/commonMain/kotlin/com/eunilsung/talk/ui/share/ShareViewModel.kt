@@ -17,12 +17,14 @@ import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
 import com.eunilsung.talk.domain.usecase.InviteUseCases
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.domain.usecase.ForwardChatUseCase
 import com.eunilsung.talk.domain.usecase.SendSharedContentUseCase
 
 class ShareViewModel(
     chatRoomListUseCases: ChatRoomListUseCases,
     private val inviteUseCases: InviteUseCases,
     private val sendSharedContent: SendSharedContentUseCase,
+    private val forwardChat: ForwardChatUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ShareUiState())
@@ -42,6 +44,9 @@ class ShareViewModel(
     fun onAction(action: ShareActions) {
         when (action) {
             is ShareActions.Init -> initWithContent(action.content)
+            is ShareActions.InitForward -> _uiState.update {
+                it.copy(forwardChat = action.chat, forwardSourceRoomId = action.sourceRoomId)
+            }
             is ShareActions.OnUserToggle -> toggleUser(action.user)
             is ShareActions.OnUserRemove -> removeUser(action.userId)
             is ShareActions.OnChatRoomSelect -> selectChatRoom(action.chatRoom)
@@ -129,8 +134,14 @@ class ShareViewModel(
 
             delay(300)
 
-            sendSharedContent(roomId, state.sharedContent).forEach {
-                Log.message("[Share] send failed: ${it.message}")
+            val forwarding = state.forwardChat
+            if (forwarding != null) {
+                runCatching { forwardChat(roomId, state.forwardSourceRoomId, forwarding) }
+                    .onFailure { Log.message("[Share] forward failed: ${it.message}") }
+            } else {
+                sendSharedContent(roomId, state.sharedContent).forEach {
+                    Log.message("[Share] send failed: ${it.message}")
+                }
             }
 
             _uiState.update { it.copy(isSubmitting = false) }

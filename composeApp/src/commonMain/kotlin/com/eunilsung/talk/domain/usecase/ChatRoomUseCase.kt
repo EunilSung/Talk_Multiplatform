@@ -35,6 +35,20 @@ data class ChatRoomUseCases(
     val reinviteDirectPartner: ReinviteDirectPartnerUseCase,
 )
 
+/**
+ * 대화 전달 — 받을 곳이 상대가 나간 1:1 방이면 먼저 상대를 다시 초대한 뒤 보낸다(대화방에서 보낼 때와 같다).
+ * 그렇지 않으면 상대는 전달을 받지 못한다.
+ */
+class ForwardChatUseCase(
+    private val repository: ChatRoomRepository,
+    private val reinviteDirectPartner: ReinviteDirectPartnerUseCase,
+) {
+    suspend operator fun invoke(chatRoomId: String, sourceRoomId: String, source: Chat.Item) {
+        runCatching { reinviteDirectPartner(chatRoomId) }
+        repository.forwardChat(chatRoomId, sourceRoomId, source)
+    }
+}
+
 /** 대화를 공지로 등록. */
 class AddNoticeUseCase(private val repository: ChatRoomRepository) {
     suspend operator fun invoke(chatRoomId: String, content: String) =

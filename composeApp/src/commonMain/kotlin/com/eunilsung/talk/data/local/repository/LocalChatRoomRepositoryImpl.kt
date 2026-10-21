@@ -23,6 +23,7 @@ import com.eunilsung.talk.data.mapper.SeedMapper
 import com.eunilsung.talk.db.AppDatabase
 import com.eunilsung.talk.domain.model.Bookmark
 import com.eunilsung.talk.domain.model.Chat
+import com.eunilsung.talk.domain.model.isForwardable
 import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.model.Emoticon
 import com.eunilsung.talk.domain.model.EmpathyChat
@@ -204,6 +205,37 @@ class LocalChatRoomRepositoryImpl(
                 )
             } ?: ReplyChat(),
             emoticon = if (hasEmoticon) Emoticon(id = emoticonId!!) else Emoticon(),
+        )
+    }
+
+    /** 서버가 없으므로 곧바로 전송 완료 상태로 받을 방에 넣는다. 첨부는 기기의 같은 파일을 가리킨다. */
+    override suspend fun forwardChat(chatRoomId: String, sourceRoomId: String, source: Chat.Item) {
+        val chat = buildForwardChat(chatRoomId, source, Chat.Status.COMPLETE) ?: return
+        appendMyChat(chatRoomId, chat)
+        Log.message("[Chat/Local] forwarded ${source.chatID} from $sourceRoomId to $chatRoomId as ${chat.chatID}")
+    }
+
+    /**
+     * [source] 를 내가 보내는 새 대화로 [status] 상태로 만든다. 저장하지는 않는다. 전달할 수 없는 대화면 null.
+     * 답장은 글로 바꾸고 멘션 태그는 벗긴다. 공감·답장 인용은 따라가지 않는다.
+     */
+    internal fun buildForwardChat(chatRoomId: String, source: Chat.Item, status: String): Chat.Item? {
+        if (Config.MyInfo.userId.isBlank() || chatRoomId.isBlank() || !source.isForwardable) return null
+        val sender = senderOf(chatRoomId)
+        return Chat.Item(
+            chatID = ChatIdUtils.generateChatId(sender.id),
+            chatType = if (source.chatType == Chat.Type.REPLY) Chat.Type.TEXT else source.chatType,
+            chatContent = source.chatContent.stripMentionTags(),
+            chatStatus = status,
+            date = nowChatDate(),
+            unReadCount = "0",
+            user = sender,
+            isMe = sender.id == Config.MyInfo.userId,
+            emoticon = source.emoticon,
+            imagePath = source.imagePath,
+            imageSize = source.imageSize,
+            originalFileName = source.originalFileName,
+            localPath = source.localPath,
         )
     }
 

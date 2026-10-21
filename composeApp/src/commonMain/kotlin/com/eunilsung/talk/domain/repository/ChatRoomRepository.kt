@@ -121,6 +121,12 @@ interface ChatRoomRepository {
     /** 파일/사진/동영상 대화 전송 — metadata 해석 후 chatType 판별해 목록에 추가. */
     suspend fun sendFile(chatRoomId: String, path: String)
 
+    /**
+     * 대화 전달 — [sourceRoomId] 방의 [source] 를 새 대화로 [chatRoomId] 에 보낸다. 답장은 글로, 멘션은 이름만 남긴다.
+     * 첨부는 다시 올리지 않는다(서버 모드는 서버가 파일을 복사한다). 전달할 수 없는 대화(`isForwardable`)는 보내지 않는다.
+     */
+    suspend fun forwardChat(chatRoomId: String, sourceRoomId: String, source: Chat.Item)
+
     /** "최신 대화로 이동" — 메모리를 DB 최신 한 페이지로 교체. 완료 후 [latestLoadedPush] emit. */
     suspend fun loadLatestChats(chatRoomId: String)
 

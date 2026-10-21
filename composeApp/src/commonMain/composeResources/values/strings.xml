@@ -277,6 +277,8 @@
     <string name="chat_recall_message">Recall this message?</string>
     <string name="chat_menu_copy">Copy</string>
     <string name="chat_menu_reply">Reply</string>
+    <string name="chat_menu_forward">Forward</string>
+    <string name="chat_forward_title">Forward</string>
     <string name="chat_menu_notice">Set as notice</string>
     <string name="chat_menu_recall">Recall</string>
     <string name="chat_bookmark_set">Add bookmark</string>

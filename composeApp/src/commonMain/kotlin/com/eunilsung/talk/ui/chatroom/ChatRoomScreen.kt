@@ -1,5 +1,7 @@
 package com.eunilsung.talk.ui.chatroom
 
+import com.eunilsung.talk.ui.share.ShareScreen
+import com.eunilsung.talk.ui.main.LocalFullScreenOverlay
 import com.eunilsung.talk.ui.main.popToEmptyRoot
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -190,6 +192,7 @@ fun ChatRoomContent(
 
     val toastManager = LocalToastManager.current
     val bottomSheet = LocalBottomSheetManager.current
+    val fullScreenOverlay = LocalFullScreenOverlay.current
     val showUserProfileFromContent = LocalShowUserProfile.current
     val strings = rememberChatRoomStrings()
 
@@ -600,6 +603,9 @@ fun ChatRoomContent(
             isTranslated = longPressedChat?.let { translations.containsKey(it.chatID) } == true,
             strings = strings,
             onDismiss = { longPressedChat = null },
+            onForward = { chat ->
+                fullScreenOverlay(ShareScreen(forwardChat = chat, forwardSourceRoomId = currentChatRoomId))
+            },
             onAction = onAction,
         )
     }

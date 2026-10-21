@@ -77,6 +77,9 @@ object Config {
         /** 답장 — 롱클릭 메뉴 "답장" + 스와이프 답장 동작 */
         const val IS_REPLY_ENABLED: Boolean = true
 
+        /** 전달 — 롱클릭 메뉴 "전달"(글·답장·이모티콘·사진·동영상·파일을 다른 방이나 사람에게) */
+        const val IS_FORWARD_ENABLED: Boolean = true
+
         /** 회수 — 롱클릭 메뉴 "회수"(내가 보낸 대화) 동작 */
         const val IS_RECALL_ENABLED: Boolean = true
 

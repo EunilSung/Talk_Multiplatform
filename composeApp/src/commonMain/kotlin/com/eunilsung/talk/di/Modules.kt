@@ -273,6 +273,7 @@ val appModule = module {
     singleOf(::RecallChatUseCase)
     singleOf(::LoadLatestChatsUseCase)
     singleOf(::SendFileUseCase)
+    singleOf(::ForwardChatUseCase)
     singleOf(::MarkChatAsReadUseCase)
     singleOf(::RefreshChatUnreadCountsUseCase)
     singleOf(::AddNoticeUseCase)

@@ -13,6 +13,7 @@ import multiplatformtalk.composeapp.generated.resources.chat_menu_copy
 import multiplatformtalk.composeapp.generated.resources.chat_menu_notice
 import multiplatformtalk.composeapp.generated.resources.chat_menu_recall
 import multiplatformtalk.composeapp.generated.resources.chat_menu_reply
+import multiplatformtalk.composeapp.generated.resources.chat_menu_forward
 import multiplatformtalk.composeapp.generated.resources.chat_menu_translate
 import multiplatformtalk.composeapp.generated.resources.chat_menu_translate_hide
 import multiplatformtalk.composeapp.generated.resources.chat_polish_concise
@@ -57,6 +58,7 @@ data class ChatRoomStrings(
     val noNotice: String,
     val menuCopy: String,
     val menuReply: String,
+    val menuForward: String,
     val menuNotice: String,
     val menuRecall: String,
     val menuTranslate: String,
@@ -88,6 +90,7 @@ fun rememberChatRoomStrings(): ChatRoomStrings {
     val noNotice = stringResource(Res.string.toast_no_notice)
     val menuCopy = stringResource(Res.string.chat_menu_copy)
     val menuReply = stringResource(Res.string.chat_menu_reply)
+    val menuForward = stringResource(Res.string.chat_menu_forward)
     val menuNotice = stringResource(Res.string.chat_menu_notice)
     val menuRecall = stringResource(Res.string.chat_menu_recall)
     val menuTranslate = stringResource(Res.string.chat_menu_translate)
@@ -117,6 +120,7 @@ fun rememberChatRoomStrings(): ChatRoomStrings {
             noNotice = noNotice,
             menuCopy = menuCopy,
             menuReply = menuReply,
+            menuForward = menuForward,
             menuNotice = menuNotice,
             menuRecall = menuRecall,
             menuTranslate = menuTranslate,
