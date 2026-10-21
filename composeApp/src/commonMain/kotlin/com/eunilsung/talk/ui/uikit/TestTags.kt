@@ -12,6 +12,7 @@ object TestTags {
     const val LOGIN_ID = "login_id"
     const val LOGIN_PW = "login_pw"
     const val LOGIN_SUBMIT = "login_submit"
+    const val LOGIN_DEMO_HINT = "login_demo_hint"
 
     const val CHAT_ROOM_ITEM = "chat_room_item"
     const val CHAT_ROOM_UNREAD = "chat_room_unread"

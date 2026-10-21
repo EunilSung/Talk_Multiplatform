@@ -15,7 +15,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -52,6 +51,9 @@ import multiplatformtalk.composeapp.generated.resources.login
 import multiplatformtalk.composeapp.generated.resources.logo
 import multiplatformtalk.composeapp.generated.resources.pw
 import multiplatformtalk.composeapp.generated.resources.save_pw
+import multiplatformtalk.composeapp.generated.resources.login_demo_hint
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.draw.clip
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.eunilsung.talk.data.local.AppExiter
@@ -64,15 +66,30 @@ import com.eunilsung.talk.ui.main.rememberImeHeight
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.util.Log
 import org.koin.compose.koinInject
-import com.eunilsung.talk.ui.uikit.button.ButtonV1
-import com.eunilsung.talk.ui.uikit.checkbox.ToggleV1
 import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
-import com.eunilsung.talk.ui.uikit.textfield.TextFieldV1
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.ui.platform.testTag
 import com.eunilsung.talk.ui.uikit.TestTags
+import multiplatformtalk.composeapp.generated.resources.visibility_off_icon
+import multiplatformtalk.composeapp.generated.resources.visibility_icon
+import multiplatformtalk.composeapp.generated.resources.login_hide_password
+import multiplatformtalk.composeapp.generated.resources.login_show_password
+import multiplatformtalk.composeapp.generated.resources.login_tagline
+import multiplatformtalk.composeapp.generated.resources.app_name
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Icon
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 
 @Composable
 fun LoginScreen(
@@ -190,16 +207,7 @@ fun LoginContent(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-            Box(modifier = Modifier
-                .size(150.dp)
-                .background(shape = RoundedCornerShape(24.dp), color = AppColors.Transparent)
-            ){
-                Image(
-                    painter = painterResource(Res.drawable.logo),
-                    contentDescription = "login logo",
-                    modifier = Modifier.size(120.dp).align(Alignment.Center)
-                )
-            }
+            Brand()
 
             AnimatedVisibility(
                 visible = showInputs && status !is LoginStatus.Success,
@@ -210,7 +218,7 @@ fun LoginContent(
                         slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = tween(1000)) +
                         shrinkVertically(animationSpec = tween(1000))
             ) {
-                LoginInputForm(inputState = inputState, onAction = onAction)
+                LoginInputForm(uiState = uiState, onAction = onAction)
             }
         }
         }
@@ -222,83 +230,174 @@ fun LoginContent(
     }
 }
 
+/** 브랜드 — 앱 아이콘, 앱 이름, 한 줄 소개. */
+@Composable
+private fun Brand() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Image(
+            painter = painterResource(Res.drawable.logo),
+            contentDescription = null,
+            modifier = Modifier.size(72.dp).clip(RoundedCornerShape(18.dp)),
+        )
+        Text(
+            text = stringResource(Res.string.app_name),
+            color = AppColors.Text,
+            fontSize = 32.sp,
+            lineHeight = 38.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = stringResource(Res.string.login_tagline),
+            color = AppColors.TextSub,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+        )
+    }
+}
+
 @Composable
 private fun LoginInputForm(
-    inputState: Login.LoginRequest,
+    uiState: LoginUiState,
     onAction: (LoginActions) -> Unit,
 ) {
+    val inputState = uiState.input
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val submit = {
+        keyboardController?.hide()
+        onAction(LoginActions.OnLoginClick(inputState))
+    }
     Column(
-        modifier = Modifier.widthIn(max = 375.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.widthIn(max = 400.dp).fillMaxWidth().padding(top = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Spacer(modifier = Modifier.height(48.dp))
+        LoginField(
+            value = inputState.id,
+            onValueChange = { onAction(LoginActions.OnIdChange(it)) },
+            label = stringResource(Res.string.id),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+            testTag = TestTags.LOGIN_ID,
+        )
+        LoginField(
+            value = inputState.pw,
+            onValueChange = { onAction(LoginActions.OnPwChange(it)) },
+            label = stringResource(Res.string.pw),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { if (uiState.canSubmit) submit() }),
+            testTag = TestTags.LOGIN_PW,
+            visualTransformation = if (uiState.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                Icon(
+                    painter = painterResource(
+                        if (uiState.isPasswordVisible) Res.drawable.visibility_off_icon else Res.drawable.visibility_icon
+                    ),
+                    contentDescription = stringResource(
+                        if (uiState.isPasswordVisible) Res.string.login_hide_password else Res.string.login_show_password
+                    ),
+                    tint = AppColors.TextSub,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { onAction(LoginActions.OnTogglePasswordVisible) }
+                        .padding(9.dp),
+                )
+            },
+        )
 
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { onAction(LoginActions.OnToggleSavePw(!inputState.isSavePw)) },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Checkbox(
+                checked = inputState.isSavePw,
+                onCheckedChange = { onAction(LoginActions.OnToggleSavePw(it)) },
+                colors = CheckboxDefaults.colors(checkedColor = AppColors.PrimaryMain),
+            )
+            Text(text = stringResource(Res.string.save_pw), color = AppColors.Text, fontSize = 14.sp)
+        }
+
+        LoginButton(enabled = uiState.canSubmit, onClick = submit)
+
+        /** 회원가입이 없어 로컬·서버 모드 모두 이 계정으로만 들어온다. */
         Text(
-            text = stringResource(Res.string.id),
-            modifier = Modifier.fillMaxWidth(),
-            color = AppColors.Text,
-            fontSize = 13.sp,
-            lineHeight = 15.sp
+            text = stringResource(Res.string.login_demo_hint),
+            color = AppColors.TextSub,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(AppColors.Gray50Bg)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .testTag(TestTags.LOGIN_DEMO_HINT),
         )
+    }
+}
 
-        Spacer(modifier = Modifier.height(5.dp))
+/** 떠 있는 라벨이 붙은 테두리 입력칸. */
+@Composable
+private fun LoginField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    keyboardOptions: KeyboardOptions,
+    keyboardActions: KeyboardActions,
+    testTag: String,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    trailingIcon: (@Composable () -> Unit)? = null,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(text = label) },
+        singleLine = true,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        visualTransformation = visualTransformation,
+        trailingIcon = trailingIcon,
+        shape = RoundedCornerShape(10.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = AppColors.PrimaryMain,
+            focusedLabelColor = AppColors.PrimaryMain,
+            unfocusedBorderColor = AppColors.Line,
+            cursorColor = AppColors.PrimaryMain,
+            focusedTextColor = AppColors.Text,
+            unfocusedTextColor = AppColors.Text,
+            unfocusedLabelColor = AppColors.TextSub,
+        ),
+        modifier = Modifier.fillMaxWidth().testTag(testTag),
+    )
+}
 
-        TextFieldV1(
-            modifier = Modifier.testTag(TestTags.LOGIN_ID),
-            inputText = inputState.id,
-            hintText = stringResource(Res.string.id),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            singleLine = true,
-            onValueChange = { onAction(LoginActions.OnIdChange(it)) }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
+/** 로그인 버튼 — 아이디·비밀번호를 다 넣어야 눌린다. */
+@Composable
+private fun LoginButton(enabled: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .padding(top = 4.dp)
+            .fillMaxWidth()
+            .height(52.dp)
+            .testTag(TestTags.LOGIN_SUBMIT)
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (enabled) AppColors.PrimaryMain else AppColors.Gray100BgAuto)
+            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
+        contentAlignment = Alignment.Center,
+    ) {
         Text(
-            text = stringResource(Res.string.pw),
-            modifier = Modifier.fillMaxWidth(),
-            color = AppColors.Text,
-            fontSize = 13.sp,
-            lineHeight = 15.sp
-        )
-
-        Spacer(modifier = Modifier.height(5.dp))
-
-        TextFieldV1(
-            modifier = Modifier.testTag(TestTags.LOGIN_PW),
-            inputText = inputState.pw,
-            hintText = stringResource(Res.string.pw),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    keyboardController?.hide()
-                    onAction(LoginActions.OnLoginClick(inputState))
-                }
-            ),
-            singleLine = true,
-            onValueChange = { onAction(LoginActions.OnPwChange(it)) }
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        ToggleV1(
-            modifier = Modifier.align(Alignment.Start),
-            text = stringResource(Res.string.save_pw),
-            checked = inputState.isSavePw,
-            onClick = { onAction(LoginActions.OnToggleSavePw(!inputState.isSavePw)) }
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        ButtonV1(
-            modifier = Modifier.fillMaxWidth().height(50.dp).testTag(TestTags.LOGIN_SUBMIT),
             text = stringResource(Res.string.login),
-            onClick = {
-                keyboardController?.hide()
-                onAction(LoginActions.OnLoginClick(inputState))
-            }
+            color = if (enabled) AppColors.White else AppColors.TextDisabled,
+            fontSize = 15.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight.Bold,
         )
     }
 }
@@ -335,7 +434,7 @@ private fun LoginLoadingPreview() {
 private fun LoginInputFormPreview() {
     MaterialTheme {
         LoginInputForm(
-            inputState = Login.LoginRequest(id = "test1", isSavePw = true),
+            uiState = LoginUiState(status = LoginStatus.Idle, input = Login.LoginRequest(id = "test1", isSavePw = true)),
             onAction = {},
         )
     }
