@@ -321,6 +321,17 @@ ORDER BY date DESC LIMIT 1;
 
 -- 서버가 실제로 가진(전송 완료된) 마지막 대화 chatId. SENDING('0')/FAIL('1') 제외.
 -- 정상 진입(미확정 없음) 앵커 및 미확정 전송의 인과적 기준 앵커 캡처에 사용.
+-- 방의 사진·동영상·파일 대화 전부(모아보기), 최근 것이 위. '1' = IMAGE, '4' = VIDEO, '2' = FILE.
+-- 기기에 파일이 있고(imagePath) 보내기가 끝났으며 회수되지 않은 것만.
+selectMediaChatsByRoom:
+SELECT * FROM ChatEntity
+WHERE myId = :myId AND chatRoomId = :chatRoomId
+  AND chatType IN ('1', '2', '4')
+  AND COALESCE(imagePath, '') <> ''
+  AND COALESCE(isRecalled, '0') <> '1'
+  AND chatStatue <> '0' AND chatStatue <> '1'
+ORDER BY date DESC, chatId DESC;
+
 selectLastCompleteChatId:
 SELECT chatId FROM ChatEntity
 WHERE myId = :myId AND chatRoomId = :chatRoomId AND chatStatue <> '0' AND chatStatue <> '1'

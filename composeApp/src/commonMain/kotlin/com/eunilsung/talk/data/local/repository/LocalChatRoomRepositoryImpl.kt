@@ -208,6 +208,12 @@ class LocalChatRoomRepositoryImpl(
         )
     }
 
+    override suspend fun getMediaChats(chatRoomId: String): List<Chat.Item> = withContext(Dispatchers.Default) {
+        val myId = Config.MyInfo.userId
+        if (myId.isBlank() || chatRoomId.isBlank()) return@withContext emptyList()
+        dbQueries.selectMediaChatsByRoom(myId, chatRoomId).executeAsList().map(chatMapper::toModel)
+    }
+
     /** 서버가 없으므로 곧바로 전송 완료 상태로 받을 방에 넣는다. 첨부는 기기의 같은 파일을 가리킨다. */
     override suspend fun forwardChat(chatRoomId: String, sourceRoomId: String, source: Chat.Item) {
         val chat = buildForwardChat(chatRoomId, source, Chat.Status.COMPLETE) ?: return

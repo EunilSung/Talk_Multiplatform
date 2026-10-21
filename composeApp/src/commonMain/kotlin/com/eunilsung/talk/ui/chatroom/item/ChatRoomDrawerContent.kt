@@ -35,6 +35,8 @@ import multiplatformtalk.composeapp.generated.resources.notice_icon
 import multiplatformtalk.composeapp.generated.resources.plus_bold_icon
 import multiplatformtalk.composeapp.generated.resources.vote
 import multiplatformtalk.composeapp.generated.resources.vote_icon
+import multiplatformtalk.composeapp.generated.resources.chat_media
+import multiplatformtalk.composeapp.generated.resources.multimedia_photo_icon
 import com.eunilsung.talk.domain.model.User
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.ui.uikit.click.itemClickable
@@ -46,12 +48,13 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.platform.testTag
 import com.eunilsung.talk.ui.uikit.TestTags
 
-/** 대화방 우측 드로어 — 메뉴 카드(공지/투표) + 참여자 카드. */
+/** 대화방 우측 드로어 — 메뉴 카드(공지/투표/모아보기) + 참여자 카드. */
 @Composable
 fun ChatRoomDrawerContent(
     users: List<User>,
     myId: String,
     onVoteClick: () -> Unit,
+    onMediaClick: () -> Unit,
     onNoticeClick: () -> Unit,
     onInviteClick: () -> Unit,
     onUserClick: (String) -> Unit,
@@ -77,6 +80,14 @@ fun ChatRoomDrawerContent(
                     label = stringResource(Res.string.vote),
                     onClick = onVoteClick,
                     modifier = Modifier.testTag(TestTags.DRAWER_VOTE),
+                )
+            }
+            if (Config.ChatRoom.IS_MEDIA_ENABLED) {
+                DrawerMenuRow(
+                    icon = painterResource(Res.drawable.multimedia_photo_icon),
+                    label = stringResource(Res.string.chat_media),
+                    onClick = onMediaClick,
+                    modifier = Modifier.testTag(TestTags.DRAWER_MEDIA),
                 )
             }
         }
@@ -162,6 +173,7 @@ private fun ChatRoomDrawerContentPreview() {
             ),
             myId = "1",
             onVoteClick = {},
+            onMediaClick = {},
             onNoticeClick = {},
             onInviteClick = {},
             onUserClick = {},

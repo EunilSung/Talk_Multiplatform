@@ -118,6 +118,9 @@ interface ChatRoomRepository {
     /** 대화 회수 — 대상의 isRecalled 를 세워 "회수된 메시지" 로 표시. */
     suspend fun recallChat(chatRoomId: String, targetChatId: String)
 
+    /** 모아보기 — 이 기기에 받아 둔 방의 사진·동영상·파일 대화, 최근 것이 먼저. 서버에 묻지 않는다. */
+    suspend fun getMediaChats(chatRoomId: String): List<Chat.Item>
+
     /** 파일/사진/동영상 대화 전송 — metadata 해석 후 chatType 판별해 목록에 추가. */
     suspend fun sendFile(chatRoomId: String, path: String)
 

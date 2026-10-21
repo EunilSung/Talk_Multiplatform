@@ -103,7 +103,8 @@ fun FileItem(
     }
 }
 
-private fun fileIconFor(fileName: String): DrawableResource {
+/** 파일 이름의 확장자로 고른 파일 아이콘. 대화방 말풍선과 모아보기가 함께 쓴다. */
+internal fun fileIconFor(fileName: String): DrawableResource {
     val ext = fileName.substringAfterLast('.', "").lowercase()
     return when (ext) {
         "xls", "xlsx", "xlsm", "xlsb", "csv" -> Res.drawable.file_excel
