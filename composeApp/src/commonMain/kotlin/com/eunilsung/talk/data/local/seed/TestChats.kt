@@ -12,7 +12,6 @@ import com.eunilsung.talk.domain.model.EmpathyChat
 import com.eunilsung.talk.domain.model.ReplyChat
 import com.eunilsung.talk.domain.util.UserListCodec
 import com.eunilsung.talk.domain.model.User
-import multiplatformtalk.composeapp.generated.resources.Res
 
 /** 대화방별 초기 대화 내용. */
 object TestChats {
@@ -22,6 +21,12 @@ object TestChats {
 
     /** 시안 공유 대화에 쓰는 사진 — 앱의 내 그룹 화면을 캡처한 것. */
     private const val SEED_DESIGN_IMAGE = "drawable/seed_group_design.png"
+
+    /** 파일 대화에 쓰는 QA 체크리스트. */
+    private const val SEED_QA_FILE = "files/seed_qa_checklist.xlsx"
+
+    /** 시드 첨부의 경로가 앱 리소스를 가리키는지 가르는 앞머리. 저장소가 이 경로의 첨부를 실제 파일로 푼다. */
+    val SEED_RESOURCE_PREFIXES = listOf("drawable/", "files/")
 
     fun seed(room: ChatRoom.Item, myId: String): List<Chat.Item> {
         val members = UserListCodec.decode(room.totalUserList)
@@ -62,13 +67,16 @@ object TestChats {
                 is Body.Picture -> base.copy(
                     chatType = Chat.Type.IMAGE,
                     chatContent = "",
-                    imagePath = resourceUri(body.resourcePath),
+                    imagePath = body.resourcePath,
+                    localPath = body.resourcePath,
                     imageSize = body.size,
                 )
                 is Body.Attachment -> base.copy(
                     chatType = Chat.Type.FILE,
                     chatContent = body.sizeLabel,
                     originalFileName = body.fileName,
+                    imagePath = body.resourcePath,
+                    localPath = body.resourcePath,
                 )
                 is Body.Sticker -> base.copy(chatType = Chat.Type.EMOTICON, emoticon = Emoticon(id = body.emoticonId))
                 is Body.Reply -> chats[body.toIndex].let { origin ->
@@ -88,12 +96,6 @@ object TestChats {
         }
         return chats
     }
-
-    /**
-     * 앱에 든 리소스의 주소. JVM 단위 테스트에는 Android 컨텍스트가 없어 주소를 못 구하므로 경로를 그대로 둔다 —
-     * 테스트는 대화 수·종류만 보고 사진을 그리지 않는다.
-     */
-    private fun resourceUri(path: String): String = runCatching { Res.getUri(path) }.getOrDefault(path)
 
     /** 공감 아이콘 번호(0~5)별로 누른 사람 수만큼 [reactors] 앞에서부터 채운다. */
     private fun empathyOf(chatId: String, counts: Map<Int, Int>, reactors: List<Pair<String, String>>): EmpathyChat {
@@ -151,11 +153,14 @@ object TestChats {
         val empathy: Map<Int, Int> = emptyMap(),
     )
 
-    /** 문자 말고 시연할 대화 종류. 사진은 앱에 든 리소스를 쓰고, 파일은 이름과 크기만 보인다. */
+    /**
+     * 문자 말고 시연할 대화 종류. 사진·파일은 앱에 든 리소스([resourcePath], `composeResources` 기준 경로)를 가리킨다.
+     * 기기 DB 에 넣을 때 저장소가 실제 파일로 풀어 경로를 바꾼다([SEED_RESOURCE_PREFIXES]).
+     */
     private sealed interface Body {
         data object Text : Body
         data class Picture(val resourcePath: String, val size: String) : Body
-        data class Attachment(val fileName: String, val sizeLabel: String) : Body
+        data class Attachment(val fileName: String, val sizeLabel: String, val resourcePath: String) : Body
         data class Sticker(val emoticonId: String) : Body
         /** [toIndex] 번째 줄에 대한 답장. */
         data class Reply(val toIndex: Int) : Body
@@ -180,7 +185,7 @@ object TestChats {
                 Line("", mine = false, speakerIndex = 0, body = Body.Sticker("(손말_안녕하세오)")),
                 Line("", mine = false, speakerIndex = 1, body = Body.Picture(SEED_DESIGN_IMAGE, "414:230"), empathy = mapOf(0 to 2, 1 to 1)),
                 Line("@$myName 내 그룹 화면 시안입니다. 확인 부탁드려요", mine = false, speakerIndex = 1),
-                Line("", mine = false, speakerIndex = 2, body = Body.Attachment("QA_체크리스트_v2.xlsx", "248KB")),
+                Line("", mine = false, speakerIndex = 2, body = Body.Attachment("QA_체크리스트_v2.xlsx", "2KB", SEED_QA_FILE)),
                 Line("", mine = false, speakerIndex = 0, body = Body.Sticker("(손말_오케이)")),
                 Line("좋네요. 검색창 위 여백만 조금 줄여 주세요", mine = true, body = Body.Reply(toIndex = 3), empathy = mapOf(1 to 2, 2 to 1)),
             )

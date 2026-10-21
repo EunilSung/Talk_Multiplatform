@@ -1,5 +1,6 @@
 package com.eunilsung.talk.data.local.repository
 
+import multiplatformtalk.composeapp.generated.resources.Res
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -452,18 +453,32 @@ class LocalChatRoomRepositoryImpl(
     private fun loadBookmarks(myId: String, chatRoomId: String): List<Bookmark> =
         dbQueries.selectBookmarksByRoom(myId, chatRoomId).executeAsList().map(chatMapper::toBookmark)
 
-    private fun seedChats(myId: String, chatRoomId: String) {
+    private suspend fun seedChats(myId: String, chatRoomId: String) {
         val room = dbQueries.selectChatRoomsByMyId(myId).executeAsList()
             .firstOrNull { it.roomId == chatRoomId }
             ?.let { chatRoomMapper.toModel(it) }
             ?: return
 
-        val seeded = TestChats.seed(room, myId)
+        val seeded = TestChats.seed(room, myId).map { materializeSeedAttachment(it) }
         if (seeded.isEmpty()) return
         dbQueries.transaction {
             seeded.forEach { dbQueries.insertChat(chatMapper.toEntity(myId, chatRoomId, it)) }
         }
         Log.message("[Chat/Local] seeded ${seeded.size} chats into $chatRoomId")
+    }
+
+    /**
+     * 앱 리소스를 가리키는 시드 첨부를 기기 캐시에 실제 파일로 풀어 그 경로로 바꾼다. 보낸 첨부와 똑같이 열고 받을 수 있게 된다
+     * (Android 는 리소스 주소를 파일로 읽지 못한다). 풀지 못하면 리소스 주소로 두어 보이기만 하게 한다.
+     */
+    private suspend fun materializeSeedAttachment(chat: Chat.Item): Chat.Item {
+        val resourcePath = chat.localPath
+        if (TestChats.SEED_RESOURCE_PREFIXES.none { resourcePath.startsWith(it) }) return chat
+        val name = chat.originalFileName.ifBlank { resourcePath.substringAfterLast('/') }
+        val written = runCatching { Res.readBytes(resourcePath) }.getOrNull()
+            ?.let { bytes -> runCatching { fileMetadataResolver.writeCacheFile("seed_$name", bytes) }.getOrNull() }
+        val path = written ?: runCatching { Res.getUri(resourcePath) }.getOrDefault(resourcePath)
+        return chat.copy(imagePath = path, localPath = path)
     }
 
     /** 대화를 방에 추가하는 공통 경로 — 저장 → 목록 갱신 → 미리보기 동기화 → 신호 방출. */

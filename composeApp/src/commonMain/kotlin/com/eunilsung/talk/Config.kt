@@ -30,7 +30,7 @@ object Config {
      * 서버 목록에 없는 방을 지울 때 시연용 데이터까지 지워진다.
      */
     object Database {
-        val NAME: String = if (Server.IS_ENABLED) "AppDatabase_server_v1.db" else "AppDatabase_v13.db"
+        val NAME: String = if (Server.IS_ENABLED) "AppDatabase_server_v1.db" else "AppDatabase_v14.db"
     }
 
     object MyInfo {

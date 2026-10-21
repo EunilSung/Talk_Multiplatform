@@ -241,13 +241,13 @@ class LocalChatRoomRepositoryTest {
     }
 
     @Test
-    fun 모아보기는_기기에_파일이_있는_첨부만_준다() = runTest {
+    fun 모아보기는_방의_사진과_파일을_최근_것부터_준다() = runTest {
         seedRoom()
 
         val media = repo.getMediaChats(roomId)
 
-        assertEquals(listOf(Chat.Type.IMAGE), media.map { it.chatType })
-        assertTrue(chats().any { it.chatType == Chat.Type.FILE && it.imagePath.isBlank() }, "시드의 파일은 기기 파일이 없다")
+        assertEquals(listOf(Chat.Type.FILE, Chat.Type.IMAGE), media.map { it.chatType })
+        assertTrue(media.all { it.imagePath.isNotBlank() }, "시드 첨부도 열 수 있는 경로를 가진다")
     }
 
     @Test
@@ -257,7 +257,7 @@ class LocalChatRoomRepositoryTest {
 
         repo.recallChat(roomId, photo.chatID)
 
-        assertTrue(repo.getMediaChats(roomId).isEmpty())
+        assertEquals(listOf(Chat.Type.FILE), repo.getMediaChats(roomId).map { it.chatType })
     }
 
     @Test
