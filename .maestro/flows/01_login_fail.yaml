@@ -11,6 +11,12 @@ tags:
 - tapOn:
     id: login_pw
 - inputText: wrong-password
+- runFlow:
+    when:
+      platform: Android
+    label: 키보드 높이를 알려 주지 않는 에뮬레이터에서는 버튼이 키보드 뒤에 가리므로 키보드를 내리고 누른다
+    commands:
+      - hideKeyboard
 - tapOn:
     id: login_submit
 - tapOn:
@@ -23,6 +29,12 @@ tags:
     id: login_pw
 - eraseText: 20
 - inputText: "1234"
+- runFlow:
+    when:
+      platform: Android
+    label: 키보드 높이를 알려 주지 않는 에뮬레이터에서는 버튼이 키보드 뒤에 가리므로 키보드를 내리고 누른다
+    commands:
+      - hideKeyboard
 - tapOn:
     id: login_submit
 - extendedWaitUntil:
