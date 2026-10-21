@@ -61,8 +61,7 @@ import com.eunilsung.talk.data.local.ExternalUrlOpener
 import com.eunilsung.talk.domain.model.Login
 import com.eunilsung.talk.ui.main.DownloadingDialog
 import com.eunilsung.talk.ui.main.ForceUpdateOverlay
-import com.eunilsung.talk.ui.main.KeyBoardPane
-import com.eunilsung.talk.ui.main.rememberImeHeight
+import androidx.compose.foundation.layout.imePadding
 import com.eunilsung.talk.ui.theme.AppColors
 import com.eunilsung.talk.util.Log
 import org.koin.compose.koinInject
@@ -158,14 +157,7 @@ fun LoginContent(
     val inputState = uiState.input
     val focusManager = LocalFocusManager.current
     val dialog = LocalDialogManager.current
-    val imeHeight = rememberImeHeight()
-    val isKeyboardVisible = imeHeight > 0.dp
     val loginTitle = stringResource(Res.string.login)
-
-    val scrollState = rememberScrollState()
-    LaunchedEffect(scrollState.maxValue) {
-        scrollState.scrollTo(scrollState.maxValue)
-    }
 
     LaunchedEffect(status) {
         when (status) {
@@ -183,29 +175,29 @@ fun LoginContent(
         }
     }
 
-    Column(
+    /**
+     * 키보드가 올라오면 그만큼만 영역을 줄인다(imePadding). 내용은 가운데에 두고, 넘치면 스크롤되며 포커스된 입력칸은
+     * Compose 가 보이는 곳으로 가져온다 — 맨 아래로 끌어내리지 않아 위쪽 입력칸이 화면 밖으로 밀리지 않는다.
+     */
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.Bg)
+            .imePadding()
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {
+                    focusManager.clearFocus()
+                })
+            },
+        contentAlignment = Alignment.Center,
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .weight(1f)
                 .fillMaxWidth()
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = {
-                        focusManager.clearFocus()
-                    })
-                },
-            contentAlignment = Alignment.Center,
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 32.dp, vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .verticalScroll(scrollState),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
 
             Brand()
 
@@ -221,12 +213,6 @@ fun LoginContent(
                 LoginInputForm(uiState = uiState, onAction = onAction)
             }
         }
-        }
-
-        KeyBoardPane(
-            isKeyboardVisible = isKeyboardVisible,
-            imeHeight = imeHeight + 50.dp
-        )
     }
 }
 
