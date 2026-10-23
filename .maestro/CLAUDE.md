@@ -16,3 +16,12 @@
 - **태블릿 AVD(`MPT_Tablet`)는 키보드 높이를 앱에 알리지 않는다.** 키보드가 입력바·버튼을 가려 대화·투표 흐름이 깨진다.
   `e2e.androidAvd` 는 폰 AVD 로 고른다. 로그인 버튼은 Android 에서 키보드를 내린 뒤 누른다(`login.yaml`).
 - **`ai` 이름표가 붙은 흐름(번역·다듬기)은 `-PrequireAi=true` 일 때만 돈다.** 키가 없는 서버에서는 뜻이 없어 평소에는 뺀다.
+- **AI 요약 흐름(`06_ai_summary.yaml`)은 기기에 AI Agent 앱이 있는지에 따라 확인할 것이 다르다.** `run.sh` 가 기기에서
+  `com.eunilsung.aiagent` 를 찾아 `-e AI_AGENT_INSTALLED=true|false` 로 넘기고, `TALK_E2E_AI_AGENT_INSTALLED` 로 직접 정할 수도
+  있다. 값이 없으면 없는 쪽이다.
+  - 없으면 설치 안내 토스트를 `id: toast_ai_agent_not_installed` 로 기다린다. 토스트는 문구 대신 태그로 찾는다 — "받는 중"
+    토스트(`toast_ai_summary_file_not_ready`)와 구분되고, 문구를 바꾸거나 번역해도 흐름이 깨지지 않는다.
+  - 있으면 두 가지를 본다. Talk 에만 있는 `chat_room_menu` 가 사라지는지, 그리고 AI Agent 에만 있는 요소(같은 계정이면 새 대화방의
+    `chat_back`, 다른 계정·로그인 안 됨이면 안내 팝업의 `dialog_title`)가 보이는지. `chat_input` 은 AI Agent 대화방에도 같은 이름이
+    있어 앱이 바뀌었는지 판정하는 데 쓰지 않는다. AI Agent 쪽 이름은 그 저장소의 `ui/uikit/TestTags.kt` 와 맞춘다.
+  - 파일 id 를 아직 모르면(기록을 남기기 전에 받은 대화) "받는 중" 안내가 떠서 몇 번 다시 누른다(`retry`).

@@ -24,6 +24,12 @@ object TestTags {
     const val CHAT_EMPATHY = "chat_empathy"
     const val CHAT_MENU_TRANSLATE = "chat_menu_translate"
     const val CHAT_MENU_FORWARD = "chat_menu_forward"
+    /** 문서 파일 대화의 "AI 요약". 누르면 AI Agent 앱을 연다. */
+    const val CHAT_MENU_AI_SUMMARY = "chat_menu_ai_summary"
+    /** "AI 요약" 을 눌렀는데 기기에 AI Agent 앱이 없다는 토스트. */
+    const val TOAST_AI_AGENT_NOT_INSTALLED = "toast_ai_agent_not_installed"
+    /** "AI 요약" 을 눌렀는데 파일의 서버 id 를 아직 몰라(받는 중) 다시 하라는 토스트. */
+    const val TOAST_AI_SUMMARY_FILE_NOT_READY = "toast_ai_summary_file_not_ready"
     const val SHARE_SUBMIT = "share_submit"
     const val SHARE_TAB_CHATROOM = "share_tab_chatroom"
     const val DRAWER_MEDIA = "drawer_media"

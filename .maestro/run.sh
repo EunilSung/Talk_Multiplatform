@@ -10,6 +10,8 @@
 #   TALK_IOS_DEVICE  / e2e.iosDevice   시뮬레이터 UDID 또는 이름. 꺼져 있으면 켠다
 # 앱은 TALK_SERVER_BASE_URL(기본 http://localhost:8090)의 서버에 붙게 빌드되고, 그 서버가 떠 있어야 한다.
 # `ai` 이름표가 붙은 흐름은 TALK_E2E_AI=true 일 때만 돈다(AI 키가 있는 서버에서만 뜻이 있다).
+# AI 요약 흐름은 기기에 AI Agent 앱(com.eunilsung.aiagent…)이 있는지 보고 확인할 것을 고른다 — 없으면 설치 안내,
+# 있으면 그 앱이 열리는지. TALK_E2E_AI_AGENT_INSTALLED=true|false 로 직접 정할 수도 있다.
 # 결과는 build/maestro/<플랫폼>/report.xml(JUnit)과 같은 폴더의 스크린샷·로그로 남는다.
 set -euo pipefail
 
@@ -31,13 +33,17 @@ MAESTRO=$(command -v maestro || echo "$HOME/.maestro/bin/maestro")
 [ -x "$MAESTRO" ] || fail "Maestro 가 없다. 설치: curl -fsSL https://get.maestro.mobile.dev | bash"
 curl -sf "$SERVER_URL/health" >/dev/null || fail "서버($SERVER_URL)에 닿지 않는다. ./gradlew :server:runLocal 로 띄운다"
 
+AI_AGENT_ID=com.eunilsung.aiagent
+
 run_flows() {
     rm -rf "$OUT"
     mkdir -p "$OUT"
-    log "$PLATFORM($1) 에서 흐름을 돌린다"
+    local ai_agent=${TALK_E2E_AI_AGENT_INSTALLED:-$2}
+    log "$PLATFORM($1) 에서 흐름을 돌린다 (AI Agent 설치: $ai_agent)"
     local tags=--exclude-tags=ai
     [ "${TALK_E2E_AI:-}" = true ] && tags=
-    "$MAESTRO" --device "$1" test -e TALK_SERVER="$SERVER_URL" "$ROOT/.maestro" $tags --format junit --output "$OUT/report.xml" --test-output-dir "$OUT"
+    "$MAESTRO" --device "$1" test -e TALK_SERVER="$SERVER_URL" -e AI_AGENT_INSTALLED="$ai_agent" \
+        "$ROOT/.maestro" $tags --format junit --output "$OUT/report.xml" --test-output-dir "$OUT"
 }
 
 android_avd_of() { "$ADB" -s "$1" emu avd name 2>/dev/null | head -1 | tr -d '\r'; }
@@ -88,7 +94,9 @@ run_android() {
     case "$SERVER_URL" in
         http://localhost:*) "$ADB" -s "$serial" reverse "tcp:$SERVER_PORT" "tcp:$SERVER_PORT" >/dev/null ;;
     esac
-    run_flows "$serial"
+    local ai_agent=false
+    [ -n "$("$ADB" -s "$serial" shell pm path "$AI_AGENT_ID" 2>/dev/null | tr -d '\r')" ] && ai_agent=true
+    run_flows "$serial" "$ai_agent"
 }
 
 find_ios_device() {
@@ -124,7 +132,10 @@ run_ios() {
 
     log "$udid 에 설치한다"
     xcrun simctl install "$udid" "$ROOT/build/ios-derived/Build/Products/Debug-iphonesimulator/Talk.app"
-    run_flows "$udid"
+    local ai_agent=false apps
+    apps=$(xcrun simctl listapps "$udid" 2>/dev/null || true)
+    case "$apps" in *"\"$AI_AGENT_ID"*) ai_agent=true ;; esac
+    run_flows "$udid" "$ai_agent"
 }
 
 case "$PLATFORM" in

@@ -57,6 +57,7 @@ import com.eunilsung.talk.ui.uikit.dialog.LocalDialogManager
 import com.eunilsung.talk.ui.uikit.sheet.LocalBottomSheetManager
 import com.eunilsung.talk.ui.uikit.toast.LocalToastManager
 import com.eunilsung.talk.ui.uikit.mediapicker.MediaPickerBindings
+import com.eunilsung.talk.ui.uikit.TestTags
 import com.eunilsung.talk.ui.uikit.mediapicker.MediaPickerHost
 import com.eunilsung.talk.ui.uikit.mediapicker.rememberMediaPickerState
 import com.eunilsung.talk.ui.userprofile.LocalShowUserProfile
@@ -103,6 +104,10 @@ class ChatRoomScreen(
                 when (event) {
                     ChatRoomEvent.SelfLeft -> rightNavigator.popToEmptyRoot()
                     ChatRoomEvent.TranslationFailed -> toastManager.show(strings.translateUnavailable)
+                    ChatRoomEvent.AiSummaryFileNotReady ->
+                        toastManager.show(strings.aiSummaryFileNotReady, testTag = TestTags.TOAST_AI_SUMMARY_FILE_NOT_READY)
+                    ChatRoomEvent.AiAgentNotInstalled ->
+                        toastManager.show(strings.aiAgentNotInstalled, testTag = TestTags.TOAST_AI_AGENT_NOT_INSTALLED)
                 }
             }
         }

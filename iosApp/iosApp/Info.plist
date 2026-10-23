@@ -66,11 +66,13 @@
 		선언해야 함. 등록 안 되어 있으면 시스템이 silently block (openURL 이 false 반환).
 		  - itms-services : Enterprise/Ad Hoc 앱 manifest 설치 트리거
 		  - itms-apps     : App Store 직링크
+		  - aiagent       : 파일 대화 "AI 요약" 이 AI Agent 앱을 연다 (aiagent://summarize?...)
 	-->
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>itms-services</string>
 		<string>itms-apps</string>
+		<string>aiagent</string>
 	</array>
 </dict>
 </plist>

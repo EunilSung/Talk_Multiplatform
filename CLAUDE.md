@@ -186,6 +186,26 @@ iosApp/        Xcode 프로젝트
 - 바꾸는 요청은 전부 REST 로 받고, WebSocket 은 "무엇이 바뀌었다"를 알리는 데만 쓴다.
 - 서버 테스트는 내장 PostgreSQL 로 실제 쿼리를 돌린다. 설치할 것이 없다.
 
+### AI Agent 연동 (AI 요약)
+
+문서 파일 대화의 롱프레스 메뉴 "AI 요약" 이 같은 기기의 AI Agent 앱(별도 저장소)을 링크로 연다. 요약은 그 앱이 하고,
+Talk 서버·`:shared` 계약은 바뀌지 않는다(AI Agent 쪽이 사용자 토큰으로 `GET /files/{id}` 를 부른다).
+
+- **링크 계약** — `aiagent://summarize?fileId=<서버 파일 id>&fileName=<파일 이름>&userId=<로그인 아이디>&userName=<이름>`.
+  값은 모두 퍼센트 인코딩(공백 `%20`). 받는 쪽이 값을 검증하고 계정을 비교하므로, 이름·순서를 바꾸려면 AI Agent 와 함께 바꾼다.
+  만드는 곳은 `data/mapper/AiAgentLinkMapper`.
+- **흐름** — `ChatActionMenu`(`canRequestAiSummary`) → `ChatRoomActions.OnRequestAiSummary` → `RequestAiSummaryUseCase` →
+  `AiSummaryRepository`(파일 id 찾기·링크 열기) → 결과에 따라 `ChatRoomEvent.AiSummaryFileNotReady`·`AiAgentNotInstalled` 토스트.
+  두 토스트에는 `TestTags.TOAST_AI_SUMMARY_FILE_NOT_READY`·`TOAST_AI_AGENT_NOT_INSTALLED` 가 붙는다(`ToastManager.show` 의 `testTag`).
+- **파일 id** — 말풍선의 `imagePath`·`localPath` 는 기기 캐시 경로라 서버 id 가 아니다. 같은 기기 파일을 여러 방에 보내거나 전달하면
+  경로 하나를 id 여럿이 가리키므로, `ChatRoomRepositoryImpl` 이 서버가 확정한 파일 대화를 반영할 때마다(받은 대화 저장·이전 대화·
+  알림 대화·올리고 보내기·전달) `ServerFileStore.rememberChatFile` 로 `server_chat_file_<방 id>/<대화 id>` → 파일 id 를 적는다.
+  유스케이스는 방·대화로 먼저 찾고(`chatFileId`), 그 기록이 없는 옛 대화만 `fileIdOf(path)` 로 `server_file_<id>` 를 거꾸로 훑는다.
+  둘 다 없으면 "받는 중" 안내가 뜬다.
+- **열기** — `data/local/AppLinkOpener`(Android `ACTION_VIEW`, iOS `canOpenURL`→`openURL`). iOS 는 Info.plist 의
+  `LSApplicationQueriesSchemes` 에 `aiagent` 가 있어야 한다. 메뉴는 서버 모드·`Config.ChatRoom.IS_AI_SUMMARY_ENABLED`·
+  `AI_SUMMARY_EXTENSIONS`·회수 안 됨·전송 완료일 때만 보인다.
+
 ## 개발 환경 준비
 
 새 머신에서 클론했다면 이것들이 저장소에 없으므로 따로 준비해야 한다.
@@ -285,6 +305,8 @@ TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:e2eAndroid   # 
   흐름 파일에도 같은 이름을 쓴다. 상대가 보낸 말·방 이름처럼 흐름이 만든 영문 글자는 글자로 찾아도 된다.
 - **다이얼로그는 Surface 에 `exposeTestTags()` 를 붙인다.** Android 는 다이얼로그가 창이 따로라 앱 루트의 설정이
   닿지 않는다. iOS 는 testTag 가 그대로 접근성 식별자로 나간다.
+- **흐름이 확인하는 토스트는 `ToastManager.show(…, testTag = TestTags.X)` 로 띄운다.** 토스트 문구도 앱 문자열이라 글자로 찾지 않는다.
+  안내가 여럿이면 태그를 따로 두어 구분한다(AI 요약의 미설치·받는 중).
 - 실행 스크립트·상대 역할·기기별 주의점은 `.maestro/CLAUDE.md` 에 있다.
 
 ### 전체 검증 — 실행 구성 하나로

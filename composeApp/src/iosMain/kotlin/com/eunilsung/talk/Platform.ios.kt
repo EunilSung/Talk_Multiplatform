@@ -5,6 +5,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.engine.darwin.Darwin
 import com.eunilsung.talk.data.local.AppExiter
+import com.eunilsung.talk.data.local.AppLinkOpener
 import com.eunilsung.talk.data.local.AppVersionProvider
 import com.eunilsung.talk.data.local.DatabaseDriverFactory
 import com.eunilsung.talk.data.local.ExternalUrlOpener
@@ -12,6 +13,7 @@ import com.eunilsung.talk.data.local.FileMetadataResolver
 import com.eunilsung.talk.data.local.FileOpener
 import com.eunilsung.talk.data.local.FilePickerProvider
 import com.eunilsung.talk.data.local.IosAppExiter
+import com.eunilsung.talk.data.local.IosAppLinkOpener
 import com.eunilsung.talk.data.local.IosAppVersionProvider
 import com.eunilsung.talk.data.local.IosExternalUrlOpener
 import com.eunilsung.talk.data.local.IosFileMetadataResolver
@@ -62,6 +64,7 @@ val platformModule = module {
     }
     single<ExternalUrlOpener> { IosExternalUrlOpener() }
     single<AppExiter> { IosAppExiter() }
+    single<AppLinkOpener> { IosAppLinkOpener() }
 }
 
 

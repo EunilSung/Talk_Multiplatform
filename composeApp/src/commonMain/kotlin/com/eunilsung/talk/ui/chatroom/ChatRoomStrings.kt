@@ -8,6 +8,7 @@ import multiplatformtalk.composeapp.generated.resources.cancel
 import multiplatformtalk.composeapp.generated.resources.chat_bookmark_set
 import multiplatformtalk.composeapp.generated.resources.chat_bookmark_unset
 import multiplatformtalk.composeapp.generated.resources.chat_delete_message
+import multiplatformtalk.composeapp.generated.resources.chat_menu_ai_summary
 import multiplatformtalk.composeapp.generated.resources.chat_delete_title
 import multiplatformtalk.composeapp.generated.resources.chat_menu_copy
 import multiplatformtalk.composeapp.generated.resources.chat_menu_notice
@@ -29,6 +30,8 @@ import multiplatformtalk.composeapp.generated.resources.date_ampm_pm
 import multiplatformtalk.composeapp.generated.resources.delete
 import multiplatformtalk.composeapp.generated.resources.notice_delete_message
 import multiplatformtalk.composeapp.generated.resources.notice_delete_title
+import multiplatformtalk.composeapp.generated.resources.toast_ai_agent_not_installed
+import multiplatformtalk.composeapp.generated.resources.toast_ai_summary_file_not_ready
 import multiplatformtalk.composeapp.generated.resources.toast_no_notice
 import multiplatformtalk.composeapp.generated.resources.toast_polish_unavailable
 import multiplatformtalk.composeapp.generated.resources.toast_translate_unavailable
@@ -64,6 +67,9 @@ data class ChatRoomStrings(
     val menuTranslate: String,
     val menuTranslateHide: String,
     val translateUnavailable: String,
+    val menuAiSummary: String,
+    val aiSummaryFileNotReady: String,
+    val aiAgentNotInstalled: String,
     val polishCorrect: String,
     val polishPolite: String,
     val polishConcise: String,
@@ -96,6 +102,9 @@ fun rememberChatRoomStrings(): ChatRoomStrings {
     val menuTranslate = stringResource(Res.string.chat_menu_translate)
     val menuTranslateHide = stringResource(Res.string.chat_menu_translate_hide)
     val translateUnavailable = stringResource(Res.string.toast_translate_unavailable)
+    val menuAiSummary = stringResource(Res.string.chat_menu_ai_summary)
+    val aiSummaryFileNotReady = stringResource(Res.string.toast_ai_summary_file_not_ready)
+    val aiAgentNotInstalled = stringResource(Res.string.toast_ai_agent_not_installed)
     val polishCorrect = stringResource(Res.string.chat_polish_correct)
     val polishPolite = stringResource(Res.string.chat_polish_polite)
     val polishConcise = stringResource(Res.string.chat_polish_concise)
@@ -126,6 +135,9 @@ fun rememberChatRoomStrings(): ChatRoomStrings {
             menuTranslate = menuTranslate,
             menuTranslateHide = menuTranslateHide,
             translateUnavailable = translateUnavailable,
+            menuAiSummary = menuAiSummary,
+            aiSummaryFileNotReady = aiSummaryFileNotReady,
+            aiAgentNotInstalled = aiAgentNotInstalled,
             polishCorrect = polishCorrect,
             polishPolite = polishPolite,
             polishConcise = polishConcise,

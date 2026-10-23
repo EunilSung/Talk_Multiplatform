@@ -7,6 +7,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.engine.okhttp.OkHttp
 import com.eunilsung.talk.data.local.AndroidAppExiter
+import com.eunilsung.talk.data.local.AndroidAppLinkOpener
+import com.eunilsung.talk.data.local.AppLinkOpener
 import com.eunilsung.talk.data.local.AndroidVideoThumbnailLoader
 import com.eunilsung.talk.data.local.VideoThumbCache
 import com.eunilsung.talk.data.local.VideoThumbnailLoader
@@ -62,4 +64,5 @@ val platformModule = module {
     }
     single<AppExiter> { AndroidAppExiter() }
     single<ExternalUrlOpener> { AndroidExternalUrlOpener(get(), get()) }
+    single<AppLinkOpener> { AndroidAppLinkOpener(get()) }
 }

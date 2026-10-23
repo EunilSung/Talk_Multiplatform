@@ -2,6 +2,7 @@ package com.eunilsung.talk.functest
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.eunilsung.talk.data.mapper.AiAgentLinkMapper
 import com.eunilsung.talk.data.mapper.SeedMapper
 import com.eunilsung.talk.data.mapper.VoteMapper
 import com.eunilsung.talk.data.mapper.ChatMapper
@@ -15,6 +16,7 @@ import com.eunilsung.talk.data.remote.server.TalkServerClient
 import com.eunilsung.talk.data.remote.server.TalkSocket
 import com.eunilsung.talk.data.remote.server.UserDirectory
 import com.eunilsung.talk.data.remote.server.valueOrNull
+import com.eunilsung.talk.data.repository.AiSummaryRepositoryImpl
 import com.eunilsung.talk.data.repository.ChatRoomListRepositoryImpl
 import com.eunilsung.talk.data.repository.ChatRoomRepositoryImpl
 import com.eunilsung.talk.data.repository.GroupRepositoryImpl
@@ -32,6 +34,7 @@ import com.eunilsung.talk.domain.model.ChatRoom
 import com.eunilsung.talk.domain.model.Login
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.SendMessageRequest
+import com.eunilsung.talk.testsupport.FakeAppLinkOpener
 import com.eunilsung.talk.testsupport.FakeFileMetadataResolver
 import com.eunilsung.talk.testsupport.TestLocalSecret
 import com.eunilsung.talk.testsupport.TestMyInfo
@@ -113,6 +116,10 @@ class RealServerHarness private constructor(private val baseUrl: String) {
         server, directory, groupMapper, people,
     )
     val profiles = UserProfileRepositoryImpl(server, directory, people)
+
+    /** 다른 앱 열기. AI Agent 앱은 기기에 없으니 연 링크를 모아 두고, 설치 여부는 시나리오가 정한다. */
+    val appLinks = FakeAppLinkOpener()
+    val aiSummary = AiSummaryRepositoryImpl(fileStore, AiAgentLinkMapper(), appLinks)
 
     /** 테스트 계정으로 로그인한다. 성공하면 대화방 저장소가 서버 알림을 듣기 시작한다. */
     suspend fun signIn(userId: String = ME, password: String = PASSWORD): Login.LoginResult =

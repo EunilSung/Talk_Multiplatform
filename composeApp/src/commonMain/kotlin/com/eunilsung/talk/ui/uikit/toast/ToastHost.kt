@@ -14,14 +14,16 @@ import androidx.compose.ui.Modifier
 fun ToastHost(content: @Composable () -> Unit) {
     var message by remember { mutableStateOf<String?>(null) }
     var icon by remember { mutableStateOf<(@Composable () -> Unit)?>(null) }
+    var toastTag by remember { mutableStateOf<String?>(null) }
     /** 같은 문구를 연달아 띄워도 새 토스트로 인식되도록 호출마다 증가시킨다. */
     var showToken by remember { mutableStateOf(0) }
 
     val manager = remember {
         object : ToastManager {
-            override fun show(m: String, i: (@Composable () -> Unit)?) {
+            override fun show(m: String, i: (@Composable () -> Unit)?, testTag: String?) {
                 message = m
                 icon = i
+                toastTag = testTag
                 showToken++
             }
         }
@@ -36,9 +38,11 @@ fun ToastHost(content: @Composable () -> Unit) {
                 onDismiss = {
                     message = null
                     icon = null
+                    toastTag = null
                 },
                 left = icon,
                 restartKey = showToken,
+                testTag = toastTag,
             )
         }
     }

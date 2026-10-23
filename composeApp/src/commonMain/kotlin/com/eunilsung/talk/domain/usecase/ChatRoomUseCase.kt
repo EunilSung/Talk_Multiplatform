@@ -33,6 +33,7 @@ data class ChatRoomUseCases(
     val addBookmark: AddBookmarkUseCase,
     val deleteBookmark: DeleteBookmarkUseCase,
     val reinviteDirectPartner: ReinviteDirectPartnerUseCase,
+    val requestAiSummary: RequestAiSummaryUseCase,
 )
 
 /**
