@@ -236,6 +236,9 @@
     <string name="chat_menu_translate_hide">번역 숨기기</string>
     <string name="chat_translating">번역하는 중…</string>
     <string name="toast_translate_unavailable">지금은 번역할 수 없습니다. 잠시 후 다시 시도해 주세요.</string>
+    <string name="chat_menu_ai_summary">AI 요약</string>
+    <string name="toast_ai_summary_file_not_ready">파일을 아직 받는 중이에요. 잠시 뒤 다시 해 주세요.</string>
+    <string name="toast_ai_agent_not_installed">AI Agent 앱이 설치되어 있지 않아요.</string>
 
     <string name="invite">초대하기</string>
     <string name="share">공유하기</string>

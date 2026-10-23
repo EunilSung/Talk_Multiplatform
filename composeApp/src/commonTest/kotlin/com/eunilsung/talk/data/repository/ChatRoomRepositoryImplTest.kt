@@ -30,6 +30,8 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -87,6 +89,10 @@ class ChatRoomRepositoryImplTest {
     private suspend fun contents(): List<String> = chats().map { it.chatContent }
 
     private fun peerSays(text: String) = server.receive(roomId, "test2", "이서연", text)
+
+    /** 서버가 확정한 파일 대화마다 적어 둔 서버 파일 id. AI 요약이 대화로 파일 id 를 찾을 때 쓴다. */
+    private fun recordedFileId(chatRoomId: String, chatId: String): String? =
+        ServerFileStore(fileSettings, server, deviceFiles).chatFileId(chatRoomId, chatId)
 
     @Test
     fun 방에_들어가면_서버의_대화를_받아_순서대로_보여_준다() = runTest {
@@ -421,5 +427,64 @@ class ChatRoomRepositoryImplTest {
         assertEquals(Chat.Type.TEXT, failed.chatType)
         assertEquals("@김민준 확인 부탁드려요", failed.chatContent)
         assertTrue(server.messagesOf("room-b").isEmpty())
+    }
+
+    @Test
+    fun 같은_파일을_두_방에_보내면_대화마다_그_방의_서버_파일_id_가_적힌다() = runTest {
+        server.addRoom("room-b", "test3" to "박도윤")
+        deviceFiles.put("/docs/report.pdf", ByteArray(64))
+        repo.fetchChats(roomId)
+        repo.fetchChats("room-b")
+
+        repo.sendFile(roomId, "/docs/report.pdf")
+        repo.sendFile("room-b", "/docs/report.pdf")
+
+        val inA = server.messagesOf(roomId).single()
+        val inB = server.messagesOf("room-b").single()
+        assertNotEquals(inA.payload?.fileId, inB.payload?.fileId)
+        assertEquals(inA.payload?.fileId, recordedFileId(roomId, inA.id))
+        assertEquals(inB.payload?.fileId, recordedFileId("room-b", inB.id))
+    }
+
+    @Test
+    fun 받은_파일_대화는_내려받지_못해도_그_대화의_서버_파일_id_가_적힌다() = runTest {
+        val message = server.receiveFile(roomId, "test2", "이서연", "file", "spec.docx", ByteArray(32))
+        message.payload?.fileId?.let(server.uploads::remove)
+
+        repo.fetchChats(roomId)
+
+        assertEquals(message.payload?.fileId, recordedFileId(roomId, message.id))
+        assertTrue(chats().single().imagePath.isBlank())
+    }
+
+    @Test
+    fun 알림으로_온_파일_대화와_위로_올려_받은_이전_파일_대화도_적힌다() = runTest {
+        val older = server.receiveFile(roomId, "test2", "이서연", "file", "old.pdf", ByteArray(16))
+        repeat(100) { peerSays("m$it") }
+        repo.fetchChats(roomId)
+        assertNull(recordedFileId(roomId, older.id))
+
+        assertTrue(repo.fetchMoreChats(roomId))
+        assertEquals(older.payload?.fileId, recordedFileId(roomId, older.id))
+
+        val pushed = server.receiveFile(roomId, "test2", "이서연", "file", "new.pdf", ByteArray(16))
+        events.push(ServerEvent(ServerEvent.TYPE_MESSAGE, roomId, pushed))
+        awaitUntil { recordedFileId(roomId, pushed.id) != null }
+        assertEquals(pushed.payload?.fileId, recordedFileId(roomId, pushed.id))
+    }
+
+    @Test
+    fun 전달한_파일_대화는_서버가_복사한_파일_id_로_적히고_원본_대화의_기록은_그대로다() = runTest {
+        server.addRoom("room-b", "test3" to "박도윤")
+        val original = server.receiveFile(roomId, "test2", "이서연", "file", "plan.pdf", ByteArray(64))
+        repo.fetchChats(roomId)
+        awaitUntil { chats().single().imagePath.isNotBlank() }
+        repo.fetchChats("room-b")
+
+        repo.forwardChat("room-b", roomId, chats().single())
+
+        val forwarded = server.messagesOf("room-b").single()
+        assertEquals("copy-${original.payload?.fileId}", recordedFileId("room-b", forwarded.id))
+        assertEquals(original.payload?.fileId, recordedFileId(roomId, original.id))
     }
 }

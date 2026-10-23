@@ -128,6 +128,7 @@ class ChatRoomRepositoryImpl(
             ServerResult.Unreachable -> error("서버에 닿지 못해 이전 대화를 받지 못했다")
         }
         if (older.isEmpty()) return false
+        rememberChatFiles(chatRoomId, older)
         local.storeOlderChats(chatRoomId, older.map { mapper.toChat(it) })
         downloadMissingFiles(chatRoomId, older)
         return true
@@ -339,6 +340,7 @@ class ChatRoomRepositoryImpl(
                 val copiedId = result.value.payload?.fileId
                 val path = chat.localPath.ifBlank { chat.imagePath }
                 if (copiedId != null && path.isNotBlank()) fileStore.remember(copiedId, path)
+                rememberChatFiles(chatRoomId, listOf(result.value))
                 mapper.toChat(result.value)
             }
             else -> chat.copy(chatStatus = Chat.Status.FAIL)
@@ -363,13 +365,28 @@ class ChatRoomRepositoryImpl(
         /** 내가 올린 파일은 원본이 이미 기기에 있다. 경로를 적어 두어 다시 내려받지 않게 한다. */
         fileStore.remember(file.id, source)
         val message = server.sendMessage(chatRoomId, mapper.toFileRequest(chat, file)).valueOrNull() ?: return null
+        rememberChatFiles(chatRoomId, listOf(message))
         return mapper.toChat(message)
     }
 
     /** 서버에서 받은 대화들을 로컬에 반영하고, 아직 기기에 없는 파일은 뒤에서 받는다. */
     private suspend fun storeFromServer(chatRoomId: String, messages: List<MessageDto>) {
+        rememberChatFiles(chatRoomId, messages)
         local.storeChats(chatRoomId, messages.map { mapper.toChat(it) })
         downloadMissingFiles(chatRoomId, messages)
+    }
+
+    /**
+     * 서버가 확정한 파일 대화마다 그 대화의 서버 파일 id 를 적어 둔다([ServerFileStore.rememberChatFile]).
+     *
+     * 같은 기기 파일을 여러 방에 보내거나 전달하면 경로 하나를 파일 id 여럿이 가리킨다. 한 방의 파일이 회수되거나 그 방을
+     * 나가도, 다른 방의 대화는 제 파일 id 로 찾게 한다. 말풍선을 기기 DB 에 쓰기 전·내려받기 전에 적으므로, 화면에 뜬 파일 대화는
+     * 아직 받지 못했어도 id 를 안다.
+     */
+    private fun rememberChatFiles(chatRoomId: String, messages: List<MessageDto>) {
+        messages.forEach { message ->
+            message.payload?.fileId?.let { fileStore.rememberChatFile(chatRoomId, message.id, it) }
+        }
     }
 
     /**
@@ -439,6 +456,7 @@ class ChatRoomRepositoryImpl(
     private suspend fun onMessage(event: ServerEvent) {
         val message = event.message ?: return
         if (event.roomId !in syncedRooms.value) return
+        rememberChatFiles(event.roomId, listOf(message))
         val chat = mapper.toChat(message)
         /** 내가 보낸 대화의 메아리는 저장만 한다. 새 대화 신호를 내면 화면이 받은 대화처럼 반응한다. */
         if (chat.isMe) local.storeChats(event.roomId, listOf(chat)) else local.appendMyChat(event.roomId, chat)

@@ -9,6 +9,7 @@ import com.eunilsung.talk.data.mapper.ServerChatMapper
 import com.eunilsung.talk.data.remote.server.ServerEvents
 import com.eunilsung.talk.data.remote.server.ServerFileStore
 import com.eunilsung.talk.data.remote.server.TalkSocket
+import com.eunilsung.talk.data.repository.AiSummaryRepositoryImpl
 import com.eunilsung.talk.data.repository.ChatRoomListRepositoryImpl
 import com.eunilsung.talk.data.repository.ChatRoomRepositoryImpl
 import com.eunilsung.talk.data.repository.InviteRepositoryImpl
@@ -20,6 +21,7 @@ import com.eunilsung.talk.data.repository.UserProfileRepositoryImpl
 import com.eunilsung.talk.data.repository.VoteRepositoryImpl
 import com.eunilsung.talk.data.local.DatabaseDriverFactory
 import com.eunilsung.talk.data.local.NoticeUiStateStore
+import com.eunilsung.talk.data.mapper.AiAgentLinkMapper
 import com.eunilsung.talk.data.mapper.ChatMapper
 import com.eunilsung.talk.data.mapper.ChatRoomMapper
 import com.eunilsung.talk.db.AppDatabase
@@ -42,6 +44,7 @@ import com.eunilsung.talk.data.local.repository.LocalUserProfileRepositoryImpl
 import com.eunilsung.talk.data.local.repository.LocalVoteRepositoryImpl
 import com.eunilsung.talk.data.local.repository.LocalVersionCheckRepositoryImpl
 import com.eunilsung.talk.ui.screenlock.ScreenLockViewModel
+import com.eunilsung.talk.domain.repository.AiSummaryRepository
 import com.eunilsung.talk.domain.repository.ChatRoomRepository
 import com.eunilsung.talk.domain.repository.ChatRoomListRepository
 import com.eunilsung.talk.domain.repository.InviteRepository
@@ -288,12 +291,16 @@ val appModule = module {
     singleOf(::FetchBookmarksUseCase)
     singleOf(::AddBookmarkUseCase)
     singleOf(::DeleteBookmarkUseCase)
+    /** 파일 대화를 AI Agent 앱에 넘긴다. 메뉴는 서버 모드에서만 보인다 — 로컬 모드의 파일은 서버 id 가 없다. */
+    singleOf(::AiAgentLinkMapper)
+    single<AiSummaryRepository> { AiSummaryRepositoryImpl(get(), get(), get()) }
+    singleOf(::RequestAiSummaryUseCase)
     /** 인자가 22개를 넘어 `singleOf` 로는 등록할 수 없다. */
     single {
         ChatRoomUseCases(
             get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
             get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
-            get(),
+            get(), get(),
         )
     }
 

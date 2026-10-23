@@ -70,6 +70,9 @@ sealed interface ChatRoomActions {
 
     data class OnHideTranslation(val chatId: String) : ChatRoomActions
 
+    /** 파일 대화를 AI Agent 앱에서 요약하게 한다. */
+    data class OnRequestAiSummary(val chat: Chat.Item) : ChatRoomActions
+
     data class OnPolishText(val text: String, val style: PolishStyle) : ChatRoomActions
 
     /** 화면이 다듬기 결과를 입력창에 반영했거나 실패 안내를 띄웠다. */
@@ -117,6 +120,12 @@ sealed interface ChatRoomEvent {
 
     /** 번역을 받지 못했다. 안내를 한 번 띄운다. */
     data object TranslationFailed : ChatRoomEvent
+
+    /** 파일을 아직 기기에 받지 못해 AI 요약을 맡기지 못했다. 잠시 뒤 다시 하라고 안내한다. */
+    data object AiSummaryFileNotReady : ChatRoomEvent
+
+    /** AI Agent 앱이 기기에 없어 AI 요약을 맡기지 못했다. */
+    data object AiAgentNotInstalled : ChatRoomEvent
 }
 
 

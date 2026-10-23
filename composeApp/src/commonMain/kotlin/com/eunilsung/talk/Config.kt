@@ -109,6 +109,18 @@ object Config {
 
         /** 대화 그룹 — 대화함의 그룹 칩 / 그룹 편집 버튼, 롱클릭 메뉴의 그룹 추가·해제 */
         const val IS_CHAT_GROUP_ENABLED: Boolean = true
+
+        /**
+         * AI 요약 — 문서 파일 대화의 롱클릭 메뉴 "AI 요약"(AI Agent 앱을 링크로 열어 요약을 맡긴다).
+         * 서버 모드에서만 보인다. 로컬(시연) 모드의 파일은 서버에 없어 AI Agent 가 받을 수 없다.
+         */
+        const val IS_AI_SUMMARY_ENABLED: Boolean = true
+
+        /** AI 요약을 맡길 수 있는 문서 확장자. AI Agent 의 문서 요약이 글을 꺼낼 수 있는 형식과 같다. */
+        val AI_SUMMARY_EXTENSIONS: Set<String> = setOf(
+            "txt", "md", "csv", "tsv", "log", "json", "xml", "html", "htm",
+            "pdf", "docx", "xlsx", "pptx", "hwp", "hwpx",
+        )
     }
 
     /** 이모티콘 옵션. */

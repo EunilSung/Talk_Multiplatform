@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,6 +48,11 @@ fun ToastMessagePreview() {
     }
 }
 
+/**
+ * 화면 아래쪽에 잠깐 떴다 사라지는 안내.
+ *
+ * @param testTag 문구에 붙일 화면 자동화(Maestro) 이름. 주면 흐름이 이 토스트를 기기 언어와 상관없이 id 로 찾는다.
+ */
 @Composable
 fun ToastMessage(
     message: String,
@@ -55,6 +61,7 @@ fun ToastMessage(
     left: @Composable (() -> Unit)? = null,
     duration: Long = 2000L,
     restartKey: Any? = message,
+    testTag: String? = null,
 ) {
     /**
      * 이전 토스트가 떠 있는 채로 새 토스트가 오면 isVisible 은 true 로 유지된다.
@@ -100,6 +107,7 @@ fun ToastMessage(
 
                     Text(
                         text = message,
+                        modifier = if (testTag != null) Modifier.testTag(testTag) else Modifier,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = Color.White,
                             fontWeight = FontWeight.Medium,

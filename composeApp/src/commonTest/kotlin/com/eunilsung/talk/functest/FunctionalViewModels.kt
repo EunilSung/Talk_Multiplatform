@@ -41,7 +41,7 @@ val viewModelMainThread: CoroutineDispatcher = Dispatchers.Default.limitedParall
  *
  * 화면이 보는 상태는 ViewModel 이 만든다 — 안읽음 표시선이 어디에 서는지, 번역이 어느 말풍선에
  * 붙는지, 다듬은 글이 언제 준비되는지. 저장소만 봐서는 이 판단들이 맞는지 알 수 없다.
- * 서버와 무관한 기기 기능(사진첩, 파일 고르기)만 빈 대역으로 채운다.
+ * 서버와 무관한 기기 기능(사진첩, 파일 고르기, 다른 앱 열기)만 대역으로 채운다.
  */
 fun RealServerHarness.chatRoomViewModel(): ChatRoomViewModel {
     val chatUseCases = ChatRoomUseCases(
@@ -70,6 +70,7 @@ fun RealServerHarness.chatRoomViewModel(): ChatRoomViewModel {
         addBookmark = AddBookmarkUseCase(chats),
         deleteBookmark = DeleteBookmarkUseCase(chats),
         reinviteDirectPartner = ReinviteDirectPartnerUseCase(rooms, invite),
+        requestAiSummary = RequestAiSummaryUseCase(aiSummary, login),
     )
     val roomUseCases = chatRoomListUseCases()
     val chatSettings = ChatSettingsRepositoryImpl(MapSettings())

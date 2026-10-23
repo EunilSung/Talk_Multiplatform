@@ -236,6 +236,9 @@
     <string name="chat_menu_translate_hide">Hide translation</string>
     <string name="chat_translating">Translating…</string>
     <string name="toast_translate_unavailable">Translation is unavailable right now. Please try again later.</string>
+    <string name="chat_menu_ai_summary">AI summary</string>
+    <string name="toast_ai_summary_file_not_ready">The file is still downloading. Please try again in a moment.</string>
+    <string name="toast_ai_agent_not_installed">The AI Agent app is not installed.</string>
 
     <string name="invite">Invite</string>
     <string name="share">Share</string>

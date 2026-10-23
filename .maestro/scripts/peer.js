@@ -3,6 +3,7 @@
  *
  * ACTION 으로 할 일을 고른다. 결과는 output 에 실어 흐름이 ${output.x} 로 쓰고, 확인 결과는 output.ok 다.
  * - setup: 셋이 쓰는 새 방을 만들어 이름을 붙이고 상대가 한 마디 한다. 둘만의 방은 지난 대화가 섞여 쓰지 않는다.
+ * - sendFile: setup 뒤에 상대가 그 방에 문서 파일(txt)을 올려 보낸다. 파일 이름은 output.fileName 이다.
  * - checkReply / checkEmpathy: 내가 보낸 말과 누른 공감이 서버에 남았는지
  * - checkVote / checkVoteClosed: 내 표가 들어갔는지, 투표가 마감됐는지
  * - checkLeft: 내가 방에서 나갔는지
@@ -52,6 +53,22 @@ function setup() {
     output.draftText = 'pls chek the meting time tmrw'
 }
 
+function sendFile() {
+    const name = 'report-' + output.title.substring('E2E-'.length) + '.txt'
+    const upload = http.post(BASE + '/rooms/' + output.room + '/files?name=' + encodeURIComponent(name), {
+        headers: { 'Content-Type': 'application/octet-stream', Authorization: 'Bearer ' + output.peerToken },
+        body: 'Quarterly report\nRevenue grew 12 percent. The launch moves to next month.\n',
+    })
+    if (upload.status >= 300) throw new Error('POST files → ' + upload.status + ' ' + upload.body)
+    const file = json(upload.body)
+    call('POST', '/rooms/' + output.room + '/messages', output.peerToken, {
+        id: output.title + '-file',
+        kind: 'file',
+        payload: { fileId: file.id, fileName: file.name, fileSize: file.size },
+    })
+    output.fileName = file.name
+}
+
 function checkReply() {
     output.ok = messages(output.peerToken).some(m => m.senderId === ME && m.content === output.replyText)
 }
@@ -95,6 +112,6 @@ function cleanup() {
     })
 }
 
-const actions = { setup, checkReply, checkEmpathy, checkVote, checkVoteClosed, checkLeft, checkPolished, cleanup }
+const actions = { setup, sendFile, checkReply, checkEmpathy, checkVote, checkVoteClosed, checkLeft, checkPolished, cleanup }
 if (!actions[ACTION]) throw new Error('모르는 ACTION: ' + ACTION)
 actions[ACTION]()

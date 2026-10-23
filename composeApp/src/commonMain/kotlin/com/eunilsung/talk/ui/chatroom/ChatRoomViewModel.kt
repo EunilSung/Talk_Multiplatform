@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.eunilsung.talk.data.local.FilePickerProvider
 import com.eunilsung.talk.data.local.RecentPhotosProvider
+import com.eunilsung.talk.domain.model.AiSummaryResult
 import com.eunilsung.talk.domain.model.Chat
 import com.eunilsung.talk.domain.model.PolishStyle
 import com.eunilsung.talk.domain.usecase.ChatRoomListUseCases
@@ -184,6 +185,7 @@ class ChatRoomViewModel(
             is ChatRoomActions.OnTranslateChat -> translateChat(action.chatId, action.languageCode)
             is ChatRoomActions.OnHideTranslation ->
                 _uiState.update { it.copy(translations = it.translations - action.chatId) }
+            is ChatRoomActions.OnRequestAiSummary -> requestAiSummary(action.chat)
             is ChatRoomActions.OnPolishText -> polishText(action.text, action.style)
             is ChatRoomActions.OnPolishHandled -> _uiState.update { it.copy(polish = PolishUiState.Idle) }
             is ChatRoomActions.OnEnterRoom ->
@@ -488,6 +490,22 @@ class ChatRoomViewModel(
                 _uiState.update {
                     it.copy(translations = it.translations + (chatId to ChatTranslationUiState.Ready(translation)))
                 }
+            }
+        }
+    }
+
+    /** AI Agent 앱을 열어 요약을 맡긴다. 열었으면 그 앱이 이어 가고, 열지 못했으면 이유를 안내한다. */
+    private fun requestAiSummary(chat: Chat.Item) {
+        val roomId = currentChatRoomId
+        if (roomId.isBlank()) return
+        viewModelScope.launch {
+            val result = runCatching { chatRoomUseCases.requestAiSummary(roomId, chat) }
+                .onFailure { Log.message("[ChatRoomVM] requestAiSummary failed: ${it.message}") }
+                .getOrNull()
+            when (result) {
+                AiSummaryResult.FILE_NOT_READY -> _events.trySend(ChatRoomEvent.AiSummaryFileNotReady)
+                AiSummaryResult.APP_NOT_INSTALLED -> _events.trySend(ChatRoomEvent.AiAgentNotInstalled)
+                AiSummaryResult.OPENED, null -> Unit
             }
         }
     }
