@@ -28,6 +28,9 @@ DEPLOY_HOST=<SSH 사용자>@<테스트 서버 공인 IP> DEPLOY_KEY=~/.ssh/<키 
 - **한도** — JSON 본문 256KB(Caddy 는 1MB), 파일 올리기 20MB(Caddy 25MB), 사람당 하루 파일 200개·500MB(전달로 복사한 것 포함),
   사람당 동시 올리기 3개·한 건 10분, 단체방 만들기는 사람당 분당 30회·하루 300회, 초대는 분당 30회·하루 500회, 투표 만들기는 분당 30회·하루 300회, 방 인원 300명, 알림 연결은 사람당 5개, 푸시 토큰은 로그인 하나에 하나·사람당 10개.
   값은 `server/.../limits/ServerLimits.kt` 에 있다.
+- **GitHub Actions 도 같은 `deploy.sh` 로 배포한다.** `v*` 태그 → `Release`(릴리스 파일: `DEPLOY_STAGE_ONLY=1` 로 만든 서버 묶음) →
+  `Deploy`(그 묶음을 받아 `DEPLOY_STAGE`·`DEPLOY_HOST_KEY_CHECK=yes` 로 올린다). 접속 정보는 `test-server` 환경 비밀값에만 두고,
+  넣는 순서와 실제 값은 `../Talk_info/CI_설정.md` 에 있다. 서버 `.env` 의 값은 CI 에 넣지 않는다.
 - **새 인스턴스는 한 번 준비한다** — `sudo bash setup-host.sh`(스왑, Docker, iptables 80·443, DB 백업 cron).
   OCI 의 Ubuntu 이미지는 iptables 가 22 번 말고 모두 막는다. VCN 보안 목록에도 80·443 이 열려 있어야 한다.
 - **DB 백업** — 매일 03:30(UTC) `~/backups` 에 7개까지 남는다.
