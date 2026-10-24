@@ -2,6 +2,7 @@ package com.eunilsung.talk.server.ai
 
 import com.eunilsung.talk.server.chat.ChatHub
 import com.eunilsung.talk.server.repository.ChatRepository
+import com.eunilsung.talk.server.repository.SendResult
 import com.eunilsung.talk.server.repository.UserRepository
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MAX_POLISH_LENGTH
@@ -96,9 +97,10 @@ class AiAssistant(
         if (!isPrivateWithAi && !MENTION.containsMatchIn(message.content)) return
 
         val answer = answerFor(message)
-        val reply = db {
-            chats.send(message.roomId, USER_ID, UUID.randomUUID().toString(), MessageKind.TEXT, answer, null)
-        } ?: return
+        val reply = (
+            db { chats.send(message.roomId, USER_ID, UUID.randomUUID().toString(), MessageKind.TEXT, answer, null) }
+                as? SendResult.Sent
+            )?.message ?: return
         hub.send(db { chats.activeMemberIds(reply.roomId) }, ServerEvent(ServerEvent.TYPE_MESSAGE, reply.roomId, reply))
     }
 

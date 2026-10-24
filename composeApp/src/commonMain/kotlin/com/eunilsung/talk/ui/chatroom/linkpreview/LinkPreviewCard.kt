@@ -32,32 +32,69 @@ import com.eunilsung.talk.data.local.ExternalUrlOpener
 import com.eunilsung.talk.domain.model.LinkPreview
 import com.eunilsung.talk.domain.model.LinkPreviewState
 import com.eunilsung.talk.ui.theme.AppColors
+import multiplatformtalk.composeapp.generated.resources.Res
+import multiplatformtalk.composeapp.generated.resources.link_preview_show
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import com.eunilsung.talk.util.Log
 
+/**
+ * 대화 링크의 미리보기 카드.
+ *
+ * [isMe] 는 내가 보낸 대화인지다. 받을지는 [LinkPreviewViewModel] 이 정한다 — 받은 대화는 '미리보기 보기'를 눌러야 받아 온다.
+ * 카드를 누르면 브라우저로만 연다([ExternalUrlOpener.open]) — 주소가 무엇이든 내려받거나 설치하지 않는다.
+ */
 @Composable
 fun LinkPreviewCard(
     url: String,
+    isMe: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: LinkPreviewViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsState()
     val urlOpener: ExternalUrlOpener = koinInject()
 
-    LaunchedEffect(url) {
-        Log.message("[LinkPreview] LinkPreviewCard launchedEffect url=$url")
-        viewModel.onAction(LinkPreviewActions.Load(url))
+    LaunchedEffect(url, isMe) {
+        Log.message("[LinkPreview] LinkPreviewCard launchedEffect url=$url isMe=$isMe")
+        viewModel.onAction(LinkPreviewActions.OnShown(url, isMe))
     }
-    when (val s = uiState.previews[url]) {
-        null, is LinkPreviewState.Loading -> LinkPreviewSkeleton(modifier = modifier)
-        is LinkPreviewState.Success -> LinkPreviewContent(
-            data = s.data,
+    val state = uiState.previews[url]
+    when {
+        url in uiState.waitingUrls -> LinkPreviewLoadButton(
+            onClick = { viewModel.onAction(LinkPreviewActions.Load(url)) },
+            modifier = modifier,
+        )
+        state is LinkPreviewState.Success -> LinkPreviewContent(
+            data = state.data,
             onClick = { urlOpener.open(url) },
             modifier = modifier,
         )
-        is LinkPreviewState.Failure -> Unit
+        state is LinkPreviewState.Loading || (state == null && isMe) -> LinkPreviewSkeleton(modifier = modifier)
+        else -> Unit
     }
+}
+
+/** 받은 대화의 링크 — 누르면 그때 미리보기를 받아 온다. */
+@Composable
+private fun LinkPreviewLoadButton(
+    onClick: () -> Unit,
+    modifier: Modifier,
+) {
+    Text(
+        text = stringResource(Res.string.link_preview_show),
+        color = AppColors.PrimaryMain,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier
+            .widthIn(max = 200.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(AppColors.BgSub)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    )
 }
 
 @Composable

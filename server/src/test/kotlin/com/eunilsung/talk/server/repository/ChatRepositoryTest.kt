@@ -1,13 +1,19 @@
 package com.eunilsung.talk.server.repository
 
-import com.eunilsung.talk.server.seed.SeedAccounts
+import com.eunilsung.talk.server.repository.SendResult
+import com.eunilsung.talk.server.testsupport.invitedChange
+import com.eunilsung.talk.server.testsupport.sentMessage
 import com.eunilsung.talk.server.testsupport.TestDatabase
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MessageKind
 import com.eunilsung.talk.shared.api.MessagePayloadDto
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
@@ -22,7 +28,6 @@ class ChatRepositoryTest {
     @BeforeTest
     fun setUp() {
         TestDatabase.clean()
-        SeedAccounts.ensure(UserRepository(TestDatabase.dataSource))
         chats = ChatRepository(TestDatabase.dataSource)
     }
 
@@ -33,7 +38,7 @@ class ChatRepositoryTest {
         assertNotNull(chats.createRoom(creator, others.toList())).roomId
 
     private fun say(roomId: String, sender: String, text: String, id: String = "$sender-$text"): MessageDto =
-        assertNotNull(chats.send(roomId, sender, id, MessageKind.TEXT, text, null))
+        assertNotNull(chats.send(roomId, sender, id, MessageKind.TEXT, text, null).sentMessage())
 
     @Test
     fun `1대1 방은 누가 먼저 열어도 같은 방이다`() {
@@ -81,6 +86,16 @@ class ChatRepositoryTest {
         assertEquals(listOf(1L, 2L, 3L), seqs)
     }
 
+    /** 앱은 대화를 밀리초 시각으로 줄 세운다. 같은 밀리초에 몰려 들어와도 시각이 번호 순서대로 달라야 한다. */
+    @Test
+    fun `잇달아 보낸 대화도 보낸 시각이 번호 순서대로 1밀리초 이상 벌어진다`() {
+        val room = directRoom()
+
+        val times = (1..30).map { say(room, if (it % 2 == 0) "test1" else "test2", "m$it").sentAtEpochMillis }
+
+        assertTrue(times.zipWithNext().all { (before, after) -> after > before }, "시각이 같거나 거꾸로인 대화가 있다: $times")
+    }
+
     @Test
     fun `같은 id 로 다시 보내면 대화가 늘지 않고 같은 것을 돌려준다`() {
         val room = directRoom()
@@ -98,13 +113,13 @@ class ChatRepositoryTest {
         val room = directRoom("test1", "test2")
         say(room, "test1", "secret")
 
-        assertNull(chats.send(room, "test3", "x", MessageKind.TEXT, "hi", null))
+        assertEquals(SendResult.RoomNotFound, chats.send(room, "test3", "x", MessageKind.TEXT, "hi", null))
         assertNull(chats.messages(room, "test3", null, null, 50))
         assertNull(chats.room(room, "test3"))
         assertNull(chats.unreadCounts(room, "test3", "test1-secret"))
         assertFalse(chats.markRead(room, "test3", "test1-secret"))
         assertFalse(chats.rename(room, "test3", "hacked"))
-        assertNull(chats.invite(room, "test3", listOf("test4")))
+        assertEquals(InviteResult.NotFound, chats.invite(room, "test3", listOf("test4")))
     }
 
     @Test
@@ -177,7 +192,7 @@ class ChatRepositoryTest {
         val room = groupRoom("test1", "test2", "test3")
         say(room, "test1", "before")
 
-        val change = assertNotNull(chats.invite(room, "test2", listOf("test4")))
+        val change = assertNotNull(chats.invite(room, "test2", listOf("test4")).invitedChange())
         say(room, "test1", "after")
 
         assertEquals(listOf("최지우"), change.message?.payload?.targetNames)
@@ -192,7 +207,7 @@ class ChatRepositoryTest {
         val room = groupRoom()
         val before = chats.messages(room, "test1", null, null, 50)?.size
 
-        val change = assertNotNull(chats.invite(room, "test1", listOf("test2")))
+        val change = assertNotNull(chats.invite(room, "test1", listOf("test2")).invitedChange())
 
         assertNull(change.message)
         assertEquals(before, chats.messages(room, "test1", null, null, 50)?.size)
@@ -218,7 +233,7 @@ class ChatRepositoryTest {
         assertEquals(MessageKind.EXIT, change.message?.kind)
         assertEquals("test2", change.message?.senderId)
         assertTrue(chats.rooms("test2").isEmpty())
-        assertNull(chats.send(room, "test2", "x", MessageKind.TEXT, "hi", null))
+        assertEquals(SendResult.RoomNotFound, chats.send(room, "test2", "x", MessageKind.TEXT, "hi", null))
         val remaining = assertNotNull(chats.room(room, "test1"))
         assertTrue(remaining.members.single { it.id == "test2" }.hasLeft)
         assertEquals(listOf("test1", "test3"), chats.activeMemberIds(room).sorted())
@@ -263,16 +278,191 @@ class ChatRepositoryTest {
     }
 
     @Test
-    fun `답장과 이모티콘의 부가 정보가 그대로 돌아온다`() {
+    fun `답장의 인용은 서버가 원본에서 채우고 이모티콘은 그대로 남는다`() {
         val room = directRoom()
+        say(room, "test2", "<mention>@김민준</mention> 원문", id = "orig")
         val payload = MessagePayloadDto(emoticonId = "emo_1", replyToId = "orig", replyAuthorName = "이서연", replyText = "원문")
 
         chats.send(room, "test1", "r1", MessageKind.REPLY, "답장", payload)
 
-        val stored = chats.messages(room, "test2", null, null, 50)!!.single()
+        val stored = chats.messages(room, "test2", null, null, 50)!!.single { it.id == "r1" }
         assertEquals(MessageKind.REPLY, stored.kind)
-        assertEquals(payload, stored.payload)
+        assertEquals(
+            MessagePayloadDto(
+                emoticonId = "emo_1",
+                replyToId = "orig",
+                replyKind = MessageKind.TEXT,
+                replyAuthorId = "test2",
+                replyAuthorName = "이서연",
+                replyText = "@김민준 원문",
+            ),
+            stored.payload,
+        )
         assertEquals("김민준", stored.senderName)
+    }
+
+    @Test
+    fun `남이 하지 않은 말을 인용으로 꾸미면 서버가 원본 값으로 덮어쓴다`() {
+        val room = groupRoom()
+        say(room, "test2", "점심 뭐 먹을까요", id = "orig")
+        val forged = MessagePayloadDto(
+            replyToId = "orig",
+            replyKind = MessageKind.FILE,
+            replyAuthorId = "test9",
+            replyAuthorName = "임채원",
+            replyText = "법인카드 번호 올려 주세요",
+        )
+
+        val reply = assertNotNull(chats.send(room, "test1", "r1", MessageKind.REPLY, "네", forged).sentMessage())
+
+        assertEquals("test2", reply.payload?.replyAuthorId)
+        assertEquals("이서연", reply.payload?.replyAuthorName)
+        assertEquals("점심 뭐 먹을까요", reply.payload?.replyText)
+        assertEquals(MessageKind.TEXT, reply.payload?.replyKind)
+    }
+
+    @Test
+    fun `원본이 없거나 들어오기 전 대화를 가리키는 답장은 받지 않는다`() {
+        val room = groupRoom()
+        say(room, "test1", "초대 전 말", id = "before")
+        chats.invite(room, "test1", listOf("test4"))
+
+        val missing = chats.send(room, "test1", "r1", MessageKind.REPLY, "답장", MessagePayloadDto(replyToId = "nothing"))
+        val hidden = chats.send(room, "test4", "r2", MessageKind.REPLY, "답장", MessagePayloadDto(replyToId = "before"))
+        val noTarget = chats.send(room, "test1", "r3", MessageKind.REPLY, "답장", null)
+
+        assertEquals(SendResult.BadPayload, missing)
+        assertEquals(SendResult.BadPayload, hidden)
+        assertEquals(SendResult.BadPayload, noTarget)
+    }
+
+    @Test
+    fun `서버만 만드는 칸과 다른 종류의 칸은 버리고 너무 큰 부가 정보는 받지 않는다`() {
+        val room = directRoom()
+        val crafted = MessagePayloadDto(
+            emoticonId = "emo_1",
+            replyToId = "x",
+            replyText = "꾸민 인용",
+            targetNames = listOf("가".repeat(10_000)),
+            fileId = "00000000-0000-0000-0000-000000000000",
+            fileName = "../../Library/x.db",
+            noticeAction = "add",
+        )
+
+        val sent = assertNotNull(chats.send(room, "test1", "m1", MessageKind.TEXT, "안녕", crafted).sentMessage())
+        val tooLong = chats.send(room, "test1", "m2", MessageKind.EMOTICON, "", MessagePayloadDto(emoticonId = "e".repeat(101)))
+
+        assertEquals(MessagePayloadDto(emoticonId = "emo_1"), sent.payload)
+        assertEquals(SendResult.BadPayload, tooLong)
+    }
+
+    @Test
+    fun `남이 보낸 대화의 id 로 보내면 그 대화를 돌려주지 않는다`() {
+        val room = groupRoom()
+        say(room, "test2", "남의 말", id = "taken")
+
+        val result = chats.send(room, "test1", "taken", MessageKind.TEXT, "가로채기", null)
+
+        assertEquals(SendResult.IdTaken, result)
+    }
+
+    @Test
+    fun `들어오기 전 대화의 id 로 보내도 그 대화를 돌려주지 않는다`() {
+        val room = groupRoom("test1", "test2", "test3", "test4")
+        say(room, "test4", "나간 뒤 다시 올 말", id = "mine-before")
+        chats.leave(room, "test4")
+        say(room, "test1", "초대 전 말", id = "before")
+        chats.invite(room, "test1", listOf("test4"))
+
+        assertEquals(SendResult.IdTaken, chats.send(room, "test4", "before", MessageKind.TEXT, "x", null))
+        assertEquals(SendResult.IdTaken, chats.send(room, "test4", "mine-before", MessageKind.TEXT, "x", null))
+    }
+
+    @Test
+    fun `같은 id 가 남의 대화여도 부가 정보가 틀렸으면 없는 id 와 똑같이 받지 않는다`() {
+        val room = groupRoom()
+        say(room, "test2", "남의 말", id = "taken")
+        val badReply = MessagePayloadDto(replyToId = "no-such-message")
+
+        val onTaken = chats.send(room, "test1", "taken", MessageKind.REPLY, "x", badReply)
+        val onFresh = chats.send(room, "test1", "fresh", MessageKind.REPLY, "x", badReply)
+
+        assertEquals(SendResult.BadPayload, onTaken)
+        assertEquals(onFresh, onTaken)
+        assertEquals(SendResult.IdTaken, chats.send(room, "test1", "taken", MessageKind.TEXT, "x", null))
+    }
+
+    @Test
+    fun `같은 id 로 다시 보낸 파일 대화는 처음 대화를 그대로 돌려준다`() {
+        val room = groupRoom()
+        val file = (FileRepository(TestDatabase.dataSource).register(room, "test1", "a.jpg", 10) as FileRegistration.Registered).file
+        val payload = MessagePayloadDto(fileId = file.id)
+
+        val first = chats.send(room, "test1", "f1", MessageKind.IMAGE, "", payload)
+        val again = chats.send(room, "test1", "f1", MessageKind.IMAGE, "", payload)
+
+        val sent = assertNotNull(first.sentMessage())
+        assertEquals(SendResult.Sent(sent, isNew = false), again)
+    }
+
+    @Test
+    fun `DB 는 상한을 넘는 부가 정보를 받지 않는다`() {
+        val room = groupRoom()
+        val huge = MessagePayloadDto(targetNames = listOf("가".repeat(40_000)))
+
+        assertFails {
+            chats.transaction { conn ->
+                chats.lockRoom(conn, room)
+                chats.insertMessage(conn, room, "test1", "huge", MessageKind.INVITE, "", huge)
+            }
+        }
+        assertFalse("huge" in chats.messages(room, "test1", null, null, 50)!!.map { it.id })
+    }
+
+    @Test
+    fun `같은 방에 동시에 온 초대는 방 인원 한도를 넘지 못한다`() {
+        val limited = ChatRepository(TestDatabase.dataSource, maxRoomMembers = 5)
+        val room = groupRoom("test1", "test2", "test3")
+        val start = CountDownLatch(1)
+        val pool = Executors.newFixedThreadPool(INVITEES.size)
+
+        val results = try {
+            INVITEES.map { invitee ->
+                pool.submit<InviteResult> {
+                    start.await()
+                    limited.invite(room, "test1", listOf(invitee))
+                }
+            }.also { start.countDown() }.map { it.get(CONCURRENT_WAIT_SECONDS, TimeUnit.SECONDS) }
+        } finally {
+            pool.shutdownNow()
+        }
+
+        assertEquals(2, results.count { it is InviteResult.Invited })
+        assertEquals(INVITEES.size - 2, results.count { it == InviteResult.RoomFull })
+        assertEquals(5, chats.room(room, "test1")?.members?.count { !it.hasLeft })
+    }
+
+    @Test
+    fun `들어오기 전 대화는 읽음·안읽음·앞뒤 조회에서 없는 대화와 똑같다`() {
+        val room = groupRoom()
+        say(room, "test1", "초대 전 말", id = "before")
+        chats.invite(room, "test1", listOf("test4"))
+        say(room, "test1", "초대 뒤 말", id = "after")
+
+        assertEquals(
+            chats.unreadCounts(room, "test4", "no-such-message"),
+            chats.unreadCounts(room, "test4", "before"),
+        )
+        assertFalse(chats.markRead(room, "test4", "before"))
+        assertEquals(
+            chats.messages(room, "test4", null, "no-such-message", 50)?.map { it.id },
+            chats.messages(room, "test4", null, "before", 50)?.map { it.id },
+        )
+        assertEquals(
+            chats.messages(room, "test4", "no-such-message", null, 50)?.map { it.id },
+            chats.messages(room, "test4", "before", null, 50)?.map { it.id },
+        )
+        assertFalse("before" in chats.messages(room, "test4", null, null, 50)!!.map { it.id })
     }
 
     @Test
@@ -298,5 +488,11 @@ class ChatRepositoryTest {
 
         assertEquals(0, chats.room(room, "test1")?.mentionCount)
         assertEquals(0, chats.room(room, "test2")?.mentionCount)
+    }
+
+    private companion object {
+        /** 동시에 초대할 사람들. 셋이 있는 방에 한도가 5 라 둘만 들어갈 수 있다. */
+        val INVITEES = listOf("test4", "test5", "test6", "test7", "test8", "test9")
+        const val CONCURRENT_WAIT_SECONDS = 30L
     }
 }

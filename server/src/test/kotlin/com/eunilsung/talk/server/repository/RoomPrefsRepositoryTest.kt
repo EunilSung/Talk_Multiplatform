@@ -1,6 +1,5 @@
 package com.eunilsung.talk.server.repository
 
-import com.eunilsung.talk.server.seed.SeedAccounts
 import com.eunilsung.talk.server.testsupport.TestDatabase
 import com.eunilsung.talk.shared.api.ChatGroupDto
 import kotlin.test.BeforeTest
@@ -21,7 +20,6 @@ class RoomPrefsRepositoryTest {
     @BeforeTest
     fun setUp() {
         TestDatabase.clean()
-        SeedAccounts.ensure(UserRepository(TestDatabase.dataSource))
         chats = ChatRepository(TestDatabase.dataSource)
         groups = ChatGroupRepository(TestDatabase.dataSource)
         roomA = assertNotNull(chats.createRoom("test1", listOf("test2"))).roomId

@@ -208,10 +208,10 @@ flowchart LR
 처음 한 번 — 새 인스턴스(Ubuntu 24.04)를 준비합니다.
 
 ```bash
-ssh ubuntu@<공인 IP> 'mkdir -p talk'
-scp deploy/setup-host.sh deploy/backup.sh deploy/.env.example ubuntu@<공인 IP>:talk/
-ssh ubuntu@<공인 IP> 'sudo bash talk/setup-host.sh'   # 스왑 2GB · Docker · iptables 80/443 · 매일 DB 백업
-ssh ubuntu@<공인 IP> 'cp talk/.env.example talk/.env' # 또는 직접 만들고 DOMAIN · DB_PASSWORD 등을 채운다
+ssh <SSH 사용자>@<공인 IP> 'mkdir -p talk'
+scp deploy/setup-host.sh deploy/backup.sh deploy/.env.example <SSH 사용자>@<공인 IP>:talk/
+ssh <SSH 사용자>@<공인 IP> 'sudo bash talk/setup-host.sh'   # 스왑 2GB · Docker · iptables 80/443 · 매일 DB 백업
+ssh <SSH 사용자>@<공인 IP> 'cp talk/.env.example talk/.env' # 또는 직접 만들고 DOMAIN · DB_PASSWORD 등을 채운다
 ```
 
 클라우드 쪽 방화벽(Oracle Cloud 는 VCN 보안 목록)에서도 80·443 을 열어 둡니다.
@@ -219,7 +219,7 @@ ssh ubuntu@<공인 IP> 'cp talk/.env.example talk/.env' # 또는 직접 만들�
 배포 — 빌드 · 올리기 · 다시 띄우기 · `/health` 확인까지 한 번에 합니다.
 
 ```bash
-DEPLOY_HOST=ubuntu@<공인 IP> DEPLOY_KEY=~/.ssh/<키 파일> deploy/deploy.sh
+DEPLOY_HOST=<SSH 사용자>@<공인 IP> DEPLOY_KEY=~/.ssh/<키 파일> deploy/deploy.sh
 ```
 
 | `.env` 값 | 용도 |
@@ -228,6 +228,7 @@ DEPLOY_HOST=ubuntu@<공인 IP> DEPLOY_KEY=~/.ssh/<키 파일> deploy/deploy.sh
 | `DB_PASSWORD` | PostgreSQL 비밀번호 (`openssl rand -hex 24`) |
 | `GEMINI_API_KEY` · `AI_MODEL` | AI. 비우면 AI 만 꺼진다 |
 | `FIREBASE_CREDENTIALS_B64` | Firebase 서비스 계정 JSON 을 base64 한 줄로. 비우면 푸시만 꺼진다 |
+| `SEED_DEMO_ACCOUNTS` · `SEED_PASSWORD` | 시연용 계정 test1~test10. 둘 다 있어야 만들고, 비밀번호는 `SEED_PASSWORD` 다(`openssl rand -hex 12`). 기본 비밀번호는 없다 |
 
 앱은 `local.properties` 의 `server.baseUrl=https://<DOMAIN>` 으로 빌드하면 배포한 서버에 붙습니다. iOS 푸시는 Apple 의 APNs
 인증 키가 Firebase 프로젝트에 등록돼 있어야 옵니다.
@@ -425,9 +426,14 @@ server.baseUrl=http://10.0.2.2:8090
 
 | ID | PW |
 |---|---|
-| `test1` ~ `test10` | `1234` |
+| `test1` ~ `test10` | `1234` (로컬 모드·로컬 서버) |
 
-로컬 모드는 기기 안 계정으로, 서버 모드는 서버가 처음 뜰 때 만들어 둔 같은 계정으로 로그인합니다.
+로컬 모드는 기기 안 계정으로, 서버 모드는 로컬 서버(`:server:runLocal`)가 만들어 둔 같은 계정으로 로그인합니다.
+배포한 서버에는 이 비밀번호가 없습니다 — `.env` 의 `SEED_DEMO_ACCOUNTS=true` 와 `SEED_PASSWORD` 로 정한 비밀번호를 씁니다([배포](#배포)).
+
+로컬 서버는 이 PC 안(`127.0.0.1`)에서만 받습니다. 에뮬레이터·시뮬레이터는 그대로 붙고, 실기기는 `adb reverse tcp:8090 tcp:8090`
+뒤 `http://localhost:8090` 으로 붙입니다. 같은 Wi-Fi 로 붙여야 하면 `HOST=0.0.0.0 ./gradlew :server:runLocal` 로 띄웁니다.
+이때는 같은 망의 누구나 위 비밀번호로 들어올 수 있어 서버가 운영 한도(방 만들기·파일 횟수)를 쓰고, 뜰 때 경고를 찍습니다.
 
 ---
 

@@ -28,10 +28,12 @@ class FakeFileMetadataResolver : FileMetadataResolver {
     override suspend fun writeCacheFile(filename: String, bytes: ByteArray): String =
         "/cache/$filename".also { files[it] = bytes }
 
+    override suspend fun writeOpenCopy(key: String, filename: String, bytes: ByteArray): String =
+        "/cache/open_files/$key/$filename".also { files[it] = bytes }
+
     override suspend fun saveDownloadedFile(filename: String, bytes: ByteArray): String? = null
     override suspend fun saveToGallery(filename: String, bytes: ByteArray): String? = null
     override suspend fun saveVideoToGallery(filename: String, bytes: ByteArray): String? = null
-    override suspend fun findDownloadedFile(filename: String): String? = null
 
     companion object {
         const val IMAGE_SIZE = "100:200"

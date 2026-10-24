@@ -51,4 +51,30 @@ class LoginAttemptLimiterTest {
         assertEquals(60, limiter.secondsUntilUnlocked("test1"))
         assertEquals(0, limiter.secondsUntilUnlocked("test2"))
     }
+
+    @Test
+    fun `한참 뒤의 실패는 처음부터 다시 센다`() {
+        val windowed = LoginAttemptLimiter(maxFailures = 3, lockMillis = 60_000, now = { clock }, failureWindowMillis = 600_000)
+        repeat(2) { windowed.recordFailure("test1") }
+
+        clock = 600_000
+        windowed.recordFailure("test1")
+
+        assertEquals(0, windowed.secondsUntilUnlocked("test1"))
+    }
+
+    @Test
+    fun `기록이 한도에 닿으면 가장 오래 조용했던 기록부터 버리고 잠긴 기록은 남긴다`() {
+        val small = LoginAttemptLimiter(maxFailures = 2, lockMillis = 60_000, now = { clock }, maxRecords = 2)
+        repeat(2) { small.recordFailure("victim") }
+        clock = 1
+        small.recordFailure("first")
+        clock = 2
+        small.recordFailure("second")
+        clock = 3
+        small.recordFailure("first")
+
+        assertEquals(60, small.secondsUntilUnlocked("victim"))
+        assertEquals(0, small.secondsUntilUnlocked("first"))
+    }
 }

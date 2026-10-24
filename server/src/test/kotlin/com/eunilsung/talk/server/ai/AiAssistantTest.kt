@@ -2,7 +2,7 @@ package com.eunilsung.talk.server.ai
 
 import com.eunilsung.talk.server.ServerJson
 import com.eunilsung.talk.server.module
-import com.eunilsung.talk.server.seed.SeedAccounts
+import com.eunilsung.talk.server.local.LOCAL_SEED_PASSWORD
 import com.eunilsung.talk.server.testsupport.TestDatabase
 import com.eunilsung.talk.shared.api.CreateRoomRequest
 import com.eunilsung.talk.shared.api.ApiError
@@ -299,7 +299,7 @@ class AiAssistantTest {
     private suspend fun HttpClient.loginToken(id: String): String =
         post("/auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(ServerJson.encodeToString(LoginRequest.serializer(), LoginRequest(id, SeedAccounts.PASSWORD)))
+            setBody(ServerJson.encodeToString(LoginRequest.serializer(), LoginRequest(id, LOCAL_SEED_PASSWORD)))
         }.decode(LoginResponse.serializer()).token
 
     private suspend fun HttpClient.createRoom(token: String, vararg memberIds: String): RoomDto =

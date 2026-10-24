@@ -1,6 +1,7 @@
 package com.eunilsung.talk.data.remote.server
 
 import com.eunilsung.talk.data.local.FileMetadataResolver
+import com.eunilsung.talk.util.sanitizeFileName
 import com.russhwolf.settings.Settings
 
 /**
@@ -60,11 +61,14 @@ class ServerFileStore(
      * 파일을 내려받아 캐시에 두고 그 경로를 돌려준다. 이미 있으면 받지 않는다. 실패하면 null.
      *
      * 캐시 파일 이름에 id 를 붙인다. 같은 이름의 파일이 여러 번 와도 서로 덮어쓰지 않는다.
+     * [fileName] 은 보낸 사람이 정한 값이라 마지막 경로 조각으로 정리한 뒤에 붙인다([sanitizeFileName]) —
+     * `../` 로 id 접두어를 떼어 내 다른 파일의 캐시를 덮어쓰지 못하게 한다.
      */
     suspend fun download(fileId: String, fileName: String): String? {
         localPath(fileId)?.let { return it }
         val bytes = server.downloadFile(fileId).valueOrNull() ?: return null
-        val path = fileMetadataResolver.writeCacheFile("${fileId.take(ID_PREFIX_LENGTH)}_$fileName", bytes) ?: return null
+        val cacheName = "${sanitizeFileName(fileId.take(ID_PREFIX_LENGTH))}_${sanitizeFileName(fileName)}"
+        val path = fileMetadataResolver.writeCacheFile(cacheName, bytes) ?: return null
         remember(fileId, path)
         return path
     }

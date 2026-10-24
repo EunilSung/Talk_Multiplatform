@@ -9,8 +9,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 /**
  * 저장소가 init 에서 구독하는 로그인 상태만 흉내 낸다.
  * 기본값 false — 백그라운드 시드가 끼어들지 않아 테스트가 결정적으로 돈다.
+ * 로그인 화면 테스트는 이어받아 저장값·자동 로그인 결과만 바꿔 쓴다.
  */
-class FakeLoginRepository : LoginRepository {
+open class FakeLoginRepository : LoginRepository {
 
     override val isLoggedIn = MutableStateFlow(false)
     override val isConnected = MutableStateFlow(false)
@@ -30,9 +31,9 @@ class FakeLoginRepository : LoginRepository {
         Login.LoginResult.Success
 
     override fun getSavedId(): String? = null
-    override fun getSavedPw(): String? = null
     override fun isSavePw(): Boolean = false
     override fun setSavePw(isSave: Boolean) = Unit
     override fun checkConnectionAndRelogin() = Unit
+    override suspend fun resumeLogin(): Login.LoginResult? = null
     override fun getMyUser(): User = User(id = Config.MyInfo.userId, name = Config.MyInfo.userName)
 }

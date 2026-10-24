@@ -38,6 +38,7 @@ import com.eunilsung.talk.util.ChatIdUtils
 import com.eunilsung.talk.domain.util.UserListCodec
 import com.eunilsung.talk.util.chatDisplayText
 import com.eunilsung.talk.util.formatFileSize
+import com.eunilsung.talk.util.sanitizeFileName
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -59,6 +60,9 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
      *
      * 초대·퇴장 알림은 서버가 "누가 누구를"만 알려 준다. 문구는 여기서 기기 언어에 맞춰 만든다 —
      * 화면이 본문을 그대로 그리기 때문이다.
+     *
+     * 답장 인용(`payload.reply*`)은 답장 대화(`REPLY`)일 때만 붙인다. 다른 종류에 실린 인용 칸은 버린다.
+     * 파일 이름은 보낸 사람이 정한 값이라 마지막 경로 조각으로 정리한다([sanitizeFileName]).
      */
     suspend fun toChat(message: MessageDto): Chat.Item {
         val payload = message.payload
@@ -83,7 +87,7 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
             date = chatDateOf(message.sentAtEpochMillis),
             unReadCount = message.unreadCount.toString(),
             user = User(id = message.senderId, name = message.senderName),
-            replyChat = payload?.replyToId?.let { replyToId ->
+            replyChat = payload?.replyToId?.takeIf { message.kind == MessageKind.REPLY }?.let { replyToId ->
                 ReplyChat(
                     chatID = replyToId,
                     chatType = payload.replyKind?.let(::chatTypeOf) ?: Chat.Type.TEXT,
@@ -98,7 +102,7 @@ class ServerChatMapper(private val fileStore: ServerFileStore) {
             imagePath = localPathOf(payload),
             localPath = localPathOf(payload),
             imageSize = payload?.imageSize.orEmpty(),
-            originalFileName = payload?.fileName.orEmpty(),
+            originalFileName = payload?.fileName?.takeIf { it.isNotBlank() }?.let { sanitizeFileName(it) }.orEmpty(),
         )
     }
 

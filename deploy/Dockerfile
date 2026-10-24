@@ -9,8 +9,9 @@ RUN useradd --system --uid 1001 talk \
 COPY --chown=talk server /app
 
 USER talk
+# 메모리가 모자라면 고장 난 채 남지 말고 끝나게 한다(ExitOnOutOfMemoryError). 끝나면 compose 가 다시 띄운다.
 ENV PORT=8080 \
     FILES_DIR=/data/files \
-    JAVA_OPTS="-Xms96m -Xmx256m -XX:MaxMetaspaceSize=128m -Xss512k -XX:+UseSerialGC -Dfile.encoding=UTF-8"
+    JAVA_OPTS="-Xms96m -Xmx256m -XX:MaxMetaspaceSize=128m -Xss512k -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8"
 EXPOSE 8080
 ENTRYPOINT ["/app/bin/server"]

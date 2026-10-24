@@ -160,6 +160,7 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)   // runTest
             implementation(libs.multiplatform.settings.test) // MapSettings (인메모리)
+            implementation(libs.ktor.client.mock)
         }
         androidUnitTest.dependencies {
             implementation(libs.sqldelight.sqlite.driver)  // JdbcSqliteDriver — 인메모리 DB

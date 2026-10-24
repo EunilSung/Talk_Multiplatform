@@ -9,6 +9,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import com.eunilsung.talk.util.Log
+import com.eunilsung.talk.util.childPathInside
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSData
 import platform.Foundation.NSDocumentDirectory
@@ -47,7 +48,24 @@ class IosFileMetadataResolver : FileMetadataResolver {
                 val cacheDir = (dirs.firstOrNull() as? String) ?: return@withContext null
                 val subDir = "$cacheDir/chat_uploads"
                 NSFileManager.defaultManager.createDirectoryAtPath(subDir, true, null, null)
-                val filePath = "$subDir/$filename"
+                val filePath = childPathInside(subDir, filename) ?: return@withContext null
+
+                val nsData = bytes.usePinned { pinned ->
+                    NSData.create(bytes = pinned.addressOf(0), length = bytes.size.toULong())
+                }
+                val ok = nsData.writeToFile(filePath, atomically = true)
+                if (ok) filePath else null
+            }.getOrNull()
+        }
+
+    override suspend fun writeOpenCopy(key: String, filename: String, bytes: ByteArray): String? =
+        withContext(Dispatchers.Default) {
+            runCatching {
+                val dirs = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, true)
+                val cacheDir = (dirs.firstOrNull() as? String) ?: return@withContext null
+                val subDir = childPathInside("$cacheDir/$OPEN_DIR", key) ?: return@withContext null
+                NSFileManager.defaultManager.createDirectoryAtPath(subDir, true, null, null)
+                val filePath = childPathInside(subDir, filename) ?: return@withContext null
 
                 val nsData = bytes.usePinned { pinned ->
                     NSData.create(bytes = pinned.addressOf(0), length = bytes.size.toULong())
@@ -86,7 +104,7 @@ class IosFileMetadataResolver : FileMetadataResolver {
                 val nsData = bytes.usePinned { pinned ->
                     NSData.create(bytes = pinned.addressOf(0), length = bytes.size.toULong())
                 }
-                val tmpPath = NSTemporaryDirectory() + filename
+                val tmpPath = childPathInside(NSTemporaryDirectory().trimEnd('/'), filename) ?: return@withContext null
                 if (!nsData.writeToFile(tmpPath, atomically = true)) return@withContext null
                 val fileUrl = NSURL.fileURLWithPath(tmpPath)
 
@@ -106,17 +124,6 @@ class IosFileMetadataResolver : FileMetadataResolver {
             }.getOrNull()
         }
 
-    override suspend fun findDownloadedFile(filename: String): String? =
-        withContext(Dispatchers.Default) {
-            if (filename.isBlank()) return@withContext null
-            runCatching {
-                val dirs = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)
-                val docDir = (dirs.firstOrNull() as? String) ?: return@withContext null
-                val filePath = "$docDir/$SAVE_DIR/$filename"
-                if (NSFileManager.defaultManager.fileExistsAtPath(filePath)) filePath else null
-            }.getOrNull()
-        }
-
     override suspend fun saveDownloadedFile(filename: String, bytes: ByteArray): String? =
         withContext(Dispatchers.Default) {
             runCatching {
@@ -124,7 +131,7 @@ class IosFileMetadataResolver : FileMetadataResolver {
                 val docDir = (dirs.firstOrNull() as? String) ?: return@withContext null
                 val appDir = "$docDir/$SAVE_DIR"
                 NSFileManager.defaultManager.createDirectoryAtPath(appDir, true, null, null)
-                val filePath = "$appDir/$filename"
+                val filePath = childPathInside(appDir, filename) ?: return@withContext null
 
                 val nsData = bytes.usePinned { pinned ->
                     NSData.create(bytes = pinned.addressOf(0), length = bytes.size.toULong())
@@ -342,3 +349,6 @@ class IosFileMetadataResolver : FileMetadataResolver {
 
 /** 사용자에게 보이는 저장 폴더명 — 갤러리·다운로드 하위에 이 이름으로 모은다. */
 private const val SAVE_DIR = "MultiplatformTalk"
+
+/** '열기'용 사본을 두는 Caches 하위 폴더. Documents 가 아니라 파일 앱·Finder 에 보이지 않는다. */
+private const val OPEN_DIR = "open_files"

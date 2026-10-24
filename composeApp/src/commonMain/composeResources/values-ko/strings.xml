@@ -2,7 +2,7 @@
     <string name="alarm">알림</string>
     <string name="id">아이디</string>
     <string name="pw">비밀번호</string>
-    <string name="save_pw">비밀번호 저장</string>
+    <string name="save_pw">자동 로그인</string>
     <string name="login_demo_hint">시연용 계정: test1 ~ test10 · 비밀번호 1234</string>
     <string name="app_name">Talk</string>
     <string name="login_tagline">함께 일하는 메신저</string>
@@ -487,4 +487,5 @@
     <string name="file_name_unknown">(이름 없음)</string>
     <string name="login_id_required">아이디를 입력해 주세요</string>
     <string name="login_pw_required">비밀번호를 입력해 주세요</string>
+    <string name="link_preview_show">링크 미리보기 보기</string>
 </resources>

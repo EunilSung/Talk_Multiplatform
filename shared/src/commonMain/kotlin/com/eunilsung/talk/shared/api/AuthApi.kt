@@ -2,12 +2,22 @@ package com.eunilsung.talk.shared.api
 
 import kotlinx.serialization.Serializable
 
-/** 로그인 요청. 비밀번호는 이 요청에만 실리고, 이후에는 토큰이 신원을 대신한다. */
+/**
+ * 로그인 요청. 비밀번호는 이 요청에만 실리고, 이후에는 토큰이 신원을 대신한다.
+ *
+ * [id] 는 [MAX_LOGIN_ID_LENGTH] 자, [password] 는 [MAX_LOGIN_PASSWORD_LENGTH] 자까지 받는다. 넘으면 서버가 400 으로 답한다.
+ */
 @Serializable
 data class LoginRequest(
     val id: String,
     val password: String,
 )
+
+/** 로그인 아이디의 최대 길이. */
+const val MAX_LOGIN_ID_LENGTH = 64
+
+/** 로그인 비밀번호의 최대 길이. 해시 계산에 드는 시간이 길이에 따라 늘지 않게 묶어 둔다. */
+const val MAX_LOGIN_PASSWORD_LENGTH = 128
 
 @Serializable
 data class LoginResponse(
@@ -46,6 +56,10 @@ object ApiErrorCode {
     const val BAD_REQUEST = "bad_request"
     /** 틀린 비밀번호가 연달아 들어와 잠시 로그인을 받지 않는다. 응답의 `Retry-After` 헤더가 남은 초다. */
     const val TOO_MANY_ATTEMPTS = "too_many_attempts"
+    /** 요청 본문이 서버가 받는 크기보다 크다(413). */
+    const val PAYLOAD_TOO_LARGE = "payload_too_large"
+    /** 짧은 시간에 같은 일을 너무 많이 했다(429). 방 만들기·초대처럼 횟수 한도가 있는 요청에서 온다. */
+    const val TOO_MANY_REQUESTS = "too_many_requests"
 }
 
 @Serializable

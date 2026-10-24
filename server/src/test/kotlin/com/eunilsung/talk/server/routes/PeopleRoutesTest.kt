@@ -2,7 +2,7 @@ package com.eunilsung.talk.server.routes
 
 import com.eunilsung.talk.server.ServerJson
 import com.eunilsung.talk.server.module
-import com.eunilsung.talk.server.seed.SeedAccounts
+import com.eunilsung.talk.server.local.LOCAL_SEED_PASSWORD
 import com.eunilsung.talk.server.testsupport.TestDatabase
 import com.eunilsung.talk.shared.api.ContactGroupDto
 import com.eunilsung.talk.shared.api.ContactGroupsDto
@@ -127,7 +127,7 @@ class PeopleRoutesTest {
     private suspend fun HttpClient.loginToken(id: String): String =
         post("/auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(ServerJson.encodeToString(LoginRequest.serializer(), LoginRequest(id, SeedAccounts.PASSWORD)))
+            setBody(ServerJson.encodeToString(LoginRequest.serializer(), LoginRequest(id, LOCAL_SEED_PASSWORD)))
         }.decode(LoginResponse.serializer()).token
 
     private suspend fun HttpClient.authGet(token: String, path: String): HttpResponse =

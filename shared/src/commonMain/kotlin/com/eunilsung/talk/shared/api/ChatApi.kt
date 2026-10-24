@@ -108,6 +108,10 @@ object MessageKind {
  *
  * 답장의 인용은 원본을 가리키기만 하지 않고 그 시점 내용을 함께 담는다. 원본이 회수되거나 아직
  * 받지 않은 구간에 있어도 인용은 보여야 한다. [replyToId] 는 "원본으로 이동"에 쓴다.
+ *
+ * 앱이 보낸 값을 그대로 저장하지 않는다. 서버가 종류마다 정한 칸만 남겨 다시 만든다 — 답장의 인용(`reply*`)은
+ * [replyToId] 의 원본에서, 파일의 [fileName]·[fileSize] 는 올린 파일 기록에서 채운다. [targetNames]·[vote]·
+ * [noticeAction] 은 서버만 넣는다. 보낸 사람이 남의 말을 인용한 것처럼 꾸미거나 파일 이름을 바꿔 달 수 없게 하려는 것이다.
  */
 @Serializable
 data class MessagePayloadDto(
@@ -201,6 +205,12 @@ object ChatErrorCode {
     /** 그런 파일이 없거나 내가 받을 수 없는 파일이다. */
     const val FILE_NOT_FOUND = "file_not_found"
     const val FILE_TOO_LARGE = "file_too_large"
+    /** 오늘 올리거나 전달할 수 있는 파일의 개수나 용량을 다 썼다(429). */
+    const val FILE_QUOTA_EXCEEDED = "file_quota_exceeded"
+    /** 같은 id 의 대화가 이미 있는데 내가 보낸 것이 아니다(409). 대화 id 를 새로 만들어 보내야 한다. */
+    const val MESSAGE_ID_TAKEN = "message_id_taken"
+    /** 방 인원 한도를 넘는 초대다. */
+    const val ROOM_FULL = "room_full"
     /** 그런 투표가 없거나 그 투표에 할 수 없는 일이다. */
     const val VOTE_NOT_FOUND = "vote_not_found"
     /** AI 가 지금 답할 수 없다 — 설정되지 않았거나, 사용량 한도에 걸렸거나, 응답을 받지 못했다. */
@@ -317,6 +327,12 @@ data class VoteVoterDto(
 @Serializable
 data class VotesResponse(val votes: List<VoteDto> = emptyList())
 
+/**
+ * 투표 만들기. 제목·항목은 200자까지, 항목은 2~20개다.
+ *
+ * [endTime] 은 서버가 해석하지 않는 마감 시각 문자열로, 비우거나 숫자와 `-:./+TZ`·공백으로 된 32자 이하만 받는다
+ * (`2026-10-24 18:00`, ISO-8601). 이 값들은 투표를 알리는 대화에 그대로 실려 방을 여는 사람마다 읽히므로 길이 상한이 있다.
+ */
 @Serializable
 data class CreateVoteRequest(
     val title: String,

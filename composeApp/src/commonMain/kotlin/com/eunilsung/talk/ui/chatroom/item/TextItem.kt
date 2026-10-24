@@ -56,7 +56,7 @@ fun TextItem(
             Spacer(modifier = Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.Bottom) {
                 if (itemProps.isMe) ChatDateSlot(itemProps)
-                LinkPreviewCard(url = previewUrl)
+                LinkPreviewCard(url = previewUrl, isMe = itemProps.isMe)
                 if (!itemProps.isMe) ChatDateSlot(itemProps)
             }
         }

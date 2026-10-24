@@ -9,14 +9,14 @@ class DownloadFileUseCase(private val repository: DeviceFileRepository) {
         repository.saveToDownloads(source, displayName) != null
 }
 
-/** 받은 파일을 연다. 받아 둔 파일이 없으면 먼저 다운로드 폴더에 받는다. */
+/**
+ * 받은 파일을 연다. 앱 캐시의 사본으로만 연다 — 다운로드 폴더(파일 앱)에는 저장하지 않는다.
+ * 공용 폴더 저장은 사용자가 '저장'을 눌렀을 때만 한다([DownloadFileUseCase]).
+ */
 class OpenFileUseCase(private val repository: DeviceFileRepository) {
     suspend operator fun invoke(source: String, displayName: String): OpenFileResult {
-        val existing = repository.findDownloaded(displayName)
-        val path = existing ?: repository.saveToDownloads(source, displayName)
-            ?: return OpenFileResult.FAILED
-        if (!repository.open(path)) return OpenFileResult.FAILED
-        return if (existing == null) OpenFileResult.DOWNLOADED_AND_OPENED else OpenFileResult.OPENED
+        val path = repository.copyForOpen(source, displayName) ?: return OpenFileResult.FAILED
+        return if (repository.open(path)) OpenFileResult.OPENED else OpenFileResult.FAILED
     }
 }
 

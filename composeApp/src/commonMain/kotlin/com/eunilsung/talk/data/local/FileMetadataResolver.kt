@@ -20,8 +20,20 @@ interface FileMetadataResolver {
      */
     suspend fun materializeForDisplay(path: String, filename: String): String = path
 
-    /** 바이트를 앱 cache 디렉터리에 [filename] 으로 저장하고 절대 path 반환. 실패 시 null. */
+    /**
+     * 바이트를 앱 cache 디렉터리에 [filename] 으로 저장하고 절대 path 반환. 실패 시 null.
+     *
+     * 이 함수부터 아래의 저장 함수는 모두 이름을 [com.eunilsung.talk.util.sanitizeFileName] 으로 정리하고,
+     * 저장 경로가 그 폴더 안인지 확인한 뒤에만 쓴다. 이름에 `../` 가 있어도 폴더 밖에 쓰지 않는다.
+     */
     suspend fun writeCacheFile(filename: String, bytes: ByteArray): String?
+
+    /**
+     * 다른 앱(iOS 는 앱 안 미리보기)으로 열 사본을 앱 cache 의 열기 전용 폴더에 [filename] 으로 쓴다. 공용 폴더에는 쓰지 않는다.
+     *
+     * [key] 가 다르면 이름이 같아도 다른 사본이다(하위 폴더가 다르다). 성공 시 절대 path, 실패 시 null.
+     */
+    suspend fun writeOpenCopy(key: String, filename: String, bytes: ByteArray): String?
 
     /** 다운로드 파일을 사용자에게 노출되는 영역에 저장. 성공 시 path/URI, 실패 시 null. */
     suspend fun saveDownloadedFile(filename: String, bytes: ByteArray): String?
@@ -31,9 +43,6 @@ interface FileMetadataResolver {
 
     /** 동영상을 갤러리에 저장. 성공 시 경로/URI, 실패 시 null. */
     suspend fun saveVideoToGallery(filename: String, bytes: ByteArray): String?
-
-    /** 이전에 [saveDownloadedFile] 로 받아둔 동일 파일 존재 여부 검사. 존재 시 path, 없으면 null. */
-    suspend fun findDownloadedFile(filename: String): String?
 }
 
 /**

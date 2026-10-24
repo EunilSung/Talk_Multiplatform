@@ -17,7 +17,7 @@ sealed interface MainActions {
     /** 파일 상세 시트에서 받기를 눌렀다. [source] 는 서버 파일 이름, [displayName] 은 저장할 이름이다. */
     data class OnDownloadFile(val source: String, val displayName: String) : MainActions
 
-    /** 파일 상세 시트에서 열기를 눌렀다. 받아 둔 파일이 없으면 먼저 받는다. */
+    /** 파일 상세 시트에서 열기를 눌렀다. 앱 캐시의 사본으로만 열고 다운로드 폴더에는 저장하지 않는다. */
     data class OnOpenFile(val source: String, val displayName: String) : MainActions
 }
 

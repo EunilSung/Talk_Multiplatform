@@ -1,6 +1,6 @@
 package com.eunilsung.talk.server.repository
 
-import com.eunilsung.talk.server.seed.SeedAccounts
+import com.eunilsung.talk.server.testsupport.sentMessage
 import com.eunilsung.talk.server.testsupport.TestDatabase
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MessageKind
@@ -23,13 +23,12 @@ class ChatExtrasRepositoryTest {
     @BeforeTest
     fun setUp() {
         TestDatabase.clean()
-        SeedAccounts.ensure(UserRepository(TestDatabase.dataSource))
         chats = ChatRepository(TestDatabase.dataSource)
         room = assertNotNull(chats.createRoom("test1", listOf("test2", "test3"))).roomId
     }
 
     private fun say(sender: String, text: String, id: String = "$sender-$text"): MessageDto =
-        assertNotNull(chats.send(room, sender, id, MessageKind.TEXT, text, null))
+        assertNotNull(chats.send(room, sender, id, MessageKind.TEXT, text, null).sentMessage())
 
     private fun stored(id: String, viewer: String = "test1"): MessageDto =
         chats.messages(room, viewer, null, null, 50)!!.first { it.id == id }
@@ -72,10 +71,10 @@ class ChatExtrasRepositoryTest {
     @Test
     fun `회수하면 본문과 부가 정보와 공감이 누구에게도 나가지 않는다`() {
         val payload = MessagePayloadDto(emoticonId = "emo_1")
-        val message = assertNotNull(chats.send(room, "test1", "secret", MessageKind.EMOTICON, "잘못 보낸 말", payload))
+        val message = assertNotNull(chats.send(room, "test1", "secret", MessageKind.EMOTICON, "잘못 보낸 말", payload).sentMessage())
         chats.toggleReaction(room, "test2", message.id, "1")
 
-        val recalled = assertNotNull(chats.recall(room, "test1", message.id))
+        val recalled = assertNotNull(chats.recall(room, "test1", message.id)).message
 
         assertTrue(recalled.isRecalled)
         listOf(recalled, stored(message.id, "test2"), assertNotNull(chats.room(room, "test3")?.lastMessage)).forEach {
@@ -105,7 +104,7 @@ class ChatExtrasRepositoryTest {
         val message = say("test1", "거둘 말")
         chats.recall(room, "test1", message.id)
 
-        assertTrue(assertNotNull(chats.recall(room, "test1", message.id)).isRecalled)
+        assertTrue(assertNotNull(chats.recall(room, "test1", message.id)).message.isRecalled)
         assertNull(chats.toggleReaction(room, "test2", message.id, "1"))
     }
 

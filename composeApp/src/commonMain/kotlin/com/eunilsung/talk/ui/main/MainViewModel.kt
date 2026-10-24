@@ -145,7 +145,6 @@ class MainViewModel(
         viewModelScope.launch {
             when (mainUseCases.openFile(source, displayName)) {
                 OpenFileResult.OPENED -> Unit
-                OpenFileResult.DOWNLOADED_AND_OPENED -> _events.send(MainScreenEvent.FileDownloaded(displayName))
                 OpenFileResult.FAILED -> _events.send(MainScreenEvent.FileOpenFailed)
             }
         }

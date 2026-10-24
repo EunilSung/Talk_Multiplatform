@@ -2,6 +2,8 @@ package com.eunilsung.talk.ui.login
 
 import org.jetbrains.compose.resources.getString
 import multiplatformtalk.composeapp.generated.resources.login_fail
+import multiplatformtalk.composeapp.generated.resources.no_server_response
+import multiplatformtalk.composeapp.generated.resources.retry
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -145,7 +147,7 @@ fun LoginScreen(
                 updateUrl = info.updateUrl,
                 onUpdate = {
                     updateRequested = true
-                    externalUrlOpener.open(info.updateUrl)
+                    externalUrlOpener.openUpdate(info.updateUrl)
                 },
                 onCancel = { appExiter.exit() }
             )
@@ -175,6 +177,13 @@ fun LoginContent(
                 title = loginTitle,
                 message = status.message,
                 onConfirm = { onAction(LoginActions.OnDuplicateLoginConfirm(inputState)) },
+                onCancel = { onAction(LoginActions.OnResetState) }
+            )
+            is LoginStatus.ResumeFailed -> dialog.confirm(
+                title = loginTitle,
+                message = status.message.ifBlank { getString(Res.string.no_server_response) },
+                confirmText = getString(Res.string.retry),
+                onConfirm = { onAction(LoginActions.OnRetryResume) },
                 onCancel = { onAction(LoginActions.OnResetState) }
             )
             else -> {}

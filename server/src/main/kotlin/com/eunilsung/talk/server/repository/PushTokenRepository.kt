@@ -19,23 +19,52 @@ class PushTokenRepository(private val dataSource: DataSource) {
      * 한 기기에서 로그아웃하고 다른 계정으로 들어와도 FCM 토큰은 그대로다. 주인을 갈지 않으면 그 기기로
      * 옛 계정의 대화가 계속 온다. [authTokenHash] 는 이 등록을 한 로그인이고, 그 로그인이 끝나면
      * 이 토큰도 함께 지워진다.
+     *
+     * 로그인 하나에는 토큰 하나만 둔다 — 같은 로그인이 등록한 다른 토큰은 지운다(앱이 토큰을 새로 받은 경우다).
+     * 한 사람의 토큰이 [maxPerUser] 개를 넘으면 가장 오래 갱신되지 않은 것부터 지운다.
      */
-    fun register(token: String, userId: String, platform: String, authTokenHash: String) {
+    fun register(token: String, userId: String, platform: String, authTokenHash: String, maxPerUser: Int) {
         dataSource.connection.use { conn ->
-            conn.prepareStatement(
-                """
-                INSERT INTO push_token (token, user_id, platform, auth_token_hash, updated_at)
-                VALUES (?, ?, ?, ?, now())
-                ON CONFLICT (token) DO UPDATE
-                    SET user_id = EXCLUDED.user_id, platform = EXCLUDED.platform,
-                        auth_token_hash = EXCLUDED.auth_token_hash, updated_at = now()
-                """.trimIndent()
-            ).use { st ->
-                st.setString(1, token)
-                st.setString(2, userId)
-                st.setString(3, platform)
-                st.setString(4, authTokenHash)
-                st.executeUpdate()
+            conn.autoCommit = false
+            try {
+                conn.prepareStatement("DELETE FROM push_token WHERE auth_token_hash = ? AND token <> ?").use { st ->
+                    st.setString(1, authTokenHash)
+                    st.setString(2, token)
+                    st.executeUpdate()
+                }
+                conn.prepareStatement(
+                    """
+                    INSERT INTO push_token (token, user_id, platform, auth_token_hash, updated_at)
+                    VALUES (?, ?, ?, ?, now())
+                    ON CONFLICT (token) DO UPDATE
+                        SET user_id = EXCLUDED.user_id, platform = EXCLUDED.platform,
+                            auth_token_hash = EXCLUDED.auth_token_hash, updated_at = now()
+                    """.trimIndent()
+                ).use { st ->
+                    st.setString(1, token)
+                    st.setString(2, userId)
+                    st.setString(3, platform)
+                    st.setString(4, authTokenHash)
+                    st.executeUpdate()
+                }
+                conn.prepareStatement(
+                    """
+                    DELETE FROM push_token WHERE user_id = ? AND token NOT IN (
+                        SELECT token FROM push_token WHERE user_id = ? ORDER BY updated_at DESC, token LIMIT ?
+                    )
+                    """.trimIndent()
+                ).use { st ->
+                    st.setString(1, userId)
+                    st.setString(2, userId)
+                    st.setInt(3, maxPerUser)
+                    st.executeUpdate()
+                }
+                conn.commit()
+            } catch (cause: Throwable) {
+                conn.rollback()
+                throw cause
+            } finally {
+                conn.autoCommit = true
             }
         }
     }

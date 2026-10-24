@@ -9,7 +9,7 @@ sealed interface ChatMediaActions {
     /** 파일 상세 시트의 "다운로드". */
     data class OnDownloadFile(val source: String, val displayName: String) : ChatMediaActions
 
-    /** 파일 상세 시트의 "열기". */
+    /** 파일 상세 시트의 "열기". 앱 캐시의 사본으로만 연다. */
     data class OnOpenFile(val source: String, val displayName: String) : ChatMediaActions
 }
 

@@ -56,7 +56,6 @@ class ChatMediaViewModel(
         viewModelScope.launch {
             when (useCases.openFile(source, displayName)) {
                 OpenFileResult.OPENED -> Unit
-                OpenFileResult.DOWNLOADED_AND_OPENED -> _events.send(ChatMediaEvent.FileDownloaded(displayName))
                 OpenFileResult.FAILED -> _events.send(ChatMediaEvent.FileOpenFailed)
             }
         }

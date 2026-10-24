@@ -2,7 +2,7 @@
     <string name="alarm">Alarm</string>
     <string name="id">ID</string>
     <string name="pw">PW</string>
-    <string name="save_pw">Save Password</string>
+    <string name="save_pw">Stay signed in</string>
     <string name="login_demo_hint">Demo accounts: test1 – test10 · password 1234</string>
     <string name="app_name">Talk</string>
     <string name="login_tagline">Messenger for teams</string>
@@ -487,4 +487,5 @@
     <string name="file_name_unknown">(No name)</string>
     <string name="login_id_required">Please enter your ID</string>
     <string name="login_pw_required">Please enter your password</string>
+    <string name="link_preview_show">Show link preview</string>
 </resources>

@@ -25,6 +25,12 @@ sealed interface LoginStatus {
     data object Success : LoginStatus
     data class Error(val message: String) : LoginStatus
     data class Duplicate(val message: String) : LoginStatus
+
+    /**
+     * 남은 로그인(서버 모드는 저장된 토큰)으로 다시 들어가지 못했다 — 서버 모드에서는 서버에 닿지 못한 경우다.
+     * 토큰은 그대로라 '다시 시도'([LoginActions.OnRetryResume])로 비밀번호 없이 다시 묻는다. 취소하면 입력칸이다.
+     */
+    data class ResumeFailed(val message: String) : LoginStatus
 }
 
 fun Login.LoginResult.toStatus(): LoginStatus = when (this) {
