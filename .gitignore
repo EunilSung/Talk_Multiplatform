@@ -26,3 +26,13 @@ server/.localfiles/
 
 # 서버 배포 비밀값
 deploy/.env
+
+# 서명 키·인증서·서비스 계정 — 저장소 밖(비밀번호 관리자·암호화 디스크 이미지)에 둔다
+*.jks
+*.keystore
+*.p12
+*.p8
+*.pem
+keystore.properties
+.env
+service-account*.json

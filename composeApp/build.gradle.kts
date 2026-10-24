@@ -189,6 +189,13 @@ compose.resources {
     packageOfResClass = "multiplatformtalk.composeapp.generated.resources"
 }
 
+/**
+ * 릴리스 APK 서명 키 파일. GitHub Actions 의 릴리스 작업이 `release` 환경 비밀값을 임시 파일로 풀어
+ * 환경변수 `ANDROID_KEYSTORE_FILE`(+ `ANDROID_KEYSTORE_PASSWORD`·`ANDROID_KEY_ALIAS`·`ANDROID_KEY_PASSWORD`)로 넘긴다.
+ * 값이 없으면 release 빌드는 서명하지 않는다. 키 파일과 비밀번호는 저장소에 두지 않는다.
+ */
+val releaseKeystoreFile: String? = providers.environmentVariable("ANDROID_KEYSTORE_FILE").orNull?.takeIf { it.isNotBlank() }
+
 android {
     namespace = "com.eunilsung.talk"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -205,8 +212,19 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    signingConfigs {
+        if (releaseKeystoreFile != null) {
+            create("release") {
+                storeFile = file(releaseKeystoreFile)
+                storePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").get()
+                keyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").get()
+                keyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD").get()
+            }
+        }
+    }
     buildTypes {
         getByName("release") {
+            if (releaseKeystoreFile != null) signingConfig = signingConfigs.getByName("release")
             // 쇼케이스 샘플이라 난독화 이득이 없고, keep 룰 없이 R8 을 켜면
             // Koin/Voyager/SQLDelight 리플렉션 경로가 런타임에 깨질 위험이 더 크다.
             isMinifyEnabled = false

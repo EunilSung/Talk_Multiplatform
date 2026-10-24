@@ -6,7 +6,7 @@
 ![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.11.1-4285F4?logo=jetpackcompose&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-24%2B-3DDC84?logo=android&logoColor=white)
 ![iOS](https://img.shields.io/badge/iOS-18.2%2B-000000?logo=apple&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-484%20passing-success)
+[![CI](https://github.com/EunilSung/Talk_Multiplatform/actions/workflows/ci.yml/badge.svg)](https://github.com/EunilSung/Talk_Multiplatform/actions/workflows/ci.yml)
 
 사내 메신저를 개발한 경험을 바탕으로 다시 만든 쇼케이스 프로젝트입니다. 두 가지 모드로 빌드됩니다.
 
@@ -277,6 +277,37 @@ DEPLOY_HOST=<SSH 사용자>@<공인 IP> DEPLOY_KEY=~/.ssh/<키 파일> deploy/de
 앱은 `local.properties` 의 `server.baseUrl=https://<DOMAIN>` 으로 빌드하면 배포한 서버에 붙습니다. 배포한 서버에는 꼭 https 주소로 빌드합니다 —
 앱은 로컬 서버를 위해 평문 HTTP 를 막지 않으므로(Android `usesCleartextTraffic`, iOS `NSAllowsArbitraryLoads`) http 주소로 빌드하면 비밀번호와 토큰이 평문으로 나갑니다.
 iOS 푸시는 Apple 의 APNs 인증 키가 Firebase 프로젝트에 등록돼 있어야 옵니다.
+
+## CI · 릴리스
+
+GitHub Actions(`.github/workflows`)가 테스트, 릴리스, 테스트 서버 배포를 맡습니다.
+
+| 워크플로 | 언제 | 하는 일 |
+|---|---|---|
+| `CI` | main 에 올린 커밋 · PR | 서버 테스트 · 앱 테스트 · 기능 테스트(러너 안에서 로컬 서버를 띄워 붙는다) · 로컬 모드 APK 빌드(Ubuntu), iOS 시뮬레이터 테스트(macOS) |
+| `Release` | `v*` 태그 | 태그가 main 의 커밋이고 앱 `versionName` 과 같은지 확인 → `CI` → 릴리스 파일 → GitHub 릴리스 → `Deploy` |
+| `Deploy` | 릴리스 뒤, 또는 Actions → Deploy → Run workflow 에 배포할 태그(예 `v10.0.0`)를 적어 손으로(되돌리기) | 릴리스의 서버 배포 묶음을 받아 체크섬을 맞추고 `deploy/deploy.sh` 로 테스트 서버에 올린다 |
+
+```bash
+# composeApp/build.gradle.kts 의 versionName · versionCode 를 올려 main 에 머지한 뒤
+git tag v<versionName> && git push origin v<versionName>
+```
+
+| 릴리스 파일 | 내용 |
+|---|---|
+| `talk-server-<버전>.tar.gz` | 서버 배포 묶음 — Docker Compose 설정 · 서버 실행본 · `.env.example` · 서버 준비 · 백업 스크립트 |
+| `Talk-<버전>-local-demo.apk` | Android 로컬 모드(서버 없이 시연 데이터로 동작). 서명 키가 없으면 디버그 서명(`-debug.apk`) |
+| `SHA256SUMS.txt` | 위 파일들의 SHA-256 |
+
+- **공개 저장소라 로그와 아티팩트는 누구나 봅니다.** 그래서 CI 는 비밀값을 쓰지 않고, 릴리스 빌드는 `release` 환경의 APK 서명 키만 씁니다.
+  어느 쪽도 앱에 서버 주소를 넣지 않고, 넣었으면 빌드를 멈춥니다.
+- **비밀값은 GitHub 환경(Environment)에만 둡니다.** `test-server` 에는 배포 전용 SSH 키와 검증한 호스트 키 한 줄
+  (`DEPLOY_HOST` · `DEPLOY_SSH_KEY` · `DEPLOY_KNOWN_HOSTS`), `release` 에는 APK 서명 키(`ANDROID_KEYSTORE_BASE64` ·
+  `ANDROID_KEYSTORE_PASSWORD` · `ANDROID_KEY_ALIAS` · `ANDROID_KEY_PASSWORD`)를 둡니다. 없으면 배포는 건너뛰고 APK 는 디버그 서명으로 만듭니다.
+- **배포는 호스트 키를 고정합니다**(`DEPLOY_HOST_KEY_CHECK=yes`). 서버의 `.env`(DB 비밀번호 · AI · 푸시 키 · `SEED_PASSWORD`)는
+  CI 에 넣지 않고 배포도 건드리지 않습니다.
+- 액션은 커밋 SHA 로 고정했고, 작업마다 필요한 권한만 줍니다(릴리스 작업만 `contents: write`). iOS 는 서명할 Apple 팀이 정해지지 않아
+  릴리스 파일이 없습니다.
 
 ---
 

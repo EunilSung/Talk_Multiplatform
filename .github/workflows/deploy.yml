@@ -1,0 +1,82 @@
+# 테스트 서버 배포 — 릴리스가 끝나면 release.yml 이 부르고, 예전 릴리스로 되돌릴 때는 Actions → Deploy → Run workflow 에서
+# 배포할 태그(예 v10.0.0)를 적어 손으로 돌린다('Use workflow from' 은 main 그대로).
+# GitHub 릴리스의 서버 배포 묶음을 받아 체크섬을 맞춘 뒤 deploy/deploy.sh 로 올린다(서버에서 빌드하지 않는다).
+# 접속 정보는 test-server 환경의 비밀값(DEPLOY_HOST · DEPLOY_SSH_KEY · DEPLOY_KNOWN_HOSTS)에만 둔다. 없으면 건너뛴다.
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 배포할 릴리스 태그 (예 v10.0.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-test-server
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: 테스트 서버에 배포
+    runs-on: ubuntu-24.04
+    environment: test-server
+    timeout-minutes: 20
+    env:
+      TAG: ${{ inputs.tag }}
+    steps:
+      - name: 배포 설정 확인
+        id: config
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9][0-9A-Za-z.-]*$ ]]; then
+            echo "::error::tag 는 v<versionName> 형식이어야 한다"
+            exit 1
+          fi
+          if [ -z "$DEPLOY_HOST" ] || [ -z "$DEPLOY_SSH_KEY" ] || [ -z "$DEPLOY_KNOWN_HOSTS" ]; then
+            echo "::notice::test-server 환경에 DEPLOY_HOST · DEPLOY_SSH_KEY · DEPLOY_KNOWN_HOSTS 가 없어 배포를 건너뛴다."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::add-mask::${DEPLOY_HOST#*@}"
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.config.outputs.ready == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
+      - name: 릴리스의 서버 배포 묶음 받기
+        if: steps.config.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          dir="$RUNNER_TEMP/release"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'talk-server-*.tar.gz' --pattern 'SHA256SUMS.txt' --dir "$dir"
+          (cd "$dir" && sha256sum --check --ignore-missing SHA256SUMS.txt)
+          mkdir -p "$RUNNER_TEMP/stage"
+          tar -xzf "$dir"/talk-server-*.tar.gz -C "$RUNNER_TEMP/stage"
+      - name: 배포
+        if: steps.config.outputs.ready == 'true'
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          umask 077
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          key="$RUNNER_TEMP/deploy_key"
+          trap 'rm -f "$key"' EXIT
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$key"
+          DEPLOY_STAGE="$RUNNER_TEMP/stage" DEPLOY_KEY="$key" DEPLOY_HOST_KEY_CHECK=yes DEPLOY_SHOW_LOGS=0 deploy/deploy.sh
