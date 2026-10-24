@@ -42,10 +42,10 @@ class LocalChatRoomRepositoryTest {
         override suspend fun resolve(path: String) = FileMetadata("f.txt", ".txt", "", 1)
         override suspend fun readBytes(path: String): ByteArray? = null
         override suspend fun writeCacheFile(filename: String, bytes: ByteArray): String? = null
+        override suspend fun writeOpenCopy(key: String, filename: String, bytes: ByteArray): String? = null
         override suspend fun saveDownloadedFile(filename: String, bytes: ByteArray): String? = null
         override suspend fun saveToGallery(filename: String, bytes: ByteArray): String? = null
         override suspend fun saveVideoToGallery(filename: String, bytes: ByteArray): String? = null
-        override suspend fun findDownloadedFile(filename: String): String? = null
     }
 
     @BeforeTest

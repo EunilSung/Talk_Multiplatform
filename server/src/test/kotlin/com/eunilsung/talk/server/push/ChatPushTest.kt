@@ -1,8 +1,9 @@
 package com.eunilsung.talk.server.push
 
 import com.eunilsung.talk.server.ServerJson
+import com.eunilsung.talk.server.limits.ServerLimits
 import com.eunilsung.talk.server.module
-import com.eunilsung.talk.server.seed.SeedAccounts
+import com.eunilsung.talk.server.local.LOCAL_SEED_PASSWORD
 import com.eunilsung.talk.server.testsupport.TestDatabase
 import com.eunilsung.talk.shared.api.CreateRoomRequest
 import com.eunilsung.talk.shared.api.LoginRequest
@@ -35,6 +36,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import io.ktor.client.request.HttpRequestBuilder
 
@@ -183,6 +185,100 @@ class ChatPushTest {
         assertEquals(HttpStatusCode.NoContent, client.registerPush(me, "device").status)
     }
 
+    @Test
+    fun `같은 로그인으로 새 토큰을 등록하면 이전 토큰으로는 더 보내지 않는다`() = serverTest {
+        val me = client.loginToken("test1")
+        val peer = client.loginToken("test2")
+        client.registerPush(peer, "old-device-token")
+        client.registerPush(peer, "new-device-token")
+        val room = client.createRoom(me, "test2")
+
+        client.send(me, room.id, SendMessageRequest("m1", "한 번만"))
+        awaitPushes(1)
+        delay(SILENCE_WAIT_MS)
+
+        assertEquals(listOf("new-device-token"), sender.sent.map { it.first })
+    }
+
+    @Test
+    fun `한 사람에게 묶이는 토큰 수에는 한도가 있어 오래된 것부터 빠진다`() = serverTest(ServerLimits(pushTokensPerUser = 2)) {
+        val me = client.loginToken("test1")
+        val logins = List(3) { client.loginToken("test2") }
+        logins.forEachIndexed { index, login ->
+            client.registerPush(login, "device-$index")
+            delay(REGISTER_GAP_MS)
+        }
+        val room = client.createRoom(me, "test2")
+
+        client.send(me, room.id, SendMessageRequest("m1", "두 대에만"))
+        awaitPushes(2)
+        delay(SILENCE_WAIT_MS)
+
+        assertEquals(setOf("device-1", "device-2"), sender.sent.map { it.first }.toSet())
+    }
+
+    @Test
+    fun `토큰 모양이 아니면 받지 않는다`() = serverTest {
+        val me = client.loginToken("test1")
+
+        assertEquals(HttpStatusCode.BadRequest, client.registerPush(me, "토큰 아님").status)
+        assertEquals(HttpStatusCode.BadRequest, client.registerPush(me, "a".repeat(1025)).status)
+        assertEquals(HttpStatusCode.NoContent, client.registerPush(me, "fcm:APA91b-_.abc").status)
+    }
+
+    @Test
+    fun `FCM 이 토큰 칸이 틀렸거나 다른 프로젝트의 토큰이라고 답하면 버린다`() {
+        assertTrue(FcmSender.isGoneToken(404, ""))
+        assertTrue(FcmSender.isGoneToken(400, fcmError(field = "message.token", message = "Invalid registration token")))
+        assertTrue(FcmSender.isGoneToken(400, fcmError(message = "The registration token is not a valid FCM registration token")))
+        assertTrue(FcmSender.isGoneToken(403, """{"error":{"details":[{"errorCode":"SENDER_ID_MISMATCH"}]}}"""))
+        assertFalse(FcmSender.isGoneToken(500, "INTERNAL"))
+        assertFalse(FcmSender.isGoneToken(403, "PERMISSION_DENIED"))
+    }
+
+    @Test
+    fun `본문이 너무 크거나 data 칸이 틀렸다는 400 은 토큰을 버리지 않는다`() {
+        assertFalse(FcmSender.isGoneToken(400, fcmError(message = "Android message is too big")))
+        assertFalse(FcmSender.isGoneToken(400, fcmError(field = "message.data", message = "Invalid data payload key")))
+        assertFalse(FcmSender.isGoneToken(400, """{"error":{"code":400,"status":"INVALID_ARGUMENT"}}"""))
+        assertFalse(FcmSender.isGoneToken(400, "not json"))
+    }
+
+    @Test
+    fun `긴 대화도 푸시의 data 는 FCM 한도 안에 든다`() = serverTest {
+        val me = client.loginToken("test1")
+        val peer = client.loginToken("test2")
+        client.registerPush(peer, "device-peer")
+        val room = client.createRoom(me, "test2")
+        val long = "가".repeat(5990) + "😀"
+
+        client.send(me, room.id, SendMessageRequest("long", long))
+
+        val (_, data) = awaitPushes(1).single()
+        val body = data.getValue(PushKeys.MSG)
+        assertTrue(body.toByteArray().size <= 1000, "본문이 ${body.toByteArray().size}바이트다")
+        assertTrue(long.startsWith(body) && body.isNotEmpty())
+        val dataBytes = data.entries.sumOf { it.key.toByteArray().size + it.value.toByteArray().size }
+        assertTrue(dataBytes <= FCM_DATA_LIMIT_BYTES, "data 가 ${dataBytes}바이트다")
+    }
+
+    @Test
+    fun `UTF-8 로 자를 때 글자 중간에서 자르지 않는다`() {
+        assertEquals("ab", "abc".truncateUtf8(2))
+        assertEquals("가", "가나".truncateUtf8(5))
+        assertEquals("a", "a😀".truncateUtf8(4))
+        assertEquals("a😀", "a😀b".truncateUtf8(5))
+        assertEquals("", "가".truncateUtf8(2))
+    }
+
+    /** FCM v1 의 400 오류 본문. [field] 를 주면 `google.rpc.BadRequest` 의 위반 칸으로 싣는다. */
+    private fun fcmError(field: String? = null, message: String): String {
+        val details = field?.let {
+            ""","details":[{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[{"field":"$it","description":"$message"}]}]"""
+        }.orEmpty()
+        return """{"error":{"code":400,"message":"$message","status":"INVALID_ARGUMENT"$details}}"""
+    }
+
     private suspend fun awaitPushes(count: Int): List<Pair<String, Map<String, String>>> {
         repeat(AWAIT_RETRIES) {
             if (sender.sent.size >= count) return sender.sent.toList()
@@ -191,15 +287,18 @@ class ChatPushTest {
         return sender.sent.toList()
     }
 
-    private fun serverTest(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
-        application { module(TestDatabase.dataSource, TestDatabase.fileStorage, sender) }
+    private fun serverTest(
+        limits: ServerLimits = ServerLimits(),
+        block: suspend ApplicationTestBuilder.() -> Unit,
+    ) = testApplication {
+        application { module(TestDatabase.dataSource, TestDatabase.fileStorage, sender, limits = limits) }
         block()
     }
 
     private suspend fun HttpClient.loginToken(id: String): String =
         post("/auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(ServerJson.encodeToString(LoginRequest.serializer(), LoginRequest(id, SeedAccounts.PASSWORD)))
+            setBody(ServerJson.encodeToString(LoginRequest.serializer(), LoginRequest(id, LOCAL_SEED_PASSWORD)))
         }.decode(LoginResponse.serializer()).token
 
     private suspend fun HttpClient.registerPush(token: String, deviceToken: String): HttpResponse =
@@ -237,5 +336,9 @@ class ChatPushTest {
         const val AWAIT_RETRIES = 50
         const val AWAIT_DELAY_MS = 50L
         const val SILENCE_WAIT_MS = 400L
+        /** FCM 이 받는 data 의 최대 바이트(키와 값의 합). */
+        const val FCM_DATA_LIMIT_BYTES = 4096
+        /** 등록 시각이 겹치지 않게 띄운다. 한도를 넘을 때 오래된 것부터 빠지는지 보려면 순서가 분명해야 한다. */
+        const val REGISTER_GAP_MS = 20L
     }
 }

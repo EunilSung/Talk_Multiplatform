@@ -3,6 +3,7 @@ package com.eunilsung.talk.data.remote.server
 import com.eunilsung.talk.testsupport.FakeFileMetadataResolver
 import com.eunilsung.talk.testsupport.FakeTalkServer
 import com.russhwolf.settings.MapSettings
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -14,7 +15,8 @@ import kotlin.test.assertTrue
 class ServerFileStoreTest {
 
     private val settings = MapSettings()
-    private val store = ServerFileStore(settings, FakeTalkServer(), FakeFileMetadataResolver())
+    private val server = FakeTalkServer()
+    private val store = ServerFileStore(settings, server, FakeFileMetadataResolver())
 
     @Test
     fun 적어_둔_경로로_서버_id_를_찾는다() {
@@ -86,5 +88,14 @@ class ServerFileStoreTest {
 
         assertNull(store.fileIdOf("file-x"))
         assertNull(store.localPath("file-x"))
+    }
+
+    @Test
+    fun 받은_파일_이름에_경로가_있어도_캐시_이름은_id_접두어와_마지막_조각이다() = runTest {
+        server.uploads["abcdefgh-1234"] = byteArrayOf(7)
+
+        val path = store.download("abcdefgh-1234", "../../Library/Preferences/abcd_target.plist")
+
+        assertEquals("/cache/abcdefgh_abcd_target.plist", path)
     }
 }

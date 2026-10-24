@@ -76,8 +76,16 @@ class LocalLoginRepositoryImpl(
 
     override fun getSavedId(): String? = settings.getStringOrNull(KEY_ID)
 
-    override fun getSavedPw(): String? =
-        if (isSavePw()) settings.getStringOrNull(KEY_PW) else null
+    /**
+     * 로컬 모드는 토큰이 없어 기억해 둔 아이디·비밀번호(공개된 시연 계정)로 다시 로그인한다.
+     * 비밀번호는 화면에 돌려주지 않고 여기서만 쓴다.
+     */
+    override suspend fun resumeLogin(): Login.LoginResult? {
+        val id = getSavedId().orEmpty()
+        val pw = if (isSavePw()) settings.getStringOrNull(KEY_PW).orEmpty() else ""
+        if (id.isBlank() || pw.isBlank()) return null
+        return requestLogin(Login.LoginRequest(id = id, pw = pw, isSavePw = true))
+    }
 
     override fun isSavePw(): Boolean = settings.getBoolean(KEY_SAVE_PW, false)
 

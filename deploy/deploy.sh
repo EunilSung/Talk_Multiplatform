@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # 서버를 빌드해 인스턴스에 올리고 다시 띄운다. 배포하는 PC 에서 돌린다.
-#   DEPLOY_HOST=ubuntu@<공인IP> deploy/deploy.sh
+#   DEPLOY_HOST=<SSH 사용자>@<공인IP> DEPLOY_KEY=~/.ssh/<키 파일> deploy/deploy.sh
+# DEPLOY_KEY 를 비우면 ssh 의 기본 키(~/.ssh/config 포함)를 쓴다.
 # 서버의 ~/talk/.env 는 건드리지 않는다. 처음 한 번은 setup-host.sh 와 .env 준비가 먼저다.
 set -euo pipefail
 
-host="${DEPLOY_HOST:?DEPLOY_HOST=ubuntu@<공인IP> 를 준다}"
-key="${DEPLOY_KEY:-$HOME/.ssh/oracle_test_server}"
+host="${DEPLOY_HOST:?DEPLOY_HOST=<SSH 사용자>@<공인IP> 를 준다}"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 stage="$root/build/deploy"
-ssh_cmd="ssh -i $key -o StrictHostKeyChecking=accept-new"
+ssh_cmd="ssh -o StrictHostKeyChecking=accept-new"
+if [ -n "${DEPLOY_KEY:-}" ]; then ssh_cmd="ssh -i $DEPLOY_KEY -o StrictHostKeyChecking=accept-new"; fi
 
 cd "$root"
 SERVER_ONLY=1 ./gradlew :server:installDist --quiet

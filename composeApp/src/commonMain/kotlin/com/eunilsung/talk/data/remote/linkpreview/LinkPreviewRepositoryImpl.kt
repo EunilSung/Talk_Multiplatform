@@ -1,12 +1,19 @@
 package com.eunilsung.talk.data.remote.linkpreview
 
 import io.ktor.client.HttpClient
-import io.ktor.client.request.get
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.headers
-import io.ktor.client.statement.bodyAsText
+import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpHeaders
+import io.ktor.http.URLBuilder
+import io.ktor.http.charset
 import io.ktor.http.contentType
+import io.ktor.http.takeFrom
+import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.charsets.decode
+import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,11 +30,19 @@ import com.eunilsung.talk.util.Log
 import com.eunilsung.talk.domain.model.LinkPreview
 import com.eunilsung.talk.domain.model.LinkPreviewState
 import com.eunilsung.talk.domain.repository.LinkPreviewRepository
+import com.eunilsung.talk.domain.util.isPreviewableUrl
 
-/** 채팅 본문의 URL → Open Graph 메타데이터 fetch + 세션 내 메모리 캐시. */
+/**
+ * 채팅 본문의 URL → Open Graph 메타데이터 fetch + 세션 내 메모리 캐시.
+ *
+ * 받아도 되는 주소([isPreviewableUrl])만 받는다. 리다이렉트는 엔진에 맡기지 않고 직접 따라가며 주소마다 다시 확인한다 —
+ * 공개 주소가 사설 주소로 넘기는 것을 막기 위해서다. 본문은 [MAX_HTML_BYTES] 까지만 읽고 나머지는 받지 않는다.
+ * og:image 도 받아도 되는 주소일 때만 카드에 싣는다.
+ */
 class LinkPreviewRepositoryImpl(
-    private val httpClient: HttpClient,
+    httpClient: HttpClient,
 ) : LinkPreviewRepository {
+    private val httpClient = httpClient.config { followRedirects = false }
     private val cache = mutableMapOf<String, MutableStateFlow<LinkPreviewState>>()
     private val cacheMutex = Mutex()
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -53,50 +68,19 @@ class LinkPreviewRepositoryImpl(
     }
 
     private suspend fun fetchInternal(url: String): LinkPreviewState {
-        val lower = url.lowercase()
-        if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
-            Log.message("[LinkPreview] unsupported scheme url=$url")
+        if (!isPreviewableUrl(url)) {
+            Log.message("[LinkPreview] blocked url=$url")
             return LinkPreviewState.Failure
         }
-        val response: HttpResponse? = withTimeoutOrNull(5_000) {
-            runCatching {
-                httpClient.get(url) {
-                    headers {
-                        append(
-                            HttpHeaders.UserAgent,
-                            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
-                                "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                "Chrome/120.0.0.0 Safari/537.36"
-                        )
-                        append(
-                            HttpHeaders.Accept,
-                            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-                        )
-                        append(HttpHeaders.AcceptLanguage, "ko-KR,ko;q=0.9,en;q=0.8")
-                        append(HttpHeaders.AcceptEncoding, "identity")
-                    }
-                }
-            }.getOrElse {
-                Log.message("[LinkPreview] request exception url=$url err=${it.message}")
-                null
-            }
-        }
-        if (response == null) {
+        val page = withTimeoutOrNull(FETCH_TIMEOUT_MS) { fetchHtml(url) }
+        if (page == null) {
             Log.message("[LinkPreview] timeout or fail url=$url")
             return LinkPreviewState.Failure
         }
-        Log.message("[LinkPreview] response url=$url status=${response.status.value} ctype=${response.contentType()}")
-        val ctype = response.contentType()?.toString()?.lowercase().orEmpty()
-        if (!ctype.contains("text/html") && !ctype.contains("application/xhtml")) {
-            Log.message("[LinkPreview] non-html url=$url ctype=$ctype")
-            return LinkPreviewState.Failure
-        }
-        val html = runCatching { response.bodyAsText() }.getOrNull()
-            ?: return LinkPreviewState.Failure
-        val capped = if (html.length > MAX_HTML_BYTES) html.substring(0, MAX_HTML_BYTES) else html
-        val preview = parseOgMeta(url = url, html = capped)
+        val parsed = parseOgMeta(url = page.url, html = page.html)
+        val preview = parsed.copy(url = url, imageUrl = parsed.imageUrl.takeIf(::isPreviewableUrl).orEmpty())
         Log.message(
-            "[LinkPreview] parsed url=$url htmlLen=${html.length} " +
+            "[LinkPreview] parsed url=$url htmlLen=${page.html.length} " +
                 "title='${preview.title.take(40)}' " +
                 "image='${preview.imageUrl.take(60)}'"
         )
@@ -107,8 +91,84 @@ class LinkPreviewRepositoryImpl(
         }
     }
 
+    /** 리다이렉트를 [MAX_REDIRECTS] 번까지 따라가 HTML 을 읽는다. 막힌 주소로 넘어가거나 HTML 이 아니면 null. */
+    private suspend fun fetchHtml(url: String): FetchedPage? {
+        var current = url
+        repeat(MAX_REDIRECTS + 1) {
+            val outcome = runCatching {
+                httpClient.prepareGet(current) { browserHeaders() }.execute { response -> readPage(current, response) }
+            }.getOrElse {
+                Log.message("[LinkPreview] request exception url=$current err=${it.message}")
+                return null
+            }
+            when (outcome) {
+                is FetchOutcome.Page -> return outcome.page
+                is FetchOutcome.Redirect -> {
+                    if (!isPreviewableUrl(outcome.location)) {
+                        Log.message("[LinkPreview] blocked redirect url=$current → ${outcome.location}")
+                        return null
+                    }
+                    current = outcome.location
+                }
+                FetchOutcome.Unusable -> return null
+            }
+        }
+        Log.message("[LinkPreview] too many redirects url=$url")
+        return null
+    }
+
+    private suspend fun readPage(url: String, response: HttpResponse): FetchOutcome {
+        Log.message("[LinkPreview] response url=$url status=${response.status.value} ctype=${response.contentType()}")
+        if (response.status.value in REDIRECT_STATUSES) {
+            val location = response.headers[HttpHeaders.Location] ?: return FetchOutcome.Unusable
+            val resolved = runCatching { URLBuilder(url).takeFrom(location).buildString() }.getOrNull()
+                ?: return FetchOutcome.Unusable
+            return FetchOutcome.Redirect(resolved)
+        }
+        val ctype = response.contentType()?.toString()?.lowercase().orEmpty()
+        if (!ctype.contains("text/html") && !ctype.contains("application/xhtml")) {
+            Log.message("[LinkPreview] non-html url=$url ctype=$ctype")
+            return FetchOutcome.Unusable
+        }
+        val html = runCatching {
+            val head = response.bodyAsChannel().readRemaining(MAX_HTML_BYTES)
+            (response.charset() ?: Charsets.UTF_8).newDecoder().decode(head)
+        }.getOrNull() ?: return FetchOutcome.Unusable
+        return FetchOutcome.Page(FetchedPage(url = url, html = html))
+    }
+
+    private fun HttpRequestBuilder.browserHeaders() {
+        headers {
+            append(
+                HttpHeaders.UserAgent,
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
+                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                    "Chrome/120.0.0.0 Safari/537.36"
+            )
+            append(
+                HttpHeaders.Accept,
+                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            )
+            append(HttpHeaders.AcceptLanguage, "ko-KR,ko;q=0.9,en;q=0.8")
+            append(HttpHeaders.AcceptEncoding, "identity")
+        }
+    }
+
+    /** 마지막으로 읽은 주소와 그 HTML 앞부분. 상대 경로 og:image 는 이 주소를 기준으로 푼다. */
+    private class FetchedPage(val url: String, val html: String)
+
+    private sealed interface FetchOutcome {
+        class Page(val page: FetchedPage) : FetchOutcome
+        class Redirect(val location: String) : FetchOutcome
+        data object Unusable : FetchOutcome
+    }
+
     companion object {
-        private const val MAX_HTML_BYTES = 2 * 1024 * 1024
+        /** 본문에서 읽는 최대 바이트. OG 메타는 head 에 있어 앞부분이면 충분하다. */
+        internal const val MAX_HTML_BYTES = 1024L * 1024L
+        internal const val MAX_REDIRECTS = 3
+        private const val FETCH_TIMEOUT_MS = 5_000L
+        private val REDIRECT_STATUSES = setOf(301, 302, 303, 307, 308)
     }
 }
 

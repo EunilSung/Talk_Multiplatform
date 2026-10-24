@@ -2,7 +2,7 @@ package com.eunilsung.talk.server.routes
 
 import com.eunilsung.talk.server.ServerJson
 import com.eunilsung.talk.server.module
-import com.eunilsung.talk.server.seed.SeedAccounts
+import com.eunilsung.talk.server.local.LOCAL_SEED_PASSWORD
 import com.eunilsung.talk.server.testsupport.TestDatabase
 import com.eunilsung.talk.shared.api.CreateRoomRequest
 import com.eunilsung.talk.shared.api.FileDto
@@ -36,6 +36,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 
@@ -144,6 +145,21 @@ class ForwardRoutesTest {
     }
 
     @Test
+    fun `남이 쓴 대화 id 로 전달하면 그 대화를 돌려주지 않는다`() = serverTest {
+        val me = client.loginToken("test1")
+        val peer = client.loginToken("test2")
+        val source = client.createRoom(me, "test2")
+        val target = client.createRoom(me, "test2", "test3")
+        client.send(me, source.id, SendMessageRequest("s1", "전달할 말"))
+        client.send(me, target.id, SendMessageRequest("taken", "내 말"))
+
+        val forwarded = client.forward(peer, target.id, "taken", source.id, "s1")
+
+        assertEquals(HttpStatusCode.Conflict, forwarded.status)
+        assertFalse("내 말" in forwarded.bodyAsText())
+    }
+
+    @Test
     fun `같은 id 로 다시 전달해도 대화는 하나다`() = serverTest {
         val me = client.loginToken("test1")
         val source = client.createRoom(me, "test2")
@@ -165,7 +181,7 @@ class ForwardRoutesTest {
     private suspend fun HttpClient.loginToken(id: String): String =
         post("/auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(ServerJson.encodeToString(LoginRequest.serializer(), LoginRequest(id, SeedAccounts.PASSWORD)))
+            setBody(ServerJson.encodeToString(LoginRequest.serializer(), LoginRequest(id, LOCAL_SEED_PASSWORD)))
         }.decode(LoginResponse.serializer()).token
 
     private suspend fun HttpClient.createRoom(token: String, vararg memberIds: String): RoomDto =

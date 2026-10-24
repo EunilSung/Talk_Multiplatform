@@ -1,7 +1,6 @@
 package com.eunilsung.talk.data.repository
 
 import com.eunilsung.talk.Config
-import com.eunilsung.talk.data.local.LocalSecret
 import com.eunilsung.talk.data.remote.server.AuthTokenStore
 import com.eunilsung.talk.data.remote.server.ServerResult
 import com.eunilsung.talk.data.remote.server.TalkServer
@@ -33,6 +32,8 @@ import org.jetbrains.compose.resources.getString
  * 서버에 로그인하는 저장소.
  *
  * 비밀번호는 로그인 요청에 한 번만 실리고, 그 뒤로는 서버가 내준 토큰이 신원을 대신한다.
+ * 비밀번호는 기기에 저장하지 않는다. 자동 로그인([resumeLogin])은 저장된 토큰을 서버(`/users/me`)에 확인해 들어간다.
+ * 예전 버전이 저장해 둔 비밀번호는 로그인·자동 로그인·로그아웃 때 지운다.
  */
 class LoginRepositoryImpl(
     private val settings: Settings,
@@ -66,7 +67,7 @@ class LoginRepositoryImpl(
                 tokenStore.save(result.value.token)
                 applyToMyInfo(result.value.user)
                 settings.putString(KEY_ID, result.value.user.id)
-                if (isSavePw()) settings.putString(KEY_PW, LocalSecret.encrypt(input.pw)) else settings.remove(KEY_PW)
+                settings.remove(KEY_PW)
                 _isConnected.value = true
                 _isLoggedIn.value = true
                 revokeLater(previousToken)
@@ -103,14 +104,37 @@ class LoginRepositoryImpl(
 
     override fun getSavedId(): String? = settings.getStringOrNull(KEY_ID)
 
-    override fun getSavedPw(): String? =
-        if (isSavePw()) settings.getStringOrNull(KEY_PW)?.let(LocalSecret::decrypt) else null
-
     override fun isSavePw(): Boolean = settings.getBoolean(KEY_SAVE_PW, false)
 
     override fun setSavePw(isSave: Boolean) {
         settings.putBoolean(KEY_SAVE_PW, isSave)
-        if (!isSave) settings.remove(KEY_PW)
+    }
+
+    /**
+     * 자동 로그인을 켰고 토큰이 남아 있으면 그 토큰이 아직 유효한지 서버에 묻는다.
+     *
+     * 서버가 토큰을 모른다고 하면 토큰을 지우고 null(입력칸)이다. 서버에 닿지 못하면 토큰은 두고 연결 실패를 알린다 —
+     * 다음에 다시 열면 같은 토큰으로 다시 묻는다.
+     */
+    override suspend fun resumeLogin(): Login.LoginResult? {
+        settings.remove(KEY_PW)
+        if (!isSavePw() || tokenStore.token().isBlank()) return null
+        return when (val result = server.me()) {
+            is ServerResult.Success -> {
+                applyToMyInfo(result.value)
+                settings.putString(KEY_ID, result.value.id)
+                _isConnected.value = true
+                _isLoggedIn.value = true
+                Log.message("[Login] resumed — ${result.value.id}")
+                Login.LoginResult.Success
+            }
+            is ServerResult.Rejected -> {
+                Log.message("[Login] resume rejected — ${result.status} ${result.code}")
+                if (result.code == ApiErrorCode.UNAUTHORIZED) tokenStore.clear()
+                null
+            }
+            ServerResult.Unreachable -> Login.LoginResult.Error(text(Res.string.no_server_response))
+        }
     }
 
     /**

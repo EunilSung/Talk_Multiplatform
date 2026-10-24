@@ -9,8 +9,11 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
 import org.slf4j.LoggerFactory
 
 /** 한 건 발송 결과. 토큰을 지워야 하는 실패를 따로 알아야 해서 나눈다. */
@@ -59,14 +62,47 @@ class FcmSender(
         if (response.status.value in 200..299) return PushResult.SENT
 
         val text = runCatching { response.bodyAsText() }.getOrDefault("")
-        /** 없는 토큰이라는 답은 다시 보내도 같다. */
-        val isGone = response.status.value == 404 || "UNREGISTERED" in text || "InvalidRegistration" in text
-        if (isGone) {
+        if (isGoneToken(response.status.value, text)) {
             log.info("푸시 토큰 폐기 — status={} token={}…", response.status, deviceToken.take(12))
             return PushResult.UNREGISTERED
         }
         log.warn("푸시 발송 거부 status={} body={}", response.status, text.take(200))
         return PushResult.FAILED
+    }
+
+    companion object {
+        private val errorJson = Json { ignoreUnknownKeys = true }
+
+        /**
+         * 이 토큰으로는 다시 보내도 같은 답이 오는지 — 그러면 토큰을 버린다.
+         *
+         * 없는 토큰(404·`UNREGISTERED`·`InvalidRegistration`)과 다른 프로젝트의 토큰(403 `SENDER_ID_MISMATCH`)은 버린다.
+         * 400 `INVALID_ARGUMENT` 는 토큰이 틀렸을 때만 버린다 — 오류 상세의 `fieldViolations` 가 `message.token` 을 가리키거나
+         * "유효한 등록 토큰이 아니다"라는 문구가 있을 때다. 본문이 너무 크거나 data 칸이 틀려도 같은 400 이 오는데, 그때
+         * 토큰을 버리면 대화 한 건으로 받는 사람 모든 기기의 정상 토큰이 지워진다.
+         */
+        fun isGoneToken(status: Int, body: String): Boolean =
+            status == 404 || "UNREGISTERED" in body || "InvalidRegistration" in body ||
+                (status == 400 && isTokenRejected(body)) ||
+                (status == 403 && "SENDER_ID_MISMATCH" in body)
+
+        /** 400 오류가 토큰 칸을 탓하는지. 읽을 수 없는 본문이면 토큰 탓으로 보지 않는다(버리지 않는 쪽이 안전하다). */
+        private fun isTokenRejected(body: String): Boolean {
+            val error = runCatching { errorJson.parseToJsonElement(body).jsonObject["error"]?.jsonObject }.getOrNull()
+                ?: return false
+            val message = (error["message"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+            val violatedFields = (error["details"] as? JsonArray).orEmpty()
+                .mapNotNull { (it as? JsonObject)?.get("fieldViolations") as? JsonArray }
+                .flatten()
+                .mapNotNull { ((it as? JsonObject)?.get("field") as? JsonPrimitive)?.contentOrNull }
+            return TOKEN_FIELD in violatedFields || message.contains(INVALID_TOKEN_MESSAGE, ignoreCase = true)
+        }
+
+        /** FCM 이 토큰 칸을 가리킬 때 쓰는 이름. */
+        private const val TOKEN_FIELD = "message.token"
+
+        /** 토큰이 틀렸을 때 FCM 이 주는 문구("The registration token is not a valid FCM registration token")에 든 말. */
+        private const val INVALID_TOKEN_MESSAGE = "registration token is not a valid"
     }
 
     /**

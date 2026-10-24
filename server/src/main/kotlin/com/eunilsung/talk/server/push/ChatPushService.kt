@@ -57,11 +57,14 @@ class ChatPushService(
     /**
      * 알림에 보일 내용. 멘션 태그는 벗기고, 파일은 파일 이름을 보낸다.
      * 이모티콘만 보낸 대화는 비워 보낸다 — 앱이 자기 언어로 "(이모티콘)" 을 채운다.
+     *
+     * [MAX_BODY_BYTES] 바이트(UTF-8)까지만 싣는다. FCM 은 data 전체가 4096바이트를 넘으면 400 으로 거절한다. 대화 본문은
+     * 6000자까지라 한글이면 18KB 에 이르러, 자르지 않으면 긴 대화마다 푸시가 나가지 않는다. 알림에는 앞부분이면 충분하다.
      */
     private fun bodyOf(message: MessageDto): String = when (message.kind) {
         MessageKind.IMAGE, MessageKind.VIDEO, MessageKind.FILE -> message.payload?.fileName.orEmpty()
         else -> message.content.replace(MENTION_TAG, "$1")
-    }
+    }.truncateUtf8(MAX_BODY_BYTES)
 
     private companion object {
         /** 초대·퇴장·투표 종료 같은 알림성 대화는 푸시로 보내지 않는다. */
@@ -86,5 +89,27 @@ class ChatPushService(
         )
 
         val MENTION_TAG = Regex("""<mention>([\s\S]*?)</mention>""", RegexOption.IGNORE_CASE)
+
+        /** 알림 본문의 최대 바이트. 나머지 칸(방 id·이름·코드)을 더해도 data 가 4096바이트 안에 든다. */
+        const val MAX_BODY_BYTES = 1000
     }
+}
+
+/** UTF-8 로 [maxBytes] 바이트 안에 드는 앞부분. 글자(코드 포인트) 중간에서 자르지 않는다. */
+internal fun String.truncateUtf8(maxBytes: Int): String {
+    var bytes = 0
+    var end = 0
+    while (end < length) {
+        val codePoint = codePointAt(end)
+        val size = when {
+            codePoint < 0x80 -> 1
+            codePoint < 0x800 -> 2
+            codePoint < 0x10000 -> 3
+            else -> 4
+        }
+        if (bytes + size > maxBytes) break
+        bytes += size
+        end += Character.charCount(codePoint)
+    }
+    return substring(0, end)
 }

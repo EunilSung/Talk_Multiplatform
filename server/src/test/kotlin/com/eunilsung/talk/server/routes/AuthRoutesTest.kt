@@ -2,12 +2,14 @@ package com.eunilsung.talk.server.routes
 
 import com.eunilsung.talk.server.ServerJson
 import com.eunilsung.talk.server.module
-import com.eunilsung.talk.server.seed.SeedAccounts
+import com.eunilsung.talk.server.local.LOCAL_SEED_PASSWORD
 import com.eunilsung.talk.server.testsupport.TestDatabase
 import com.eunilsung.talk.shared.api.ApiError
 import com.eunilsung.talk.shared.api.ApiErrorCode
 import com.eunilsung.talk.shared.api.LoginRequest
 import com.eunilsung.talk.shared.api.LoginResponse
+import com.eunilsung.talk.shared.api.MAX_LOGIN_ID_LENGTH
+import com.eunilsung.talk.shared.api.MAX_LOGIN_PASSWORD_LENGTH
 import com.eunilsung.talk.shared.api.UserDto
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -19,7 +21,10 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.writeFully
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlin.test.BeforeTest
@@ -36,7 +41,7 @@ class AuthRoutesTest {
 
     @Test
     fun `맞는 아이디와 비밀번호면 토큰과 내 정보를 준다`() = serverTest {
-        val response = client.login("test1", SeedAccounts.PASSWORD)
+        val response = client.login("test1", LOCAL_SEED_PASSWORD)
 
         assertEquals(HttpStatusCode.OK, response.status)
         val body = ServerJson.decodeFromString(LoginResponse.serializer(), response.bodyAsText())
@@ -48,7 +53,7 @@ class AuthRoutesTest {
 
     @Test
     fun `아이디는 대소문자와 앞뒤 공백을 가리지 않는다`() = serverTest {
-        val response = client.login("  TEST2 ", SeedAccounts.PASSWORD)
+        val response = client.login("  TEST2 ", LOCAL_SEED_PASSWORD)
 
         assertEquals(HttpStatusCode.OK, response.status)
         val body = ServerJson.decodeFromString(LoginResponse.serializer(), response.bodyAsText())
@@ -67,7 +72,7 @@ class AuthRoutesTest {
 
     @Test
     fun `없는 아이디도 틀린 비밀번호와 같은 응답을 받는다`() = serverTest {
-        val unknownUser = client.login("nobody", SeedAccounts.PASSWORD)
+        val unknownUser = client.login("nobody", LOCAL_SEED_PASSWORD)
         val wrongPassword = client.login("test1", "wrong")
 
         assertEquals(wrongPassword.status, unknownUser.status)
@@ -76,8 +81,35 @@ class AuthRoutesTest {
 
     @Test
     fun `아이디나 비밀번호가 비면 400 이다`() = serverTest {
-        assertEquals(HttpStatusCode.BadRequest, client.login("", SeedAccounts.PASSWORD).status)
+        assertEquals(HttpStatusCode.BadRequest, client.login("", LOCAL_SEED_PASSWORD).status)
         assertEquals(HttpStatusCode.BadRequest, client.login("test1", "").status)
+    }
+
+    @Test
+    fun `너무 긴 아이디나 비밀번호는 확인하지 않고 400 이다`() = serverTest {
+        assertEquals(HttpStatusCode.BadRequest, client.login("a".repeat(MAX_LOGIN_ID_LENGTH + 1), "x").status)
+        assertEquals(HttpStatusCode.BadRequest, client.login("test1", "x".repeat(MAX_LOGIN_PASSWORD_LENGTH + 1)).status)
+        assertEquals(HttpStatusCode.OK, client.login("test1", LOCAL_SEED_PASSWORD).status)
+    }
+
+    @Test
+    fun `길이를 밝힌 큰 본문은 읽기 전에 413 이다`() = serverTest {
+        val response = client.post("/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"id":"${"a".repeat(300_000)}","password":"x"}""")
+        }
+
+        assertEquals(HttpStatusCode.PayloadTooLarge, response.status)
+        assertEquals(ApiErrorCode.PAYLOAD_TOO_LARGE, ServerJson.decodeFromString(ApiError.serializer(), response.bodyAsText()).code)
+    }
+
+    @Test
+    fun `길이를 밝히지 않은 본문도 한도를 넘으면 끊는다`() = serverTest {
+        val padded = """{"id":"test1","password":"$LOCAL_SEED_PASSWORD","pad":"${"a".repeat(300_000)}"}"""
+        val small = """{"id":"test1","password":"$LOCAL_SEED_PASSWORD","pad":"a"}"""
+
+        assertEquals(HttpStatusCode.BadRequest, client.loginChunked(padded).status)
+        assertEquals(HttpStatusCode.OK, client.loginChunked(small).status)
     }
 
     @Test
@@ -122,12 +154,12 @@ class AuthRoutesTest {
     fun `비밀번호를 연달아 틀리면 맞는 비밀번호도 잠시 받지 않고 다른 아이디는 영향이 없다`() = serverTest {
         repeat(5) { assertEquals(HttpStatusCode.Unauthorized, client.login("test6", "wrong-$it").status) }
 
-        val locked = client.login("test6", SeedAccounts.PASSWORD)
+        val locked = client.login("test6", LOCAL_SEED_PASSWORD)
 
         assertEquals(HttpStatusCode.TooManyRequests, locked.status)
         assertEquals(ApiErrorCode.TOO_MANY_ATTEMPTS, ServerJson.decodeFromString(ApiError.serializer(), locked.bodyAsText()).code)
         assertTrue((locked.headers[HttpHeaders.RetryAfter]?.toLongOrNull() ?: 0) > 0)
-        assertEquals(HttpStatusCode.OK, client.login("test7", SeedAccounts.PASSWORD).status)
+        assertEquals(HttpStatusCode.OK, client.login("test7", LOCAL_SEED_PASSWORD).status)
     }
 
     @Test
@@ -137,7 +169,7 @@ class AuthRoutesTest {
         val passwordHash = queryStrings("SELECT password_hash FROM app_user WHERE id = 'test5'").single()
         val tokenHashes = queryStrings("SELECT token_hash FROM auth_token")
 
-        assertFalse(SeedAccounts.PASSWORD in passwordHash.split('$'))
+        assertFalse(LOCAL_SEED_PASSWORD in passwordHash.split('$'))
         assertEquals(1, tokenHashes.size)
         assertFalse(token in tokenHashes)
     }
@@ -160,9 +192,27 @@ class AuthRoutesTest {
             setBody(ServerJson.encodeToString(LoginRequest.serializer(), LoginRequest(id, password)))
         }
 
+    /** 길이 머리 없이(chunked) 보낸다. */
+    private suspend fun HttpClient.loginChunked(body: String): HttpResponse =
+        post("/auth/login") {
+            setBody(object : OutgoingContent.WriteChannelContent() {
+                override val contentType = ContentType.Application.Json
+                override suspend fun writeTo(channel: ByteWriteChannel) {
+                    body.encodeToByteArray().asList().chunked(CHUNK_BYTES).forEach {
+                        channel.writeFully(it.toByteArray())
+                        channel.flush()
+                    }
+                }
+            })
+        }
+
     private suspend fun HttpClient.loginToken(id: String): String =
         ServerJson.decodeFromString(
             LoginResponse.serializer(),
-            login(id, SeedAccounts.PASSWORD).bodyAsText(),
+            login(id, LOCAL_SEED_PASSWORD).bodyAsText(),
         ).token
+
+    private companion object {
+        const val CHUNK_BYTES = 8 * 1024
+    }
 }

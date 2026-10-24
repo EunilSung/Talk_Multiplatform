@@ -24,9 +24,19 @@ object LocalAddresses {
         }
     }.getOrNull()
 
-    /** 로그 한 줄. */
-    fun describe(port: Int): String {
-        val device = primaryAddress()?.let { "http://$it:$port" } ?: "사용할 수 있는 주소 없음(Wi-Fi 확인)"
-        return "접속 주소 — 에뮬레이터=http://10.0.2.2:$port · iOS 시뮬레이터=http://localhost:$port · 실기기=$device"
+    /**
+     * 로그 한 줄. [host] 가 루프백(127.0.0.1)이면 같은 망의 다른 기기는 붙지 못한다 — 실기기는 `adb reverse` 로 붙이거나
+     * `HOST=0.0.0.0` 으로 띄운다.
+     */
+    fun describe(host: String, port: Int): String {
+        val device = when {
+            isLoopback(host) -> "adb reverse tcp:$port tcp:$port 후 http://localhost:$port (같은 Wi-Fi 로 붙이려면 HOST=0.0.0.0)"
+            else -> primaryAddress()?.let { "http://$it:$port" } ?: "사용할 수 있는 주소 없음(Wi-Fi 확인)"
+        }
+        return "접속 주소($host) — 에뮬레이터=http://10.0.2.2:$port · iOS 시뮬레이터=http://localhost:$port · 실기기=$device"
     }
+
+    /** 이 PC 안에서만 받는 주소인지. 모르는 모양은 밖에 열린 것으로 본다. */
+    fun isLoopback(host: String): Boolean =
+        host == "localhost" || host == "::1" || host.startsWith("127.")
 }

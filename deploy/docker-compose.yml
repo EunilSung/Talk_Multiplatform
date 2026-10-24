@@ -45,6 +45,8 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       AI_MODEL: ${AI_MODEL:-}
       FIREBASE_CREDENTIALS_B64: ${FIREBASE_CREDENTIALS_B64:-}
+      SEED_DEMO_ACCOUNTS: ${SEED_DEMO_ACCOUNTS:-}
+      SEED_PASSWORD: ${SEED_PASSWORD:-}
     volumes:
       - files:/data/files
     ports:

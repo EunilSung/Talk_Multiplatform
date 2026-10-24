@@ -1,5 +1,7 @@
 package com.eunilsung.talk.server.config
 
+import com.eunilsung.talk.server.limits.ServerLimits
+
 /**
  * 서버 설정 — 전부 환경변수에서 읽는다.
  *
@@ -7,6 +9,8 @@ package com.eunilsung.talk.server.config
  */
 data class ServerConfig(
     val port: Int,
+    /** 받을 주소(`HOST`). 운영은 컨테이너 안이라 모든 주소(0.0.0.0)에서 받고, 밖으로는 Caddy 만 연다. */
+    val host: String = DEFAULT_HOST,
     val db: DbConfig,
     /** 올라온 파일을 두는 폴더. 컨테이너에서는 볼륨을 여기에 붙여야 재배포해도 파일이 남는다. */
     val filesDirectory: String,
@@ -23,9 +27,18 @@ data class ServerConfig(
     val aiModel: String = DEFAULT_AI_MODEL,
     /** 한 사람이 한 시간에 AI 를 부를 수 있는 횟수(`AI_PER_USER_HOURLY`). 비면 [com.eunilsung.talk.server.ai.AiUsageLimiter] 의 기본값이다. */
     val aiPerUserHourly: Int? = null,
+    /**
+     * 시연용 계정(test1~test10)의 비밀번호. null 이면 계정을 만들지 않는다.
+     *
+     * 운영 진입점은 `SEED_DEMO_ACCOUNTS=true` 이고 `SEED_PASSWORD` 가 있을 때만 값이 생긴다([seedPasswordOf]). 기본 비밀번호는 없다.
+     */
+    val seedPassword: String? = null,
+    /** 한 사람이 쓸 수 있는 서버 자원의 한도. 운영은 기본값이고, 로컬 개발 서버는 넉넉한 값을 넣는다. */
+    val limits: ServerLimits = ServerLimits(),
 ) {
     companion object {
         const val DEFAULT_PORT = 8080
+        const val DEFAULT_HOST = "0.0.0.0"
         const val DEFAULT_AI_MODEL = "gemini-3.5-flash-lite"
 
         fun aiApiKeyFromEnv(): String = env("GEMINI_API_KEY").orEmpty()
@@ -34,8 +47,13 @@ data class ServerConfig(
 
         fun aiPerUserHourlyFromEnv(): Int? = env("AI_PER_USER_HOURLY")?.toIntOrNull()
 
+        /** 시연용 계정을 켜는 값이 `true` 이고 비밀번호가 있을 때만 그 비밀번호, 아니면 null. */
+        fun seedPasswordOf(demoAccounts: String?, password: String?): String? =
+            password?.takeIf { it.isNotBlank() && demoAccounts?.trim().equals("true", ignoreCase = true) }
+
         fun fromEnv(): ServerConfig = ServerConfig(
             port = env("PORT")?.toIntOrNull() ?: DEFAULT_PORT,
+            host = env("HOST") ?: DEFAULT_HOST,
             db = DbConfig(
                 url = env("DB_URL") ?: "jdbc:postgresql://localhost:5432/talk_dev",
                 user = env("DB_USER") ?: "talk",
@@ -47,6 +65,7 @@ data class ServerConfig(
             aiApiKey = aiApiKeyFromEnv(),
             aiModel = aiModelFromEnv(),
             aiPerUserHourly = aiPerUserHourlyFromEnv(),
+            seedPassword = seedPasswordOf(env("SEED_DEMO_ACCOUNTS"), env("SEED_PASSWORD")),
         )
 
         private fun env(name: String): String? = System.getenv(name)?.takeIf { it.isNotBlank() }

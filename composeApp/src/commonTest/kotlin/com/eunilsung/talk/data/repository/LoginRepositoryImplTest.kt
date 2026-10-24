@@ -80,16 +80,76 @@ class LoginRepositoryImplTest {
     }
 
     @Test
-    fun 비밀번호_저장을_켜면_잠가서_두고_끄면_지운다() = runTest {
+    fun 자동_로그인을_켜도_비밀번호는_기기에_저장하지_않는다() = runTest {
         repository.setSavePw(true)
         repository.requestLogin(Login.LoginRequest("test1", FakeTalkServer.PASSWORD))
 
-        assertEquals(FakeTalkServer.PASSWORD, repository.getSavedPw())
-        assertFalse(settings.getString(SettingsKeys.KEY_PW, "") == FakeTalkServer.PASSWORD)
-
-        repository.setSavePw(false)
-        assertNull(repository.getSavedPw())
+        assertTrue(repository.isSavePw())
         assertFalse(settings.hasKey(SettingsKeys.KEY_PW))
+        assertTrue(settings.keys.none { settings.getStringOrNull(it) == FakeTalkServer.PASSWORD })
+    }
+
+    @Test
+    fun 예전_버전이_저장한_비밀번호는_로그인하거나_다시_들어갈_때_지운다() = runTest {
+        settings.putString(SettingsKeys.KEY_PW, "sealed-old-password")
+        repository.resumeLogin()
+        assertFalse(settings.hasKey(SettingsKeys.KEY_PW))
+
+        settings.putString(SettingsKeys.KEY_PW, "sealed-old-password")
+        repository.requestLogin(Login.LoginRequest("test1", FakeTalkServer.PASSWORD))
+        assertFalse(settings.hasKey(SettingsKeys.KEY_PW))
+    }
+
+    @Test
+    fun 자동_로그인을_켜면_다시_켰을_때_저장된_토큰으로_비밀번호_없이_들어간다() = runTest {
+        repository.setSavePw(true)
+        repository.requestLogin(Login.LoginRequest("test1", FakeTalkServer.PASSWORD))
+        TestMyInfo.clear()
+
+        val restarted = LoginRepositoryImpl(settings, server, AuthTokenStore(settings))
+        val result = restarted.resumeLogin()
+
+        assertIs<Login.LoginResult.Success>(result)
+        assertTrue(restarted.isLoggedIn.value)
+        assertEquals("test1", Config.MyInfo.userId)
+        assertEquals("김민준", Config.MyInfo.userName)
+        assertEquals("token-1", AuthTokenStore(settings).token())
+    }
+
+    @Test
+    fun 자동_로그인을_켜지_않았으면_토큰이_있어도_들어가지_않는다() = runTest {
+        repository.requestLogin(Login.LoginRequest("test1", FakeTalkServer.PASSWORD))
+
+        val restarted = LoginRepositoryImpl(settings, server, AuthTokenStore(settings))
+
+        assertNull(restarted.resumeLogin())
+        assertFalse(restarted.isLoggedIn.value)
+    }
+
+    @Test
+    fun 서버가_토큰을_모르면_토큰을_지우고_입력칸으로_간다() = runTest {
+        repository.setSavePw(true)
+        repository.requestLogin(Login.LoginRequest("test1", FakeTalkServer.PASSWORD))
+        server.isTokenValid = false
+
+        val restarted = LoginRepositoryImpl(settings, server, AuthTokenStore(settings))
+
+        assertNull(restarted.resumeLogin())
+        assertFalse(restarted.isLoggedIn.value)
+        assertEquals("", AuthTokenStore(settings).token())
+    }
+
+    @Test
+    fun 다시_들어갈_때_서버에_닿지_못하면_토큰은_두고_오류를_알린다() = runTest {
+        repository.setSavePw(true)
+        repository.requestLogin(Login.LoginRequest("test1", FakeTalkServer.PASSWORD))
+        server.isReachable = false
+
+        val restarted = LoginRepositoryImpl(settings, server, AuthTokenStore(settings))
+
+        assertIs<Login.LoginResult.Error>(restarted.resumeLogin())
+        assertFalse(restarted.isLoggedIn.value)
+        assertEquals("token-1", AuthTokenStore(settings).token())
     }
 
     @Test

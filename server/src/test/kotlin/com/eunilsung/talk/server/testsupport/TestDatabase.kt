@@ -2,7 +2,10 @@ package com.eunilsung.talk.server.testsupport
 
 import com.eunilsung.talk.server.db.Database
 import com.eunilsung.talk.server.files.FileStorage
+import com.eunilsung.talk.server.local.LOCAL_SEED_PASSWORD
 import com.eunilsung.talk.server.local.LocalPostgres
+import com.eunilsung.talk.server.repository.UserRepository
+import com.eunilsung.talk.server.seed.SeedAccounts
 import java.nio.file.Files
 import javax.sql.DataSource
 
@@ -16,10 +19,14 @@ import javax.sql.DataSource
  */
 object TestDatabase {
 
+    /**
+     * 시연용 계정(test1~test10, 비밀번호 [LOCAL_SEED_PASSWORD])을 처음 한 번 만들어 둔다. 서버 본체는 비밀번호를 받지
+     * 않으면 계정을 만들지 않으므로, 모든 테스트가 같은 계정을 쓰도록 여기서 채운다.
+     */
     val dataSource: DataSource by lazy {
         val postgres = LocalPostgres.startTemporary()
         Runtime.getRuntime().addShutdownHook(Thread { postgres.close() })
-        Database.connect(LocalPostgres.configOf(postgres))
+        Database.connect(LocalPostgres.configOf(postgres)).also { SeedAccounts.ensure(UserRepository(it), LOCAL_SEED_PASSWORD) }
     }
 
     /** 테스트가 올린 파일을 두는 임시 폴더. 실행이 끝나면 지워진다. */

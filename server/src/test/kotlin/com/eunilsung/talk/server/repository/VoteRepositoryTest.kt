@@ -1,6 +1,5 @@
 package com.eunilsung.talk.server.repository
 
-import com.eunilsung.talk.server.seed.SeedAccounts
 import com.eunilsung.talk.server.testsupport.TestDatabase
 import com.eunilsung.talk.shared.api.CreateVoteRequest
 import com.eunilsung.talk.shared.api.MessageKind
@@ -8,6 +7,7 @@ import com.eunilsung.talk.shared.api.VoteDto
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -23,7 +23,6 @@ class VoteRepositoryTest {
     @BeforeTest
     fun setUp() {
         TestDatabase.clean()
-        SeedAccounts.ensure(UserRepository(TestDatabase.dataSource))
         chats = ChatRepository(TestDatabase.dataSource)
         votes = VoteRepository(chats)
         room = assertNotNull(chats.createRoom("test1", listOf("test2", "test3"))).roomId
@@ -130,5 +129,38 @@ class VoteRepositoryTest {
 
         assertEquals(listOf(second.id, first.id), votes.votes(room, "test3")?.map { it.id })
         assertNull(votes.vote(otherRoom, "test1", first.id))
+    }
+
+    @Test
+    fun `나중에 초대받은 사람에게는 들어오기 전 투표와 그 투표자가 보이지 않는다`() {
+        val before = lunchVote()
+        votes.cast(room, "test2", before.id, listOf(0))
+        chats.invite(room, "test1", listOf("test4"))
+        val after = assertNotNull(votes.create(room, "test1", CreateVoteRequest("회식 날짜", listOf("금요일", "토요일")))).vote
+
+        assertEquals(listOf(after.id), votes.votes(room, "test4")?.map { it.id })
+        assertNull(votes.vote(room, "test4", before.id))
+        assertNull(votes.cast(room, "test4", before.id, listOf(1)))
+        assertEquals(listOf(after.id, before.id), votes.votes(room, "test3")?.map { it.id })
+        assertNotNull(votes.cast(room, "test4", after.id, listOf(0)))
+    }
+
+    @Test
+    fun `가장 큰 정상 투표도 알림에 실리고 DB 는 긴 마감 시각을 받지 않는다`() {
+        val escaped = "\u0001".repeat(MAX_VOTE_TEXT)
+        val largest = votes.create(room, "test1", CreateVoteRequest(escaped, List(MAX_VOTE_ITEMS) { escaped }))
+        val closed = votes.close(room, "test1", assertNotNull(largest).vote.id)
+
+        assertEquals(MAX_VOTE_ITEMS, largest.message.payload?.vote?.items?.size)
+        assertNotNull(closed)
+        assertFails {
+            votes.create(room, "test1", CreateVoteRequest("마감", listOf("가", "나"), useEndTime = true, endTime = "1".repeat(33)))
+        }
+    }
+
+    private companion object {
+        /** 투표 경로가 받는 제목·항목 길이와 항목 수의 상한(`VoteRoutes`). */
+        const val MAX_VOTE_TEXT = 200
+        const val MAX_VOTE_ITEMS = 20
     }
 }

@@ -15,15 +15,16 @@ import org.jetbrains.compose.resources.getString
 import java.io.File
 
 /**
- * Android [FileOpener] — 다운로드한 첨부를 연결 프로그램 선택기(`Intent.createChooser`)로 넘긴다.
+ * Android [FileOpener] — 첨부를 연결 프로그램 선택기(`Intent.createChooser`)로 넘긴다.
  *
  * 경로는 두 가지로 들어온다.
- * - MediaStore 저장분: `content://...` — 그대로 쓰고 MIME 은 ContentResolver 에서 얻는다.
- * - 파일 저장분(공용 다운로드 폴더 / 앱 외부 저장소 fallback): 절대 경로 — API 24+ 에서 `file://`
- *   를 다른 앱에 넘기면 FileUriExposedException 이므로 FileProvider 로 content:// 를 만든다.
+ * - `content://...` — 그대로 쓰고 MIME 은 ContentResolver 에서 얻는다.
+ * - 절대 경로(앱 cache 의 열기 전용 사본) — API 24+ 에서 `file://` 를 다른 앱에 넘기면 FileUriExposedException
+ *   이므로 FileProvider 로 content:// 를 만든다. FileProvider 는 그 사본 폴더만 내준다(`res/xml/file_paths.xml`).
  *
- * 선택기에 뜨는 각 앱에 읽기 권한을 개별 부여한다. chooser 가 플래그를 대상 인텐트로 옮겨주지
- * 않는 단말이 있어 [Context.grantUriPermission] 까지 같이 건다.
+ * 읽기 권한은 인텐트의 [Intent.FLAG_GRANT_READ_URI_PERMISSION] 과 ClipData 로만 준다. 시스템이 사용자가 고른 앱에만
+ * 그 화면이 떠 있는 동안 임시 권한을 준다. 선택기에 뜬 앱마다 미리 [Context.grantUriPermission] 하지 않는다 —
+ * 고르지 않은 앱에도 권한이 남고 회수되지 않기 때문이다.
  */
 class AndroidFileOpener(
     private val context: Context,
@@ -52,22 +53,13 @@ class AndroidFileOpener(
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
-        val targets = runCatching {
-            context.packageManager.queryIntentActivities(viewIntent, 0)
-        }.getOrElse { emptyList() }
-        if (targets.isEmpty()) return false
-
-        targets.forEach { resolved ->
-            runCatching {
-                context.grantUriPermission(
-                    resolved.activityInfo.packageName,
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                )
-            }
-        }
+        val hasTarget = runCatching {
+            context.packageManager.queryIntentActivities(viewIntent, 0).isNotEmpty()
+        }.getOrDefault(false)
+        if (!hasTarget) return false
 
         val chooser = Intent.createChooser(viewIntent, chooserTitle).apply {
+            clipData = viewIntent.clipData
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }

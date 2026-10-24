@@ -14,6 +14,13 @@ import com.eunilsung.talk.domain.model.Login
 import com.eunilsung.talk.domain.usecase.LoginUseCases
 import com.eunilsung.talk.domain.usecase.VersionCheckUseCase
 
+/**
+ * 로그인 화면.
+ *
+ * 저장해 둔 비밀번호를 입력칸에 채우지 않는다 — 채우면 '비밀번호 보기'로 누구나 읽을 수 있다. 자동 로그인은
+ * [LoginUseCases.resumeLogin] 이 입력칸을 거치지 않고 한다. '보기'는 사용자가 이번에 직접 넣은 글자만 보인다.
+ * 자동 로그인이 서버에 닿지 못하면 [LoginStatus.ResumeFailed] 로 '다시 시도'를 묻는다.
+ */
 class LoginViewModel(
     private val loginUseCases: LoginUseCases,
     private val versionCheck: VersionCheckUseCase,
@@ -28,7 +35,7 @@ class LoginViewModel(
                 .filter { !it }
                 .collect {
                     _uiState.update {
-                        it.copy(status = LoginStatus.Idle, input = it.input.copy(pw = loginUseCases.getSavedLogin().pw))
+                        it.copy(status = LoginStatus.Idle, input = it.input.copy(pw = ""), isPasswordVisible = false)
                     }
                 }
         }
@@ -44,6 +51,7 @@ class LoginViewModel(
             is LoginActions.OnLoginClick -> performLogin(action.input)
             is LoginActions.OnDuplicateLoginConfirm -> duplicateLogin(action.input)
             LoginActions.OnResetState -> resetUiState()
+            LoginActions.OnRetryResume -> retryResume()
         }
     }
 
@@ -53,14 +61,28 @@ class LoginViewModel(
             _uiState.update { it.copy(versionInfo = info) }
             if (info?.needsUpdate == true) return@launch
 
-            val input = _uiState.value.input
-            if (input.id.isNotEmpty() && input.pw.isNotEmpty()) {
-                performLogin(input)
-            } else {
+            if (!resume()) {
                 delay(1000)
                 resetUiState()
             }
         }
+    }
+
+    private fun retryResume() {
+        viewModelScope.launch {
+            setStatus(LoginStatus.Loading)
+            if (!resume()) resetUiState()
+        }
+    }
+
+    /**
+     * 남은 로그인으로 들어가 본다. 남은 로그인이 없으면 false 다.
+     * 들어가지 못하면 오류 대신 [LoginStatus.ResumeFailed] 로 두어 화면이 '다시 시도'를 묻게 한다.
+     */
+    private suspend fun resume(): Boolean {
+        val resumed = loginUseCases.resumeLogin() ?: return false
+        setStatus(if (resumed is Login.LoginResult.Error) LoginStatus.ResumeFailed(resumed.message) else resumed.toStatus())
+        return true
     }
 
     private fun performLogin(input: Login.LoginRequest) {

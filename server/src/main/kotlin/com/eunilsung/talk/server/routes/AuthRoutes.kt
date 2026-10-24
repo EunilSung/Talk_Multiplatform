@@ -1,6 +1,7 @@
 package com.eunilsung.talk.server.routes
 
 import com.eunilsung.talk.server.auth.LoginAttemptLimiter
+import com.eunilsung.talk.server.chat.ChatHub
 import com.eunilsung.talk.server.auth.PasswordHasher
 import com.eunilsung.talk.server.repository.AuthTokenRepository
 import com.eunilsung.talk.server.repository.UserRepository
@@ -8,6 +9,8 @@ import com.eunilsung.talk.shared.api.ApiError
 import com.eunilsung.talk.shared.api.ApiErrorCode
 import com.eunilsung.talk.shared.api.LoginRequest
 import com.eunilsung.talk.shared.api.LoginResponse
+import com.eunilsung.talk.shared.api.MAX_LOGIN_ID_LENGTH
+import com.eunilsung.talk.shared.api.MAX_LOGIN_PASSWORD_LENGTH
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
@@ -18,15 +21,19 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 
 /** 로그인·로그아웃·내 정보. */
-fun Route.authRoutes(users: UserRepository, tokens: AuthTokenRepository, limiter: LoginAttemptLimiter) {
+fun Route.authRoutes(users: UserRepository, tokens: AuthTokenRepository, limiter: LoginAttemptLimiter, hub: ChatHub) {
 
     /**
      * 로그인. 아이디가 없는 것과 비밀번호가 틀린 것을 같은 응답으로 돌려준다 —
      * 구분해 주면 어떤 아이디가 있는지 밖에서 알아낼 수 있다.
+     *
+     * 아이디·비밀번호 길이를 먼저 본다. 긴 아이디가 실패 기록에 그대로 남거나 긴 비밀번호로 해시 계산을 늘이지 못하게 한다.
      */
     post("/auth/login") {
         val request = runCatching { call.receive<LoginRequest>() }.getOrNull()
-        if (request == null || request.id.isBlank() || request.password.isBlank()) {
+        if (request == null || request.id.isBlank() || request.password.isBlank() ||
+            request.id.length > MAX_LOGIN_ID_LENGTH || request.password.length > MAX_LOGIN_PASSWORD_LENGTH
+        ) {
             call.respond(HttpStatusCode.BadRequest, ApiError(ApiErrorCode.BAD_REQUEST, "아이디와 비밀번호가 필요합니다"))
             return@post
         }
@@ -68,10 +75,14 @@ fun Route.authRoutes(users: UserRepository, tokens: AuthTokenRepository, limiter
         }
     }
 
-    /** 로그아웃 — 이 기기의 토큰만 없앤다. 이미 없는 토큰이어도 성공으로 답한다. */
+    /**
+     * 로그아웃 — 이 기기의 토큰만 없앤다. 이미 없는 토큰이어도 성공으로 답한다.
+     * 그 토큰으로 열린 알림 연결도 닫는다. 남겨 두면 로그아웃한 뒤에도 그 연결로 대화가 계속 간다.
+     */
     post("/auth/logout") {
         val token = call.bearerToken()
         db { tokens.revoke(token) }
+        if (token.isNotBlank()) hub.closeLogin(tokens.hashOf(token))
         call.respond(HttpStatusCode.NoContent)
     }
 

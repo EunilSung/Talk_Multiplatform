@@ -1,5 +1,6 @@
 package com.eunilsung.talk.server.repository
 
+import com.eunilsung.talk.server.limits.ServerLimits
 import com.eunilsung.talk.shared.api.BookmarkDto
 import com.eunilsung.talk.shared.api.MessageDto
 import com.eunilsung.talk.shared.api.MessageKind
@@ -24,6 +25,39 @@ data class RoomChange(
     val message: MessageDto? = null,
 )
 
+/** 대화를 넣은 결과. */
+sealed interface SendResult {
+    /** 들어간 대화. [isNew] 가 false 면 내가 같은 id 로 이미 보낸 것을 돌려준 것이다 — 다시 알리지 않는다. */
+    data class Sent(val message: MessageDto, val isNew: Boolean) : SendResult
+
+    /** 방이 없거나 참여 중이 아니다. */
+    data object RoomNotFound : SendResult
+
+    /**
+     * 같은 id 의 대화가 이미 있는데 내가 보낸 것이 아니거나 내가 들어오기 전의 것이다.
+     * 그 대화를 돌려주면 남의 대화나 들어오기 전 대화가 샌다.
+     */
+    data object IdTaken : SendResult
+
+    /** 부가 정보가 맞지 않는다 — 답장 원본을 볼 수 없거나, 실을 수 없는 파일이거나, 너무 크다. */
+    data object BadPayload : SendResult
+}
+
+/** 회수한 결과. [fileId] 는 그 대화가 실은 파일(서버가 확인해 적어 둔 것)이다. 지울지는 파일 저장소가 다시 따진다. */
+data class Recalled(val message: MessageDto, val fileId: String?)
+
+/** 초대한 결과. */
+sealed interface InviteResult {
+    /** 초대했다. 이미 있는 사람만 골랐으면 [RoomChange.message] 가 없다. */
+    data class Invited(val change: RoomChange) : InviteResult
+
+    /** 방이 없거나, 내가 참여 중이 아니거나, 모르는 아이디가 섞였다. 셋을 가르지 않는다. */
+    data object NotFound : InviteResult
+
+    /** 새로 들어올 사람을 더하면 방 인원 한도를 넘는다. */
+    data object RoomFull : InviteResult
+}
+
 /**
  * 대화방·대화 저장소.
  *
@@ -31,9 +65,12 @@ data class RoomChange(
  * 돌려준다 — 호출하는 쪽이 권한 확인을 빠뜨려도 남의 방이 새지 않는다.
  *
  * 방 안의 순서를 바꾸는 일(대화 넣기, 초대, 퇴장)은 방 행을 잠그고 한다. 그래야 번호가 건너뛰거나
- * 겹치지 않고, 같은 대화를 두 번 보내도 한 번만 들어간다.
+ * 겹치지 않고, 같은 대화를 두 번 보내도 한 번만 들어간다. 방 인원 한도([maxRoomMembers])도 그 잠금 안에서 센다.
  */
-class ChatRepository(private val dataSource: DataSource) {
+class ChatRepository(
+    private val dataSource: DataSource,
+    private val maxRoomMembers: Int = ServerLimits().maxRoomMembers,
+) {
 
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
 
@@ -82,26 +119,31 @@ class ChatRepository(private val dataSource: DataSource) {
     }
 
     /**
-     * 방에 사람을 더 부른다. 방이 없거나 내가 참여자가 아니거나 모르는 아이디가 있으면 null.
+     * 방에 사람을 더 부른다.
      *
      * 새로 들어온 사람은 초대 알림부터 본다. 이미 있는 사람만 골랐으면 아무 일도 하지 않는다.
+     * 인원 한도는 방 행을 잠근 뒤에 센다 — 잠그기 전에 세면 같은 방에 동시에 온 초대들이 모두 같은 인원을 보고 통과한다.
      */
-    fun invite(roomId: String, actorId: String, userIds: List<String>): RoomChange? = transaction { conn ->
-        val lastSeq = lockRoom(conn, roomId) ?: return@transaction null
-        if (!isActiveMember(conn, roomId, actorId)) return@transaction null
+    fun invite(roomId: String, actorId: String, userIds: List<String>): InviteResult = transaction { conn ->
+        val lastSeq = lockRoom(conn, roomId) ?: return@transaction InviteResult.NotFound
+        if (!isActiveMember(conn, roomId, actorId)) return@transaction InviteResult.NotFound
         val ids = userIds.map(::normalize).distinct()
         val names = userNames(conn, ids)
-        if (names.size != ids.size) return@transaction null
+        if (names.size != ids.size) return@transaction InviteResult.NotFound
+        val (members, alreadyIn) = activeMemberCounts(conn, roomId, ids)
+        if (members + ids.size - alreadyIn > maxRoomMembers) return@transaction InviteResult.RoomFull
 
         val added = ids.filter { addMember(conn, roomId, it, joinedSeq = lastSeq) }
-        if (added.isEmpty()) return@transaction RoomChange(roomId)
+        if (added.isEmpty()) return@transaction InviteResult.Invited(RoomChange(roomId))
 
         /** 사람이 늘면 더 이상 1:1 방이 아니다. 표시를 지워야 그 둘이 새 1:1 방을 열 수 있다. */
         conn.prepareStatement("UPDATE chat_room SET direct_key = NULL WHERE id = ?").use { st ->
             st.setString(1, roomId)
             st.executeUpdate()
         }
-        RoomChange(roomId, insertSystemMessage(conn, roomId, actorId, MessageKind.INVITE, added.mapNotNull(names::get)))
+        InviteResult.Invited(
+            RoomChange(roomId, insertSystemMessage(conn, roomId, actorId, MessageKind.INVITE, added.mapNotNull(names::get))),
+        )
     }
 
     /** 방에서 나간다. 남은 사람들에게 퇴장 알림이 남는다. 참여 중이 아니었으면 null. */
@@ -167,10 +209,14 @@ class ChatRepository(private val dataSource: DataSource) {
         }
 
     /**
-     * 대화를 넣는다. 참여 중이 아니면 null.
+     * 대화를 넣는다.
      *
-     * 같은 [clientId] 가 이미 있으면 새로 넣지 않고 있던 것을 돌려준다. 앱은 응답을 못 받으면 같은 id 로
-     * 다시 보내는데, 그때 대화가 두 번 생기면 안 된다.
+     * 같은 [clientId] 가 이미 있으면 새로 넣지 않는다. 내가 보낸, 내가 볼 수 있는 대화면 그것을 그대로 돌려준다. 앱은 응답을
+     * 못 받으면 같은 id 로 다시 보내는데, 그때 대화가 두 번 생기면 안 된다.
+     *
+     * [payload] 는 그대로 저장하지 않고 [cleanPayload] 로 종류마다 허용한 칸만 남겨 다시 만든다. 받을 수 없으면
+     * [SendResult.BadPayload] 다. 같은 id 가 남의 대화이거나 들어오기 전 대화일 때의 [SendResult.IdTaken] 은 부가 정보를
+     * 확인한 뒤에 준다 — 먼저 주면 아무것도 만들지 못하는 요청(없는 원본을 가리킨 답장)으로 그 id 가 있는지 알아낼 수 있다.
      */
     fun send(
         roomId: String,
@@ -179,12 +225,20 @@ class ChatRepository(private val dataSource: DataSource) {
         kind: String,
         content: String,
         payload: MessagePayloadDto?,
-    ): MessageDto? = transaction { conn ->
-        lockRoom(conn, roomId) ?: return@transaction null
-        if (!isActiveMember(conn, roomId, senderId)) return@transaction null
-        seqOf(conn, roomId, clientId)?.let { return@transaction selectMessage(conn, roomId, it) }
-        insertMessage(conn, roomId, senderId, clientId, kind, content, payload)
-            .also { insertMentions(conn, roomId, it.seq, senderId, content) }
+    ): SendResult = transaction { conn ->
+        lockRoom(conn, roomId) ?: return@transaction SendResult.RoomNotFound
+        val joinedSeq = joinedSeq(conn, roomId, senderId) ?: return@transaction SendResult.RoomNotFound
+        val existingSeq = seqOf(conn, roomId, clientId)
+        existingSeq?.let { seq ->
+            selectMessage(conn, roomId, seq)?.takeIf { it.senderId == senderId && seq > joinedSeq }
+                ?.let { return@transaction SendResult.Sent(it, isNew = false) }
+        }
+        val cleaned = cleanPayload(conn, roomId, senderId, joinedSeq, kind, payload)
+            ?: return@transaction SendResult.BadPayload
+        if (existingSeq != null) return@transaction SendResult.IdTaken
+        val message = insertMessage(conn, roomId, senderId, clientId, kind, content, cleaned.payload, cleaned.fileId)
+        insertMentions(conn, roomId, message.seq, senderId, content)
+        SendResult.Sent(message, isNew = true)
     }
 
     /**
@@ -201,8 +255,8 @@ class ChatRepository(private val dataSource: DataSource) {
         limit: Int,
     ): List<MessageDto>? = dataSource.connection.use { conn ->
         val joinedSeq = joinedSeq(conn, roomId, userId) ?: return@use null
-        val afterSeq = afterId?.let { seqOf(conn, roomId, it) }
-        val beforeSeq = beforeId?.let { seqOf(conn, roomId, it) }
+        val afterSeq = afterId?.let { visibleSeqOf(conn, roomId, joinedSeq, it) }
+        val beforeSeq = beforeId?.let { visibleSeqOf(conn, roomId, joinedSeq, it) }
 
         val lower = maxOf(joinedSeq, afterSeq ?: 0)
         val upper = beforeSeq ?: Long.MAX_VALUE
@@ -223,7 +277,7 @@ class ChatRepository(private val dataSource: DataSource) {
      * [messageId] 까지 읽었다고 적는다. 읽은 자리가 실제로 앞으로 갔으면 true.
      *
      * 더 앞의 대화를 가리키면 아무 일도 하지 않는다. 늦게 도착한 요청이 읽은 자리를 되돌리면
-     * 이미 읽은 대화가 다시 안읽음이 된다.
+     * 이미 읽은 대화가 다시 안읽음이 된다. 내가 들어오기 전 대화는 없는 대화와 똑같이 다룬다.
      */
     fun markRead(roomId: String, userId: String, messageId: String): Boolean =
         dataSource.connection.use { conn ->
@@ -232,7 +286,7 @@ class ChatRepository(private val dataSource: DataSource) {
                 UPDATE chat_room_member m SET last_read_seq = g.seq
                 FROM chat_message g
                 WHERE m.room_id = ? AND m.user_id = ? AND m.left_at IS NULL
-                  AND g.room_id = m.room_id AND g.client_id = ? AND g.seq > m.last_read_seq
+                  AND g.room_id = m.room_id AND g.client_id = ? AND g.seq > m.last_read_seq AND g.seq > m.joined_seq
                 """.trimIndent()
             ).use { st ->
                 st.setString(1, roomId)
@@ -242,11 +296,15 @@ class ChatRepository(private val dataSource: DataSource) {
             }
         }
 
-    /** [fromId] 부터 뒤쪽 대화들의 안읽음 수. 참여 중이 아니면 null. */
+    /**
+     * [fromId] 부터 뒤쪽 대화들의 안읽음 수. 참여 중이 아니면 null.
+     *
+     * [fromId] 가 없거나 내가 들어오기 전 대화면 빈 목록이다. 둘을 가르면 들어오기 전 대화가 있는지 알아낼 수 있다.
+     */
     fun unreadCounts(roomId: String, userId: String, fromId: String): List<UnreadCountDto>? =
         dataSource.connection.use { conn ->
             val joinedSeq = joinedSeq(conn, roomId, userId) ?: return@use null
-            val fromSeq = seqOf(conn, roomId, fromId) ?: return@use emptyList()
+            val fromSeq = visibleSeqOf(conn, roomId, joinedSeq, fromId) ?: return@use emptyList()
             conn.prepareStatement(
                 """
                 SELECT g.client_id, $UNREAD_COUNT AS unread
@@ -303,45 +361,37 @@ class ChatRepository(private val dataSource: DataSource) {
         }
 
     /**
-     * 내가 보낸 대화를 회수한다. 바뀐 대화를 돌려준다. 이미 회수했으면 그대로 돌려준다.
+     * 내가 보낸 대화를 회수한다. 바뀐 대화와 그 대화가 실은 파일을 돌려준다. 이미 회수했으면 그대로 돌려준다.
      *
      * 남의 대화이거나 초대·퇴장 같은 알림이면 null — 보낸 사람만 자기 말을 거둘 수 있다.
+     * 파일은 대화의 부가 정보가 아니라 서버가 확인해 적어 둔 [Recalled.fileId] 로 알려 준다.
      */
-    fun recall(roomId: String, userId: String, messageId: String): MessageDto? = transaction { conn ->
+    fun recall(roomId: String, userId: String, messageId: String): Recalled? = transaction { conn ->
         if (!isActiveMember(conn, roomId, userId)) return@transaction null
         val seq = seqOf(conn, roomId, messageId) ?: return@transaction null
-        conn.prepareStatement(
+        val fileId = conn.prepareStatement(
             """
             UPDATE chat_message SET recalled_at = coalesce(recalled_at, now())
             WHERE room_id = ? AND seq = ? AND sender_id = ? AND kind = ANY (?)
+            RETURNING file_id
             """.trimIndent()
         ).use { st ->
             st.setString(1, roomId)
             st.setLong(2, seq)
             st.setString(3, userId)
             st.setArray(4, conn.createArrayOf("text", MessageKind.SENDABLE.toTypedArray()))
-            if (st.executeUpdate() == 0) return@transaction null
+            st.executeQuery().use { rs ->
+                if (!rs.next()) return@transaction null
+                rs.getString(1)
+            }
         }
-        selectMessage(conn, roomId, seq)
+        Recalled(checkNotNull(selectMessage(conn, roomId, seq)), fileId)
     }
 
     /** 이 사람이 볼 수 있는 대화 하나. 방에 없거나, 들어오기 전의 대화이거나, 없는 대화면 null. */
     fun message(roomId: String, userId: String, messageId: String): MessageDto? =
         dataSource.connection.use { conn ->
             visibleSeq(conn, roomId, userId, messageId)?.let { selectMessage(conn, roomId, it) }
-        }
-
-    /** 이 대화에 딸린 파일의 id. 파일 대화가 아니면 null. */
-    fun fileIdOf(roomId: String, messageId: String): String? =
-        dataSource.connection.use { conn ->
-            conn.prepareStatement("SELECT payload FROM chat_message WHERE room_id = ? AND client_id = ?").use { st ->
-                st.setString(1, roomId)
-                st.setString(2, messageId)
-                st.executeQuery().use { rs ->
-                    if (!rs.next()) return@use null
-                    rs.getString(1)?.let { json.decodeFromString(MessagePayloadDto.serializer(), it).fileId }
-                }
-            }
         }
 
     /** 방의 공지. 공지가 없으면 내용이 빈 값을 돌려준다. 참여 중이 아니면 null. */
@@ -447,7 +497,95 @@ class ChatRepository(private val dataSource: DataSource) {
     /** 내가 볼 수 있는 대화의 번호. 방에 없거나, 없는 대화이거나, 내가 들어오기 전 대화이면 null. */
     private fun visibleSeq(conn: Connection, roomId: String, userId: String, messageId: String): Long? {
         val joinedSeq = joinedSeq(conn, roomId, userId) ?: return null
-        return seqOf(conn, roomId, messageId)?.takeIf { it > joinedSeq }
+        return visibleSeqOf(conn, roomId, joinedSeq, messageId)
+    }
+
+    /** [joinedSeq] 뒤의 대화일 때만 그 번호. 들어오기 전 대화는 없는 대화와 똑같이 null 이다. */
+    private fun visibleSeqOf(conn: Connection, roomId: String, joinedSeq: Long, messageId: String): Long? =
+        seqOf(conn, roomId, messageId)?.takeIf { it > joinedSeq }
+
+    /** [cleanPayload] 의 결과 — 저장할 부가 정보와, 파일 대화면 서버가 확인한 파일 id. */
+    private data class CleanPayload(val payload: MessagePayloadDto?, val fileId: String? = null)
+
+    /**
+     * 받은 부가 정보를 종류마다 허용한 칸만으로 다시 만든다. 받을 수 없으면 null.
+     *
+     * - 답장: [MessagePayloadDto.replyToId] 의 원본을 보낸 사람이 볼 수 있는 구간에서 찾아, 인용(보낸 사람·이름·본문 앞부분·
+     *   종류)을 원본으로 채운다. 원본이 없으면 받지 않는다. 앱이 적어 보낸 인용은 쓰지 않는다.
+     * - 파일: 이 방에 보낸 사람이 올린, 아직 어느 대화에도 실리지 않은 파일만 받는다. 이름·크기는 올린 기록의 값이다.
+     * - 그 밖: 이모티콘만 남긴다. 투표·공지·초대 대상은 서버만 만드는 칸이라 버린다.
+     *
+     * 다시 만든 것을 직렬화해 [MAX_PAYLOAD_CHARS] 를 넘으면 받지 않는다. 방을 여는 사람마다 그 크기를 읽기 때문이다.
+     */
+    private fun cleanPayload(
+        conn: Connection,
+        roomId: String,
+        senderId: String,
+        joinedSeq: Long,
+        kind: String,
+        payload: MessagePayloadDto?,
+    ): CleanPayload? {
+        val emoticonId = payload?.emoticonId?.takeIf { it.isNotBlank() }
+        if (emoticonId != null && emoticonId.length > MAX_EMOTICON_ID_LENGTH) return null
+        val cleaned = when (kind) {
+            MessageKind.REPLY -> {
+                val replyToId = payload?.replyToId?.takeIf { it.isNotBlank() } ?: return null
+                CleanPayload(replyPayload(conn, roomId, joinedSeq, replyToId)?.copy(emoticonId = emoticonId) ?: return null)
+            }
+            in MessageKind.WITH_FILE -> filePayload(conn, roomId, senderId, payload) ?: return null
+            else -> CleanPayload(emoticonId?.let { MessagePayloadDto(emoticonId = it) })
+        }
+        val encoded = cleaned.payload?.let { json.encodeToString(MessagePayloadDto.serializer(), it) }.orEmpty()
+        return cleaned.takeIf { encoded.length <= MAX_PAYLOAD_CHARS }
+    }
+
+    /** 답장의 인용을 원본에서 만든다. 원본이 없거나 [joinedSeq] 앞이면 null. */
+    private fun replyPayload(conn: Connection, roomId: String, joinedSeq: Long, replyToId: String): MessagePayloadDto? {
+        val seq = visibleSeqOf(conn, roomId, joinedSeq, replyToId) ?: return null
+        val original = selectMessage(conn, roomId, seq) ?: return null
+        return MessagePayloadDto(
+            replyToId = original.id,
+            replyKind = original.kind.takeIf { it in MessageKind.SENDABLE } ?: MessageKind.TEXT,
+            replyAuthorId = original.senderId,
+            replyAuthorName = original.senderName,
+            replyText = quoteOf(original).take(MAX_REPLY_TEXT_LENGTH),
+            replyEmoticonId = original.payload?.emoticonId,
+        )
+    }
+
+    /**
+     * 인용에 보일 원본 내용. 앱이 말풍선에 그리는 내용과 같게 만든다 — 동영상·파일은 크기, 나머지는 멘션 태그를 벗긴 본문이다.
+     * 회수된 원본은 본문과 부가 정보가 비어 있어 빈 인용이 된다.
+     */
+    private fun quoteOf(original: MessageDto): String = when (original.kind) {
+        MessageKind.VIDEO, MessageKind.FILE -> fileSizeText(original.payload?.fileSize ?: -1)
+        else -> original.content.replace(MENTION_TAG, "$1")
+    }
+
+    /** 실을 파일을 확인하고 그 파일의 등록값으로 부가 정보를 만든다. 실을 수 없는 파일이면 null. */
+    private fun filePayload(conn: Connection, roomId: String, senderId: String, payload: MessagePayloadDto?): CleanPayload? {
+        val fileId = payload?.fileId?.takeIf { it.isNotBlank() } ?: return null
+        val (name, size) = conn.prepareStatement(
+            """
+            SELECT f.name, f.size FROM chat_file f
+            WHERE f.id = ? AND f.room_id = ? AND f.uploader_id = ?
+              AND NOT EXISTS (SELECT 1 FROM chat_message g WHERE g.file_id = f.id)
+            """.trimIndent()
+        ).use { st ->
+            st.setString(1, fileId)
+            st.setString(2, roomId)
+            st.setString(3, senderId)
+            st.executeQuery().use { rs -> if (rs.next()) rs.getString(1) to rs.getLong(2) else return null }
+        }
+        return CleanPayload(
+            MessagePayloadDto(
+                fileId = fileId,
+                fileName = name,
+                fileSize = size,
+                imageSize = payload.imageSize?.takeIf { it.isNotBlank() && it.length <= MAX_IMAGE_SIZE_LENGTH },
+            ),
+            fileId = fileId,
+        )
     }
 
     private fun selectNotice(conn: Connection, roomId: String): NoticeDto? =
@@ -513,12 +651,17 @@ class ChatRepository(private val dataSource: DataSource) {
             }
         }
 
+        if (rows.isEmpty()) return emptyList()
+        /** 참여자와 마지막 대화는 방마다 따로 묻지 않고 한 번에 가져온다. 방이 많아도 쿼리 수가 늘지 않는다. */
+        val roomIds = rows.map { it.id }
+        val members = selectMembers(conn, roomIds)
+        val lastMessages = selectLastMessages(conn, userId, roomIds)
         return rows.map { row ->
             RoomDto(
                 id = row.id,
                 title = row.title,
-                members = selectMembers(conn, row.id),
-                lastMessage = selectLastMessage(conn, row.id, row.joinedSeq),
+                members = members[row.id].orEmpty(),
+                lastMessage = lastMessages[row.id],
                 unreadCount = (row.lastSeq - maxOf(row.readSeq, row.joinedSeq)).coerceAtLeast(0).toInt(),
                 isMuted = row.isMuted,
                 createdAtEpochMillis = row.createdAt,
@@ -528,28 +671,40 @@ class ChatRepository(private val dataSource: DataSource) {
         }
     }
 
-    private fun selectMembers(conn: Connection, roomId: String): List<RoomMemberDto> =
+    /** 방 id → 참여자(나간 사람 포함), 직급이 높은 순 → 이름 순. */
+    private fun selectMembers(conn: Connection, roomIds: List<String>): Map<String, List<RoomMemberDto>> =
         conn.prepareStatement(
             """
-            SELECT m.user_id, u.name, m.left_at IS NOT NULL
+            SELECT m.room_id, m.user_id, u.name, m.left_at IS NOT NULL
             FROM chat_room_member m JOIN app_user u ON u.id = m.user_id
-            WHERE m.room_id = ?
-            ORDER BY u.position_sort, u.name
+            WHERE m.room_id = ANY (?)
+            ORDER BY m.room_id, u.position_sort, u.name
             """.trimIndent()
         ).use { st ->
-            st.setString(1, roomId)
+            st.setArray(1, conn.createArrayOf("text", roomIds.toTypedArray()))
             st.executeQuery().use { rs ->
-                buildList { while (rs.next()) add(RoomMemberDto(rs.getString(1), rs.getString(2), rs.getBoolean(3))) }
+                buildList {
+                    while (rs.next()) add(rs.getString(1) to RoomMemberDto(rs.getString(2), rs.getString(3), rs.getBoolean(4)))
+                }
             }
-        }
+        }.groupBy({ it.first }, { it.second })
 
-    private fun selectLastMessage(conn: Connection, roomId: String, joinedSeq: Long): MessageDto? =
+    /** 방 id → [userId] 가 볼 수 있는 마지막 대화. 들어온 뒤 대화가 없는 방은 빠진다. */
+    private fun selectLastMessages(conn: Connection, userId: String, roomIds: List<String>): Map<String, MessageDto> =
         conn.prepareStatement(
-            "$MESSAGE_SELECT WHERE g.room_id = ? AND g.seq > ? ORDER BY g.seq DESC LIMIT 1"
+            """
+            SELECT lm.* FROM chat_room_member me
+            CROSS JOIN LATERAL (
+                $MESSAGE_SELECT WHERE g.room_id = me.room_id AND g.seq > me.joined_seq ORDER BY g.seq DESC LIMIT 1
+            ) lm
+            WHERE me.user_id = ? AND me.room_id = ANY (?)
+            """.trimIndent()
         ).use { st ->
-            st.setString(1, roomId)
-            st.setLong(2, joinedSeq)
-            st.executeQuery().use { rs -> if (rs.next()) rs.toMessage() else null }
+            st.setString(1, userId)
+            st.setArray(2, conn.createArrayOf("text", roomIds.toTypedArray()))
+            st.executeQuery().use { rs ->
+                buildMap { while (rs.next()) rs.toMessage().let { put(it.roomId, it) } }
+            }
         }
 
     private fun selectMessage(conn: Connection, roomId: String, seq: Long): MessageDto? =
@@ -626,7 +781,14 @@ class ChatRepository(private val dataSource: DataSource) {
         payload = MessagePayloadDto(targetNames = targetNames).takeIf { targetNames.isNotEmpty() },
     )
 
-    /** 번호를 뽑아 대화를 넣고, 보낸 사람은 거기까지 읽은 것으로 적는다. 방 행을 잠근 채로 불러야 한다. */
+    /**
+     * 번호를 뽑아 대화를 넣고, 보낸 사람은 거기까지 읽은 것으로 적는다. 방 행을 잠근 채로 불러야 한다.
+     *
+     * [fileId] 는 서버가 확인한 파일만 준다. 회수·내려받기·다시 싣기 확인이 부가 정보가 아니라 이 값을 본다.
+     *
+     * 보낸 시각은 같은 방의 바로 앞 대화보다 적어도 1밀리초 늦게 둔다. 앱은 대화를 밀리초 단위 시각으로 줄 세우므로,
+     * 같은 밀리초에 두 대화가 들어오면 순서가 뒤섞인다. 방 행을 잠근 채라 앞 대화의 시각이 바뀌지 않는다.
+     */
     internal fun insertMessage(
         conn: Connection,
         roomId: String,
@@ -635,6 +797,7 @@ class ChatRepository(private val dataSource: DataSource) {
         kind: String,
         content: String,
         payload: MessagePayloadDto?,
+        fileId: String? = null,
     ): MessageDto {
         val seq = conn.prepareStatement(
             "UPDATE chat_room SET next_seq = next_seq + 1 WHERE id = ? RETURNING next_seq - 1"
@@ -646,7 +809,13 @@ class ChatRepository(private val dataSource: DataSource) {
             }
         }
         conn.prepareStatement(
-            "INSERT INTO chat_message (room_id, seq, client_id, sender_id, kind, content, payload) VALUES (?, ?, ?, ?, ?, ?, ?)"
+            """
+            INSERT INTO chat_message (room_id, seq, client_id, sender_id, kind, content, payload, file_id, sent_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, GREATEST(
+                clock_timestamp(),
+                (SELECT p.sent_at + INTERVAL '1 millisecond' FROM chat_message p WHERE p.room_id = ? ORDER BY p.seq DESC LIMIT 1)
+            ))
+            """.trimIndent()
         ).use { st ->
             st.setString(1, roomId)
             st.setLong(2, seq)
@@ -655,6 +824,8 @@ class ChatRepository(private val dataSource: DataSource) {
             st.setString(5, kind)
             st.setString(6, content)
             st.setString(7, payload?.let { json.encodeToString(MessagePayloadDto.serializer(), it) })
+            st.setString(8, fileId)
+            st.setString(9, roomId)
             st.executeUpdate()
         }
         conn.prepareStatement(
@@ -700,8 +871,24 @@ class ChatRepository(private val dataSource: DataSource) {
     internal fun isActiveMember(conn: Connection, roomId: String, userId: String): Boolean =
         joinedSeq(conn, roomId, userId) != null
 
+    /** 지금 참여 중인 사람 수와, 그 가운데 [userIds] 에 든 사람 수. */
+    private fun activeMemberCounts(conn: Connection, roomId: String, userIds: List<String>): Pair<Int, Int> =
+        conn.prepareStatement(
+            """
+            SELECT count(*), count(*) FILTER (WHERE user_id = ANY (?))
+            FROM chat_room_member WHERE room_id = ? AND left_at IS NULL
+            """.trimIndent()
+        ).use { st ->
+            st.setArray(1, conn.createArrayOf("text", userIds.toTypedArray()))
+            st.setString(2, roomId)
+            st.executeQuery().use { rs ->
+                rs.next()
+                rs.getInt(1) to rs.getInt(2)
+            }
+        }
+
     /** 참여 중이면 어디서부터 볼 수 있는지, 아니면 null. */
-    private fun joinedSeq(conn: Connection, roomId: String, userId: String): Long? =
+    internal fun joinedSeq(conn: Connection, roomId: String, userId: String): Long? =
         conn.prepareStatement(
             "SELECT joined_seq FROM chat_room_member WHERE room_id = ? AND user_id = ? AND left_at IS NULL"
         ).use { st ->
@@ -787,6 +974,14 @@ class ChatRepository(private val dataSource: DataSource) {
         /** 공감 종류는 앱의 이모지 여섯 개와 짝을 이룬다. */
         val REACTION_KINDS = setOf("0", "1", "2", "3", "4", "5")
 
+        /** 저장하는 부가 정보(JSON)의 최대 길이. 방을 여는 사람마다 이것을 읽는다. */
+        const val MAX_PAYLOAD_CHARS = 4096
+        const val MAX_EMOTICON_ID_LENGTH = 100
+        /** 인용에 담는 원본 본문의 길이. 말풍선은 한 줄만 그린다. */
+        const val MAX_REPLY_TEXT_LENGTH = 200
+        /** 사진 크기 `"가로:세로"` 의 최대 길이. 넘으면 버린다(말풍선 틀만 미리 못 잡을 뿐이다). */
+        const val MAX_IMAGE_SIZE_LENGTH = 32
+
         const val MESSAGE_SELECT =
             "SELECT g.room_id, g.seq, g.client_id, g.sender_id, u.name AS sender_name, g.kind, g.content, " +
                 "g.payload, g.sent_at, g.recalled_at IS NOT NULL AS recalled, $UNREAD_COUNT AS unread, $REACTIONS AS reactions " +
@@ -796,3 +991,24 @@ class ChatRepository(private val dataSource: DataSource) {
 
 /** 앱이 멘션을 감싸는 태그. 안쪽이 `@이름` 이다. */
 internal val MENTION_TAG = Regex("""<mention>([\s\S]*?)</mention>""", RegexOption.IGNORE_CASE)
+
+/**
+ * 파일 크기를 앱의 말풍선과 같은 모양(`"1.5MB"`)으로 쓴다. 답장 인용에 파일 대화의 내용으로 들어간다.
+ * 앱의 `formatFileSize` 와 같은 규칙이다 — 둘이 다르면 같은 인용이 보낸 쪽과 받은 쪽에서 다르게 보인다.
+ */
+internal fun fileSizeText(bytes: Long): String {
+    if (bytes < 0) return ""
+    val kb = bytes.toDouble() / KILOBYTE
+    val (value, unit) = when {
+        kb < KILOBYTE -> kb to "KB"
+        kb < KILOBYTE * KILOBYTE -> (kb / KILOBYTE) to "MB"
+        else -> (kb / (KILOBYTE * KILOBYTE)) to "GB"
+    }
+    val tenths = kotlin.math.round(value * 10.0).toLong()
+    val whole = tenths / 10
+    val frac = tenths % 10
+    val number = if (frac == 0L) whole.toString() else "$whole.$frac"
+    return "$number$unit"
+}
+
+private const val KILOBYTE = 1024.0

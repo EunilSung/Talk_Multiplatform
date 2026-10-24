@@ -35,15 +35,34 @@ class UserRepository(private val dataSource: DataSource) {
             }
         }
 
-    fun count(): Int =
+    /**
+     * 비밀번호 해시를 바꾸고 그 사람의 로그인(토큰)을 모두 끊는다. 없는 아이디면 아무 일도 하지 않는다.
+     *
+     * 비밀번호를 바꿔도 예전 비밀번호로 받아 둔 토큰이 살아 있으면 바꾼 의미가 없다. 공개된 비밀번호로 들어온 사람의
+     * 토큰도 함께 끊는다. 그 로그인에 묶인 푸시 토큰은 표의 연쇄 삭제로 함께 지워진다.
+     */
+    fun resetPassword(userId: String, passwordHash: String) {
         dataSource.connection.use { conn ->
-            conn.createStatement().use { st ->
-                st.executeQuery("SELECT count(*) FROM app_user").use { rs ->
-                    rs.next()
-                    rs.getInt(1)
+            conn.autoCommit = false
+            try {
+                conn.prepareStatement("UPDATE app_user SET password_hash = ? WHERE id = ?").use { st ->
+                    st.setString(1, passwordHash)
+                    st.setString(2, normalize(userId))
+                    st.executeUpdate()
                 }
+                conn.prepareStatement("DELETE FROM auth_token WHERE user_id = ?").use { st ->
+                    st.setString(1, normalize(userId))
+                    st.executeUpdate()
+                }
+                conn.commit()
+            } catch (cause: Throwable) {
+                conn.rollback()
+                throw cause
+            } finally {
+                conn.autoCommit = true
             }
         }
+    }
 
     /** 없을 때만 넣는다. 이미 있으면 그대로 둔다. */
     fun insertIfAbsent(user: UserDto, passwordHash: String) {

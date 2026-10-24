@@ -9,11 +9,12 @@ import com.eunilsung.talk.shared.api.UserDto
  *
  * 회원가입이 없는 쇼케이스라 계정을 서버가 미리 만들어 둔다. 앱의 로컬 모드가 쓰는 계정과
  * 같은 사람들이라, 서버 모드로 바꿔도 같은 아이디로 로그인된다.
+ *
+ * 비밀번호는 서버를 띄우는 쪽이 정한다. 이 코드에는 기본 비밀번호가 없다 — 운영 진입점은 `SEED_DEMO_ACCOUNTS=true` 와
+ * `SEED_PASSWORD` 가 함께 있을 때만 계정을 만들고, 로컬 개발 서버(`:server:runLocal`)만 알려진 시연용 비밀번호를 쓴다.
+ * 공개 저장소에 적힌 비밀번호로 배포한 서버의 모든 계정에 들어갈 수 있으면 안 된다.
  */
 object SeedAccounts {
-
-    /** 전 계정 공통 비밀번호. */
-    const val PASSWORD = "1234"
 
     /** 앞에 올수록 상위 직급. [UserDto.positionSort] 를 여기서 뽑는다. */
     private val POSITION_ORDER = listOf("부장", "차장", "팀장", "과장", "대리", "주임", "사원")
@@ -32,14 +33,26 @@ object SeedAccounts {
     )
 
     /**
-     * 사용자 표가 비어 있을 때만 채운다.
+     * 시연용 계정의 비밀번호를 [password] 로 맞춘다. 없는 계정은 만들고, 이미 있는 계정의 비밀번호가 다르면 바꾼다.
      *
-     * 해시가 일부러 느려서 매번 돌리면 기동이 그만큼 늦어진다. 한 명이라도 있으면 이미 채운 것으로 본다.
+     * 이미 배포한 서버도 `SEED_PASSWORD` 를 새 값으로 주고 다시 띄우면 예전 비밀번호가 더는 통하지 않는다. 비밀번호를 바꾼
+     * 계정은 예전 비밀번호로 받은 토큰도 모두 끊긴다 — 기기마다 새 비밀번호로 다시 로그인해야 한다.
+     * 해시가 일부러 느려서 계정마다 한 번씩 확인하는 만큼 기동이 늦어진다(계정 10개).
      */
-    fun ensure(users: UserRepository) {
-        if (users.count() > 0) return
-        ALL.forEach { users.insertIfAbsent(it, PasswordHasher.hash(PASSWORD)) }
+    fun ensure(users: UserRepository, password: String) {
+        require(password.isNotBlank()) { "시연용 계정 비밀번호가 비어 있다" }
+        ALL.forEach { account ->
+            val stored = users.findCredential(account.id)
+            when {
+                stored == null -> users.insertIfAbsent(account, PasswordHasher.hash(password))
+                !PasswordHasher.verify(password, stored.passwordHash) ->
+                    users.resetPassword(account.id, PasswordHasher.hash(password))
+            }
+        }
     }
+
+    /** 시연용 계정이 하나라도 남아 있는지. 계정을 만들지 않게 띄운 서버가 남은 계정을 알리는 데 쓴다. */
+    fun anyExists(users: UserRepository): Boolean = ALL.any { users.find(it.id) != null }
 
     private fun account(
         index: Int,

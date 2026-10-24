@@ -14,6 +14,7 @@ data class LoginUseCases(
     val getSavedLogin: GetSavedLoginUseCase,
     val setSavePassword: SetSavePasswordUseCase,
     val getMyUser: GetMyUserUseCase,
+    val resumeLogin: ResumeLoginUseCase,
 )
 
 /** 로그인 요청 유스케이스. */
@@ -56,16 +57,26 @@ class ObserveLoginStateUseCase(private val loginRepository: LoginRepository) {
     operator fun invoke(): StateFlow<Boolean> = loginRepository.isLoggedIn
 }
 
-/** 기기에 기억해 둔 아이디·비밀번호·저장 여부. 없으면 빈 값. */
+/** 기기에 기억해 둔 아이디와 자동 로그인 여부. 비밀번호는 입력칸에 채우지 않아 늘 빈 값이다. */
 class GetSavedLoginUseCase(private val loginRepository: LoginRepository) {
     operator fun invoke(): Login.LoginRequest = Login.LoginRequest(
         id = loginRepository.getSavedId().orEmpty(),
-        pw = loginRepository.getSavedPw().orEmpty(),
         isSavePw = loginRepository.isSavePw(),
     )
 }
 
-/** 비밀번호를 기억할지. */
+/** 기기에 남은 로그인으로 입력 없이 다시 들어간다. 남은 것이 없거나 확인하다 실패하면 null. */
+class ResumeLoginUseCase(private val loginRepository: LoginRepository) {
+    suspend operator fun invoke(): Login.LoginResult? {
+        return try {
+            loginRepository.resumeLogin()
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
+/** 자동 로그인을 할지. */
 class SetSavePasswordUseCase(private val loginRepository: LoginRepository) {
     operator fun invoke(isSave: Boolean) = loginRepository.setSavePw(isSave)
 }

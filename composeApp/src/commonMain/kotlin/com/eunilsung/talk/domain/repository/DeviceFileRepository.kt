@@ -6,8 +6,11 @@ interface DeviceFileRepository {
     /** [source] 를 다운로드 폴더에 [displayName] 으로 저장한다. 저장한 경로, 읽거나 쓰지 못하면 null. */
     suspend fun saveToDownloads(source: String, displayName: String): String?
 
-    /** 전에 다운로드 폴더에 받아 둔 [displayName] 파일의 경로. 없으면 null. */
-    suspend fun findDownloaded(displayName: String): String?
+    /**
+     * [source] 를 앱 안에서만 보이는 캐시에 [displayName] 으로 복사한다. 열기 전용 사본이라 공용 폴더(다운로드·파일 앱)에는 남지 않는다.
+     * 복사한 경로, 읽거나 쓰지 못하면 null.
+     */
+    suspend fun copyForOpen(source: String, displayName: String): String?
 
     /** 기기의 다른 앱으로 연다. 열었으면 true. */
     suspend fun open(path: String): Boolean

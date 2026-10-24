@@ -129,6 +129,7 @@ fun RealServerHarness.loginViewModel(repository: LoginRepository): LoginViewMode
         getSavedLogin = GetSavedLoginUseCase(repository),
         setSavePassword = SetSavePasswordUseCase(repository),
         getMyUser = GetMyUserUseCase(repository),
+        resumeLogin = ResumeLoginUseCase(repository),
     )
     return own(LoginViewModel(useCases, VersionCheckUseCase(LocalVersionCheckRepositoryImpl())))
 }

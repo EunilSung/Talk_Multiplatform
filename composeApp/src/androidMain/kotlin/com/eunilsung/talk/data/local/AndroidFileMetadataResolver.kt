@@ -8,6 +8,8 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.eunilsung.talk.util.childPathInside
+import com.eunilsung.talk.util.sanitizeFileName
 import java.io.File
 
 /** Android [FileMetadataResolver] — content URI / 파일 경로 분기 처리. */
@@ -19,11 +21,33 @@ class AndroidFileMetadataResolver(
         withContext(Dispatchers.IO) {
             runCatching {
                 val dir = File(context.cacheDir, "chat_uploads").apply { if (!exists()) mkdirs() }
-                val outFile = File(dir, filename)
+                val outFile = safeFileIn(dir, filename) ?: return@runCatching null
                 outFile.writeBytes(bytes)
                 outFile.absolutePath
             }.getOrNull()
         }
+
+    override suspend fun writeOpenCopy(key: String, filename: String, bytes: ByteArray): String? =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val root = File(context.cacheDir, OPEN_DIR)
+                val dir = safeFileIn(root, key)?.apply { if (!exists()) mkdirs() } ?: return@runCatching null
+                val outFile = safeFileIn(dir, filename) ?: return@runCatching null
+                outFile.writeBytes(bytes)
+                outFile.absolutePath
+            }.getOrNull()
+        }
+
+    /**
+     * [dir] 안의 [filename] 파일. 이름을 정리하고([sanitizeFileName]), 심볼릭 링크까지 푼 경로(canonicalPath)가
+     * [dir] 밖이면 null 이다.
+     */
+    private fun safeFileIn(dir: File, filename: String): File? {
+        val path = childPathInside(dir.absolutePath, filename) ?: return null
+        val file = File(path)
+        val inside = file.canonicalPath.startsWith(dir.canonicalPath + File.separator)
+        return file.takeIf { inside }
+    }
 
     override suspend fun saveToGallery(filename: String, bytes: ByteArray): String? =
         withContext(Dispatchers.IO) {
@@ -31,7 +55,7 @@ class AndroidFileMetadataResolver(
                 runCatching {
                     val resolver = context.contentResolver
                     val values = android.content.ContentValues().apply {
-                        put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                        put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, sanitizeFileName(filename))
                         put(
                             android.provider.MediaStore.MediaColumns.RELATIVE_PATH,
                             android.os.Environment.DIRECTORY_PICTURES + "/$SAVE_DIR"
@@ -58,7 +82,7 @@ class AndroidFileMetadataResolver(
                     android.os.Environment.DIRECTORY_PICTURES
                 )
                 val appDir = File(picturesDir, SAVE_DIR).apply { if (!exists()) mkdirs() }
-                val outFile = File(appDir, filename)
+                val outFile = safeFileIn(appDir, filename) ?: return@runCatching null
                 outFile.writeBytes(bytes)
                 android.media.MediaScannerConnection.scanFile(
                     context,
@@ -76,7 +100,7 @@ class AndroidFileMetadataResolver(
                 runCatching {
                     val resolver = context.contentResolver
                     val values = android.content.ContentValues().apply {
-                        put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                        put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, sanitizeFileName(filename))
                         put(
                             android.provider.MediaStore.MediaColumns.RELATIVE_PATH,
                             android.os.Environment.DIRECTORY_MOVIES + "/$SAVE_DIR"
@@ -103,7 +127,7 @@ class AndroidFileMetadataResolver(
                     android.os.Environment.DIRECTORY_MOVIES
                 )
                 val appDir = File(moviesDir, SAVE_DIR).apply { if (!exists()) mkdirs() }
-                val outFile = File(appDir, filename)
+                val outFile = safeFileIn(appDir, filename) ?: return@runCatching null
                 outFile.writeBytes(bytes)
                 android.media.MediaScannerConnection.scanFile(
                     context,
@@ -113,51 +137,6 @@ class AndroidFileMetadataResolver(
                 )
                 outFile.absolutePath
             }.getOrNull()
-        }
-
-    override suspend fun findDownloadedFile(filename: String): String? =
-        withContext(Dispatchers.IO) {
-            if (filename.isBlank()) return@withContext null
-
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                runCatching {
-                    val resolver = context.contentResolver
-                    val projection = arrayOf(
-                        android.provider.MediaStore.MediaColumns._ID,
-                    )
-                    val selection =
-                        "${android.provider.MediaStore.MediaColumns.DISPLAY_NAME} = ? AND " +
-                                "${android.provider.MediaStore.MediaColumns.RELATIVE_PATH} = ?"
-                    val relativePath = android.os.Environment.DIRECTORY_DOWNLOADS + "/$SAVE_DIR/"
-                    val selectionArgs = arrayOf(filename, relativePath)
-                    resolver.query(
-                        android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                        projection, selection, selectionArgs, null,
-                    )?.use { cursor ->
-                        if (cursor.moveToFirst()) {
-                            val id = cursor.getLong(
-                                cursor.getColumnIndexOrThrow(android.provider.MediaStore.MediaColumns._ID)
-                            )
-                            android.content.ContentUris.withAppendedId(
-                                android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, id
-                            ).toString()
-                        } else null
-                    }
-                }.getOrNull()?.let { return@withContext it }
-            }
-
-            val candidates = listOfNotNull(
-                @Suppress("DEPRECATION")
-                File(
-                    android.os.Environment.getExternalStoragePublicDirectory(
-                        android.os.Environment.DIRECTORY_DOWNLOADS
-                    ),
-                    "$SAVE_DIR/$filename",
-                ),
-                context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS)
-                    ?.let { File(it, "$SAVE_DIR/$filename") },
-            )
-            candidates.firstOrNull { it.exists() }?.absolutePath
         }
 
     /**
@@ -172,16 +151,17 @@ class AndroidFileMetadataResolver(
 
     override suspend fun saveDownloadedFile(filename: String, bytes: ByteArray): String? =
         withContext(Dispatchers.IO) {
+            val safeName = sanitizeFileName(filename)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                 runCatching {
                     val resolver = context.contentResolver
                     val values = android.content.ContentValues().apply {
-                        put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                        put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, safeName)
                         put(
                             android.provider.MediaStore.MediaColumns.RELATIVE_PATH,
                             android.os.Environment.DIRECTORY_DOWNLOADS + "/$SAVE_DIR"
                         )
-                        mimeTypeOf(filename)?.let {
+                        mimeTypeOf(safeName)?.let {
                             put(android.provider.MediaStore.MediaColumns.MIME_TYPE, it)
                         }
                         put(android.provider.MediaStore.MediaColumns.IS_PENDING, 1)
@@ -206,7 +186,7 @@ class AndroidFileMetadataResolver(
                     android.os.Environment.DIRECTORY_DOWNLOADS
                 )
                 val appDir = File(downloadsDir, SAVE_DIR).apply { if (!exists()) mkdirs() }
-                val outFile = File(appDir, filename)
+                val outFile = safeFileIn(appDir, safeName) ?: return@runCatching null
                 outFile.writeBytes(bytes)
                 outFile.absolutePath
             }.getOrElse { null }?.let { return@withContext it }
@@ -215,7 +195,7 @@ class AndroidFileMetadataResolver(
                 val base = context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS)
                     ?: return@runCatching null
                 val appDir = File(base, SAVE_DIR).apply { if (!exists()) mkdirs() }
-                val outFile = File(appDir, filename)
+                val outFile = safeFileIn(appDir, safeName) ?: return@runCatching null
                 outFile.writeBytes(bytes)
                 outFile.absolutePath
             }.getOrNull()
@@ -335,3 +315,6 @@ class AndroidFileMetadataResolver(
 
 /** 사용자에게 보이는 저장 폴더명 — 갤러리·다운로드 하위에 이 이름으로 모은다. */
 private const val SAVE_DIR = "MultiplatformTalk"
+
+/** '열기'용 사본을 두는 앱 cache 하위 폴더. FileProvider(`res/xml/file_paths.xml`)는 이 폴더만 내준다. */
+private const val OPEN_DIR = "open_files"

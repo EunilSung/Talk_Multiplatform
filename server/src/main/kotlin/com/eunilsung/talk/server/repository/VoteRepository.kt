@@ -15,22 +15,28 @@ import java.util.UUID
  *
  * 득표수는 저장하지 않고 표에서 센다. 만들 때와 끝낼 때는 방에 알림 대화를 남기므로, 대화의 순서를
  * 지키는 [ChatRepository] 의 잠금과 대화 넣기를 함께 쓴다.
+ *
+ * 내가 들어오기 전에 만들어진 투표는 없는 투표와 똑같이 다룬다. 대화와 같은 규칙이다 — 나중에 초대받은 사람이
+ * 그 전 투표에서 누가 무엇을 골랐는지 보지 못한다. 투표를 알린 대화의 번호(`chat_vote.seq`)로 가른다.
  */
 class VoteRepository(private val chats: ChatRepository) {
 
-    /** 방의 투표 전부, 최근 것부터. 참여 중이 아니면 null. */
+    /** 방의 투표 가운데 내가 들어온 뒤의 것, 최근 것부터. 참여 중이 아니면 null. */
     fun votes(roomId: String, userId: String): List<VoteDto>? = chats.transaction { conn ->
-        if (!chats.isActiveMember(conn, roomId, userId)) return@transaction null
-        conn.prepareStatement("SELECT id FROM chat_vote WHERE room_id = ? ORDER BY created_at DESC").use { st ->
+        val joinedSeq = chats.joinedSeq(conn, roomId, userId) ?: return@transaction null
+        conn.prepareStatement(
+            "SELECT id FROM chat_vote WHERE room_id = ? AND (seq IS NULL OR seq > ?) ORDER BY created_at DESC"
+        ).use { st ->
             st.setString(1, roomId)
+            st.setLong(2, joinedSeq)
             st.executeQuery().use { rs -> buildList { while (rs.next()) add(rs.getString(1)) } }
-        }.mapNotNull { select(conn, roomId, it) }
+        }.mapNotNull { select(conn, roomId, it, joinedSeq) }
     }
 
-    /** 투표 한 건. 참여 중이 아니거나 이 방의 투표가 아니면 null. */
+    /** 투표 한 건. 참여 중이 아니거나, 이 방의 투표가 아니거나, 내가 들어오기 전 투표면 null. */
     fun vote(roomId: String, userId: String, voteId: String): VoteDto? = chats.transaction { conn ->
-        if (!chats.isActiveMember(conn, roomId, userId)) return@transaction null
-        select(conn, roomId, voteId)
+        val joinedSeq = chats.joinedSeq(conn, roomId, userId) ?: return@transaction null
+        select(conn, roomId, voteId, joinedSeq)
     }
 
     /** 투표를 만들고 방에 알린다. 참여 중이 아니면 null. */
@@ -68,18 +74,25 @@ class VoteRepository(private val chats: ChatRepository) {
                 }
                 st.executeBatch()
             }
-            announce(conn, roomId, userId, voteId, MessageKind.VOTE)
+            announce(conn, roomId, userId, voteId, MessageKind.VOTE).also { change ->
+                conn.prepareStatement("UPDATE chat_vote SET seq = ? WHERE id = ?").use { st ->
+                    st.setLong(1, change.message.seq)
+                    st.setString(2, voteId)
+                    st.executeUpdate()
+                }
+            }
         }
 
     /**
      * 내 표를 [selectedIdx] 로 바꾼다. 비우면 표를 거둔다. 바뀐 투표를 돌려준다.
      *
-     * 참여 중이 아니거나, 끝난 투표이거나, 없는 항목을 골랐거나, 하나만 고르는 투표에 여럿을 골랐으면 null.
+     * 참여 중이 아니거나, 들어오기 전 투표이거나, 끝난 투표이거나, 없는 항목을 골랐거나, 하나만 고르는 투표에 여럿을
+     * 골랐으면 null.
      */
     fun cast(roomId: String, userId: String, voteId: String, selectedIdx: List<Int>): VoteDto? =
         chats.transaction { conn ->
-            if (!chats.isActiveMember(conn, roomId, userId)) return@transaction null
-            val current = select(conn, roomId, voteId, forUpdate = true) ?: return@transaction null
+            val joinedSeq = chats.joinedSeq(conn, roomId, userId) ?: return@transaction null
+            val current = select(conn, roomId, voteId, joinedSeq, forUpdate = true) ?: return@transaction null
             val picked = selectedIdx.distinct()
             val validIdx = current.items.map { it.idx }.toSet()
             if (current.isClosed || !validIdx.containsAll(picked)) return@transaction null
@@ -99,7 +112,7 @@ class VoteRepository(private val chats: ChatRepository) {
                 }
                 st.executeBatch()
             }
-            select(conn, roomId, voteId)
+            select(conn, roomId, voteId, joinedSeq)
         }
 
     /** 투표를 끝내고 결과를 방에 알린다. 만든 사람만 할 수 있다. 이미 끝났으면 null. */
@@ -140,16 +153,24 @@ class VoteRepository(private val chats: ChatRepository) {
         return VoteChangeResponse(vote, message)
     }
 
-    private fun select(conn: Connection, roomId: String, voteId: String, forUpdate: Boolean = false): VoteDto? {
+    /** 투표 한 건. [afterSeq] 를 주면 그 번호 뒤에 알려진 투표만 본다(내가 들어온 뒤의 것). */
+    private fun select(
+        conn: Connection,
+        roomId: String,
+        voteId: String,
+        afterSeq: Long = -1,
+        forUpdate: Boolean = false,
+    ): VoteDto? {
         val lockClause = if (forUpdate) "FOR UPDATE" else ""
         val base = conn.prepareStatement(
             """
             SELECT id, title, writer_id, closed_at IS NOT NULL, multi_select, allow_add_item, use_end_time, end_time
-            FROM chat_vote WHERE id = ? AND room_id = ? $lockClause
+            FROM chat_vote WHERE id = ? AND room_id = ? AND (seq IS NULL OR seq > ?) $lockClause
             """.trimIndent()
         ).use { st ->
             st.setString(1, voteId)
             st.setString(2, roomId)
+            st.setLong(3, afterSeq)
             st.executeQuery().use { rs ->
                 if (!rs.next()) return null
                 VoteDto(
