@@ -286,7 +286,7 @@ GitHub Actions(`.github/workflows`)가 테스트, 릴리스, 테스트 서버 �
 |---|---|---|
 | `CI` | main 에 올린 커밋 · PR | 서버 테스트 · 앱 테스트 · 기능 테스트(러너 안에서 로컬 서버를 띄워 붙는다) · 로컬 모드 APK 빌드(Ubuntu), iOS 시뮬레이터 테스트(macOS) |
 | `Release` | `v*` 태그 | 태그가 main 의 커밋이고 앱 `versionName` 과 같은지 확인 → `CI` → 릴리스 파일 → GitHub 릴리스 → `Deploy` |
-| `Deploy` | 릴리스 뒤, 또는 Actions → Deploy → Run workflow 에 배포할 태그(예 `v1.0.1`)를 적어 손으로(되돌리기) | 릴리스의 서버 배포 묶음을 받아 체크섬을 맞추고 `deploy/deploy.sh` 로 테스트 서버에 올린다 |
+| `Deploy` | 릴리스 뒤, 또는 Actions → Deploy → Run workflow 의 "Use workflow from" 에서 배포할 태그(예 `v1.0.1`)를 골라 손으로(되돌리기) | 릴리스의 서버 배포 묶음을 받아 체크섬을 맞추고 `deploy/deploy.sh` 로 테스트 서버에 올린다 |
 
 ```bash
 # composeApp/build.gradle.kts 의 versionName · versionCode 를 올려 main 에 머지한 뒤
