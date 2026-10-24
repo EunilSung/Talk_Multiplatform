@@ -170,3 +170,5 @@ jobs:
     uses: ./.github/workflows/deploy.yml
     with:
       tag: ${{ github.ref_name }}
+    # 재사용 워크플로는 environment 를 잡에 적어도, 호출하는 쪽이 비밀값을 넘기지 않으면 환경 비밀값이 비어서 들어온다(v1.0.1 에서 확인)
+    secrets: inherit
