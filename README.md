@@ -5,20 +5,28 @@
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-7F52FF?logo=kotlin&logoColor=white)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-1.11.1-4285F4?logo=jetpackcompose&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-24%2B-3DDC84?logo=android&logoColor=white)
-![iOS](https://img.shields.io/badge/iOS-arm64%20%2B%20sim-000000?logo=apple&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-323%20passing-success)
+![iOS](https://img.shields.io/badge/iOS-18.2%2B-000000?logo=apple&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-484%20passing-success)
 
 사내 메신저를 개발한 경험을 바탕으로 다시 만든 쇼케이스 프로젝트입니다. 두 가지 모드로 빌드됩니다.
 
 - **로컬 모드** — 백엔드나 계정 없이 `installDebug` 한 번이면 실행됩니다. 대화·투표·공지가 기기 안 데이터베이스를 오가며 동작합니다.
 - **서버 모드** — 같은 저장소의 Ktor 서버에 붙어 여러 사람이 실제로 주고받습니다. 화면과 도메인 계층은 로컬 모드와 같은 코드를 씁니다.
 
+문서 파일은 같은 기기에 설치한 [AI Agent](https://github.com/EunilSung/AI_Agent) 앱(회사 PC 의 로컬 LLM 을 쓰는 에이전트, 별도 저장소)에 요약을 맡길 수 있습니다.
+
 <p align="center">
-  <img src="docs/screenshots/android-tablet.png" height="280" alt="태블릿 2-pane — 대화함 · 대화방">
-  <img src="docs/screenshots/android-phone-list.png" height="280" alt="폰 — 대화함">
-  <img src="docs/screenshots/android-phone.png" height="280" alt="폰 — 대화방">
+  <img src="docs/screenshots/android-tablet.png" height="280" alt="Android 태블릿 2-pane — 대화함 · 대화방">
+  <img src="docs/screenshots/ios-phone-list.png" height="280" alt="iPhone — 대화함">
+  <img src="docs/screenshots/ios-phone.png" height="280" alt="iPhone — 대화방">
 </p>
-<p align="center"><sub>태블릿은 대화함과 대화방을 나란히(폴더블도 같은 레이아웃), 폰은 한 화면씩. 사진 · 파일 · 이모티콘 · 답장 · 공감 · 멘션이 한 대화방에 보입니다.</sub></p>
+<p align="center">
+  <img src="docs/screenshots/ios-login.png" height="280" alt="iPhone — 로그인">
+  <img src="docs/screenshots/ios-menu-ai-summary.png" height="280" alt="iPhone — 문서 파일 롱프레스 메뉴의 AI 요약">
+  <img src="docs/screenshots/ios-ai-agent-summary.png" height="280" alt="iPhone — AI Agent 가 만든 요약">
+</p>
+<p align="center"><sub>위: 태블릿은 대화함과 대화방을 나란히(폴더블도 같은 레이아웃), 폰은 한 화면씩. 사진 · 파일 · 이모티콘 · 답장 · 공감 · 멘션이 한 대화방에 보입니다(로컬 모드).<br>
+아래: 로그인(화면의 1234 안내는 로컬 모드 · 로컬 서버용), 문서 파일을 길게 눌러 고르는 <b>AI 요약</b>, 그 링크로 열린 AI Agent 의 요약(로컬 서버에 붙인 서버 모드).</sub></p>
 
 ---
 
@@ -34,20 +42,25 @@
 - **공지** — 대화를 공지로 등록, 상단 배너(접기·숨기기), 전문 보기
 - **투표** — 생성 · 참여 · 결과, 종료 시 1위 표시
 - **책갈피** · **회수** · **검색**(사용자 · 날짜 필터)
+- **링크 미리보기** — 대화 속 링크를 카드로. 받은 대화의 링크는 눌러야 미리보기를 불러온다(보낸 사람이 열람 여부를 알 수 없게)
+- **AI**(서버 모드) — 방에 초대해 `@AI` 로 부르는 참여자, 말풍선 번역, 보내기 전 글 다듬기(교정 · 정중하게 · 간결하게)
 - **AI 요약** — 문서 파일(txt·md·csv·pdf·docx·xlsx·pptx·hwp·hwpx 등) 롱프레스 메뉴에서 [AI Agent](#ai-agent-연동-ai-요약) 앱을 열어
   요약을 맡긴다. 서버 모드에서만 보인다
 
 ### 대화방
 - 목록 · 그룹(칩) 관리 · 상단고정 · 알림 설정 · 나가기 · 초대(1:1 중복 생성 방지)
-- **모아보기** — 서랍에서 방의 사진·동영상(화면 너비에 맞춘 그리드)과 파일을 탭으로 모아 보고, 누르면 대화방과 같이 연다
+- **모아보기** — 서랍에서 방의 사진·동영상(날짜별 그리드)과 파일을 탭으로 모아 보고, 누르면 대화방과 같이 연다
 - 안읽음 마커, 새 대화 배너, 최신으로 이동
 
 ### 미디어
 - 사진 선택 시트, **앨범 폴더별 필터**, 다중 선택, 전체화면 뷰어, 갤러리 저장
 
 ### 그 외
-- 내그룹(연락처) · 사용자 프로필 · **화면잠금**(PIN / 패턴 / 생체) · 공유(Share Intent)
-- **다크모드** · **태블릿 · 폴더블 2-pane** · 한국어/영어 (문자열 421개, 양쪽 완전 일치)
+- 내그룹(연락처) · 사용자 프로필 · **화면잠금**(PIN / 패턴 / 생체) · 공유(Android 공유 인텐트 · iOS 공유 확장)
+- **로그인** — 서버 모드의 자동 로그인은 비밀번호가 아니라 기기에 잠가 둔 토큰으로 다시 들어간다(로컬 모드는 시연 계정 비밀번호를 기억해 다시 로그인)
+- **푸시** — Firebase Cloud Messaging data 메시지(iOS 는 `content-available` 로 앱을 깨워 앱이 알림을 띄움), 알림을 끈 방은 보내지 않음
+- **화면 워터마크** — 내 아이디·이름을 화면 전체에 옅게 깐다(스크린샷에도 남는다)
+- **다크모드** · **태블릿 · 폴더블 2-pane** · 한국어/영어 (문자열 422개, 양쪽 완전 일치)
 - **전송 주체 전환** — 로컬 모드에서는 상대 대화를 만들 수 없으므로, 보내는 사람을 바꿔 대화 흐름을 재현하는 시연용 기능 (서버 모드에서는 숨김)
 
 ---
@@ -57,11 +70,12 @@
 | 분류 | 사용 기술 |
 |---|---|
 | 언어 · UI | Kotlin 2.3.20, Compose Multiplatform 1.11.1, Material3 |
-| 아키텍처 | Clean Architecture (ui / domain / data), MVVM |
+| 아키텍처 | Clean Architecture (ui / domain / data), MVI(Action → ViewModel → UiState) |
 | DI | Koin 4.2.1 |
 | 네비게이션 | Voyager 1.0.1 |
 | 기기 DB | SQLDelight 2.3.2 (테이블 11개) — 서버 모드에서는 캐시로 쓴다 |
 | 설정 저장 | multiplatform-settings 1.3.0 |
+| 기기 암호화 | Android Keystore · iOS Keychain (+ Krypto) |
 | 이미지 | Coil 3.4.0 (+ GIF 디코더) |
 | 직렬화 · 시간 | kotlinx.serialization 1.11.0, kotlinx-datetime 0.6.1 |
 | 네트워크 | Ktor 3.4.2 클라이언트 (REST · WebSocket) |
@@ -69,7 +83,7 @@
 | Firebase | Messaging(푸시) · Crashlytics — Android · iOS |
 | Android 전용 | AndroidX Biometric |
 
-**타깃** — Android `minSdk 24` / `targetSdk 36`, iOS `iosArm64` · `iosSimulatorArm64`
+**타깃** — Android `minSdk 24` / `targetSdk 36`, iOS 18.2 이상(`iosArm64` · `iosSimulatorArm64`, 공유 확장은 iOS 26 이상)
 
 ---
 
@@ -100,24 +114,26 @@ flowchart TD
 
 ```
 composeApp/src/
-├── commonMain/          387 files — 화면·도메인·데이터 대부분
+├── commonMain/          399 files — 화면·도메인·데이터 대부분
 │   ├── kotlin/com/eunilsung/talk/
 │   │   ├── ui/          화면 (chatroom, chatroomlist, group, invite, setting …)
-│   │   ├── domain/      model · repository(interface 15) · usecase(57)
+│   │   ├── domain/      model · repository(interface 28) · usecase(136)
 │   │   ├── data/        local(플랫폼 추상화 · repository 로컬 구현 · seed 시드) · repository(서버 모드 구현) · remote/server · mapper
 │   │   └── di/          Koin 모듈
 │   ├── sqldelight/      AppDatabase.sq
 │   └── composeResources/ strings(ko·en) · drawable
-├── androidMain/          33 files — actual 구현
-├── iosMain/              33 files — actual 구현
-└── commonTest/           59 files — 로직 + DB 통합 + 서버 모드 저장소 + 기능 테스트
+├── androidMain/          34 files — actual 구현
+├── iosMain/              34 files — actual 구현
+├── commonTest/           76 files — 로직 + DB 통합 + 서버 모드 저장소 + 기능 테스트
+└── androidUnitTest/ · iosTest/  9 files — 플랫폼별 테스트 대역 + Android 전용 테스트(암호화·진입점·문자열·흐름 태그)
 shared/                    3 files — 앱·서버가 함께 쓰는 요청·응답 모델
-server/                   33 files — Ktor 서버 (+ 테스트 17 files, 마이그레이션 9개)
+server/                   38 files — Ktor 서버 (+ 테스트 24 files, 마이그레이션 11개)
 deploy/                   운영 배포 — Docker Compose(PostgreSQL · 서버 · Caddy) · 배포·서버 준비·백업 스크립트
-.maestro/                 실화면 흐름 5개 — Android·iOS 에 같은 파일을 돌린다
+.maestro/                 실화면 흐름 6개 — Android·iOS 에 같은 파일을 돌린다
 ```
 
-**화면 패턴** — 10개 ViewModel 이 `sealed UiState` 를 노출하고, 9개 화면이 `sealed Actions` 로 이벤트를 단방향 전달합니다.
+**화면 패턴** — 18개 ViewModel 이 `uiState`(StateFlow) 하나와 `onAction` 을 갖고, 화면은 `sealed` `Actions` 로만 일을 시킵니다.
+다이얼로그·이동·토스트처럼 한 번만 처리할 일은 12개 ViewModel 이 `events` 로 냅니다.
 
 ---
 
@@ -126,10 +142,11 @@ deploy/                   운영 배포 — Docker Compose(PostgreSQL · 서버 
 서버가 없어도 "진짜처럼" 동작하게 만든 부분입니다.
 
 - **`data/local/repository/`·`data/local/seed/`** — 서버 자리를 대신하는 저장소 구현 12개와 시드 데이터.
-  시드는 계정 10명, 대화방 7개, 방마다 대화 스크립트로 구성되며 최초 실행 시 DB에 적재됩니다.
+  시드는 계정 10명, 대화방 8개, 방마다 대화 스크립트로 구성되며 최초 실행 시 DB에 적재됩니다.
 - **단일 출처** — 대화방 목록의 안읽음·멘션 수를 하드코딩하지 않고 **대화 스크립트에서 도출**합니다.
   목록엔 12인데 방엔 5개뿐인 어긋남을 구조적으로 막았고, 테스트로 고정했습니다.
 - **실제 CRUD** — 대화 전송·공지 등록·투표·책갈피가 모두 SQLDelight 를 거칩니다. 앱 재시작 후에도 유지됩니다.
+- **시연 첨부도 실제 파일** — 시드의 사진·엑셀 첨부를 기기 파일로 풀어 두어 모아보기·열기·받기가 서버 모드와 똑같이 동작합니다.
 - 시드를 바꿀 땐 `Config.Database.NAME` 을 올려 새 DB 로 시작합니다.
 
 ---
@@ -138,7 +155,7 @@ deploy/                   운영 배포 — Docker Compose(PostgreSQL · 서버 
 
 `local.properties` 에 `server.baseUrl` 을 넣고 빌드하면 서버 모드가 됩니다.
 
-- **화면은 계속 기기 DB 를 봅니다.** 서버 모드 저장소는 로컬 구현 위에 얹혀(`by local` 위임),
+- **화면은 계속 기기 DB 를 봅니다.** 대화함·대화방·그룹 저장소는 로컬 구현 위에 얹혀(`by local` 위임),
   서버에서 받은 것을 기기 DB 에 반영하고 사용자가 한 일을 서버로 보냅니다. 오프라인에서도 받아 둔 목록이 보입니다.
 - **완결된 응답만 반영합니다.** 요청이 실패하면 가지고 있던 데이터를 그대로 둡니다. 공감·회수·공지처럼
   여러 사람이 동시에 건드리는 것은 화면에 먼저 그리지 않고 서버가 받아 준 결과만 그립니다.
@@ -153,38 +170,59 @@ deploy/                   운영 배포 — Docker Compose(PostgreSQL · 서버 
 
 | 기능 | 서버가 지키는 것 |
 |---|---|
-| 대화방 | 1:1 방은 누가 먼저 열어도 하나, 나중에 초대받은 사람은 그 전 대화를 보지 못함 |
+| 대화방 | 1:1 방은 누가 먼저 열어도 하나, 나중에 초대받은 사람은 그 전 대화·첨부·투표를 볼 수도 읽음 처리·전달할 수도 없음 |
 | 읽음 | 읽은 자리는 뒤로 가지 않음, 나간 사람은 안읽음 수에서 빠짐 |
-| 공감 · 회수 | 켤지 끌지를 서버가 정함, 회수하면 본문·파일·공감이 누구에게도 나가지 않음 |
-| 파일 | 방 참여자만 받을 수 있고 나가면 못 받음, 파일 하나 20MB |
+| 공감 · 회수 | 켤지 끌지를 서버가 정함, 회수하면 본문·파일·공감이 누구에게도 나가지 않고, 그 대화에 서버가 확인해 붙인 파일만 지움 |
+| 부가 정보 | 앱이 보낸 그대로 저장하지 않음 — 답장 인용은 원본에서, 파일 이름·크기는 올린 기록에서 다시 채워 위조를 막음 |
+| 전달 | 내가 볼 수 있는 원본만, 첨부는 받을 방으로 복사 |
+| 파일 | 방 참여자만 받을 수 있고 나가면 못 받음, 파일 하나 20MB(받으면서 저장), 이름은 경로를 떼고 제어·방향 바꾸기 문자와 `..` 를 `_` 로 바꿈 |
 | 투표 | 하나만 고르는 투표엔 한 표, 끝내기는 만든 사람만 |
-| 푸시 | 로그아웃하면 그 기기의 푸시 토큰도 함께 지워짐, 알림을 끈 방은 보내지 않음 |
-| AI | 방에 초대해 `@AI` 로 부르는 참여자, 말풍선 번역, 보내기 전 글 다듬기(교정·정중하게·간결하게). 부른 사람이 볼 수 있는 대화만 모델에 보냄 |
-| 로그인 | 틀린 비밀번호가 연달아 5번이면 5분 잠금 |
+| 푸시 | 로그인 하나에 토큰 하나, 로그아웃하면 그 기기의 토큰도 지워짐, 알림을 끈 방은 보내지 않음 |
+| AI | 방에 초대해 `@AI` 로 부르는 참여자, 말풍선 번역, 보내기 전 글 다듬기. 부른 사람이 볼 수 있는 대화만 모델에 보냄. 사람당 시간당 20회 |
+| 로그인 | 아이디마다 틀린 비밀번호가 15분 넘게 끊기지 않고 5번 이어지면 5분 잠금 |
+| 한도 | 한 사람이 서버를 독차지하지 못하게 본문 크기, 하루 파일 수·용량, 동시 올리기, 방 만들기·초대·투표 횟수, 방 인원, 알림 연결 수에 상한을 둠 |
 
 푸시는 Firebase 서비스 계정 키를, AI 는 Google Gemini 키(`GEMINI_API_KEY`)를 서버에 넣어야 동작합니다. 키가 없으면 그 기능만 꺼지고 서버는 그대로 뜹니다.
 
 ### AI Agent 연동 (AI 요약)
 
-문서 파일 대화를 길게 눌러 **AI 요약** 을 고르면 같은 기기의 AI Agent 앱(별도 저장소)을 링크로 엽니다. 요약은 AI Agent 가
-같은 Talk 계정의 토큰으로 이 서버에서 파일을 받아 만듭니다. Talk 서버와 `:shared` 계약은 바뀌지 않습니다.
+문서 파일 대화를 길게 눌러 **AI 요약** 을 고르면 같은 기기의 [AI Agent](https://github.com/EunilSung/AI_Agent) 앱(별도 저장소)을
+링크로 엽니다. 요약은 AI Agent 가 같은 Talk 계정의 토큰으로 이 서버에서 파일을 받아 만듭니다. Talk 서버와 `:shared` 계약은 바뀌지 않습니다.
 
 ```
 aiagent://summarize?fileId=<Talk 서버 파일 id>&fileName=<파일 이름>&userId=<로그인 아이디>&userName=<이름>
 ```
 
 - 값은 모두 퍼센트 인코딩합니다(공백 `%20`, 한글은 UTF-8). Talk 는 로그인 아이디와 사용자 id 가 같은 값이라 AI Agent 가
-  자기 로그인 계정과 바로 비교합니다 — 다르면 그 앱이 로그아웃하고 이 계정으로 로그인하라고 안내합니다.
+  자기 로그인 계정과 바로 비교합니다 — 다르면 AI Agent 가 지금 계정에서 로그아웃하고 이 계정으로 로그인할지 먼저 묻습니다(묻기 전에는 아무것도 바꾸지 않습니다).
 - 말풍선은 기기에 받아 둔 경로만 들고 있어, 서버 파일 id 는 `ServerFileStore` 의 기록에서 찾습니다. 서버가 확정한 파일 대화마다
   `server_chat_file_<방 id>/<대화 id>` → 파일 id 를 적어 두고 그것을 먼저 씁니다. 같은 파일을 여러 방에 보내거나 전달해 경로 하나를
   id 여럿이 가리켜도, 한 방에서 회수하거나 나간 뒤 다른 방의 요약이 엉뚱한 id 로 가지 않게 하려는 것입니다. 이 기록이 없는 옛 대화만
   `server_file_<id>` → 경로를 거꾸로 훑습니다.
 - 파일 id 를 찾지 못하면 "받는 중" 안내를, AI Agent 가 없으면 "설치되어 있지 않아요" 안내를 띄웁니다. 두 토스트에는 testTag 가 붙어
   실화면 흐름이 문구 대신 id 로 찾습니다.
-- 링크는 아무 앱이나 부를 수 있지만 파일은 그 방 참여자의 토큰으로만 받을 수 있습니다(서버가 막습니다).
+- 링크는 아무 앱이나 부를 수 있지만 파일은 그 방 참여자의 토큰으로만 받을 수 있습니다(서버가 막습니다). 반대로 링크에는 파일 이름과
+  아이디·이름이 실리므로, 같은 스킴을 등록한 다른 앱이 있으면 그 앱도 이 값을 받을 수 있습니다.
 - Android 는 `ACTION_VIEW` 로 열고(받을 앱이 없으면 `ActivityNotFoundException`), iOS 는 `canOpenURL` → `openURL` 입니다.
   iOS 는 Info.plist 의 `LSApplicationQueriesSchemes` 에 `aiagent` 가 있어야 `canOpenURL` 이 답합니다.
 - 메뉴는 `Config.ChatRoom.IS_AI_SUMMARY_ENABLED` 로 끄고, 대상 확장자는 `AI_SUMMARY_EXTENSIONS` 에 있습니다.
+
+---
+
+## 보안
+
+공개 저장소라 실제 서버 주소·계정·키는 문서와 코드에 적지 않고 `<공인 IP>` 같은 자리표시만 씁니다. 주소는 인증서 기록 등으로 드러날 수 있어
+숨기는 것에 기대지 않고, 계정 비밀번호와 한도로 막습니다. 코드에서는 아래를 지킵니다.
+
+- **서버** — 위 표의 권한 규칙(참여 전 대화 차단, 부가 정보 재구성, 회수 범위)과 자원 한도. 시연용 계정은 운영 진입점에서
+  기본 비밀번호 없이 `SEED_PASSWORD` 로만 만듭니다([배포](#배포)). 로컬 개발 서버는 이 PC 안(`127.0.0.1`)에서만 받습니다.
+- **링크** — 대화의 링크와 미리보기는 앱이 내려받거나 설치하지 않고, 링크로 열 수 있는 앱(브라우저 등)에만 넘깁니다. 미리보기는 https 주소만 불러오고, 주소에 적힌 호스트가 사설·루프백·링크로컬
+  IP 이거나 점 없는 이름·`localhost`·`.local` 같은 내부용 이름이면 거절하며, 받은 대화는 눌러야 불러옵니다.
+- **파일** — 받은 파일 이름은 경로를 떼고 정리한 뒤 저장하고, "열기" 권한은 고른 앱에만 줍니다.
+- **기기 저장** — 로그인 토큰과 기기 DB 의 대화 본문·대화방 정보·그룹 사람 정보를 잠가 저장합니다([기술적으로 볼만한 지점](#6-기기-저장-암호화)).
+  공지·책갈피·투표 테이블과 이 기능을 켜기 전에 저장된 행은 아직 평문입니다. 서버 모드의 자동 로그인은 비밀번호를 저장하지 않습니다
+  (로컬 모드는 공개된 시연 비밀번호를 설정에 기억해 둡니다).
+- 위 규칙은 단위 테스트(링크·파일 이름·잠금 규칙은 `commonTest`, Android 암호화와 진입점은 `androidUnitTest`, 서버는 경로 테스트)와 기능 테스트로 고정했습니다.
 
 ---
 
@@ -202,8 +240,11 @@ flowchart LR
 ```
 
 - **빌드는 배포하는 PC 에서 합니다.** 1GB 에서는 Gradle 이 돌지 않아, `installDist` 로 만든 실행본만 올려 이미지로 감쌉니다.
+  메모리가 모자라면 JVM 이 끝나고(`ExitOnOutOfMemoryError`) Compose 가 다시 띄웁니다.
 - **비밀값은 서버의 `~/talk/.env` 에만 둡니다**(`deploy/.env.example`). 배포 스크립트는 이 파일을 건드리지 않습니다.
 - **도메인이 없으면** `<공인 IP>.sslip.io` 를 `DOMAIN` 에 넣으면 그 이름으로 인증서를 받습니다.
+- **Caddy 는 같은 인스턴스의 다른 앱과 함께 씁니다.** 공용 Docker 네트워크 `edge` 와 `~/caddy-sites/*.caddy` 를 읽어 들이고,
+  본문 크기를 경로별로 막습니다(파일 올리기 25MB, 나머지 1MB).
 
 처음 한 번 — 새 인스턴스(Ubuntu 24.04)를 준비합니다.
 
@@ -228,16 +269,20 @@ DEPLOY_HOST=<SSH 사용자>@<공인 IP> DEPLOY_KEY=~/.ssh/<키 파일> deploy/de
 | `DB_PASSWORD` | PostgreSQL 비밀번호 (`openssl rand -hex 24`) |
 | `GEMINI_API_KEY` · `AI_MODEL` | AI. 비우면 AI 만 꺼진다 |
 | `FIREBASE_CREDENTIALS_B64` | Firebase 서비스 계정 JSON 을 base64 한 줄로. 비우면 푸시만 꺼진다 |
-| `SEED_DEMO_ACCOUNTS` · `SEED_PASSWORD` | 시연용 계정 test1~test10. 둘 다 있어야 만들고, 비밀번호는 `SEED_PASSWORD` 다(`openssl rand -hex 12`). 기본 비밀번호는 없다 |
+| `SEED_DEMO_ACCOUNTS` · `SEED_PASSWORD` | 시연용 계정 test1~test10. 둘 다 있어야 그 비밀번호로 만들거나 맞춘다(`openssl rand -hex 12`). 기본 비밀번호는 없다 |
 
-앱은 `local.properties` 의 `server.baseUrl=https://<DOMAIN>` 으로 빌드하면 배포한 서버에 붙습니다. iOS 푸시는 Apple 의 APNs
-인증 키가 Firebase 프로젝트에 등록돼 있어야 옵니다.
+시연용 계정은 서버가 뜰 때마다 맞춥니다. 둘 중 하나라도 빠지면 계정을 만들지도 바꾸지도 않으므로, **이미 있는 계정은 그때의 비밀번호
+그대로 남습니다**(서버 로그에 경고가 찍힙니다). 비밀번호를 바꾸려면 두 값을 넣고 다시 띄웁니다.
+
+앱은 `local.properties` 의 `server.baseUrl=https://<DOMAIN>` 으로 빌드하면 배포한 서버에 붙습니다. 배포한 서버에는 꼭 https 주소로 빌드합니다 —
+앱은 로컬 서버를 위해 평문 HTTP 를 막지 않으므로(Android `usesCleartextTraffic`, iOS `NSAllowsArbitraryLoads`) http 주소로 빌드하면 비밀번호와 토큰이 평문으로 나갑니다.
+iOS 푸시는 Apple 의 APNs 인증 키가 Firebase 프로젝트에 등록돼 있어야 옵니다.
 
 ---
 
 ## 테스트
 
-**앱 211개 + 서버 112개, 진짜 서버에 붙여 도는 기능 테스트 22묶음(시나리오 51개), 그리고 Android·iOS 실화면 흐름 5개.**
+**앱 312개 + 서버 172개, 진짜 서버에 붙여 도는 기능 테스트 23묶음(시나리오 54개), 그리고 Android·iOS 실화면 흐름 6개.**
 
 ```bash
 ./gradlew :composeApp:testDebugUnitTest   # 앱 (Android JVM)
@@ -257,12 +302,13 @@ TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:verifyAll -Pfun
 
 | 대상 | 내용 |
 |---|---|
-| 순수 로직 | 대화 미리보기 토큰, 멘션 태그, 참여자 목록 인코딩 |
+| 순수 로직 | 대화 미리보기 토큰, 멘션 태그, 참여자 목록 인코딩, 링크 미리보기 주소 규칙, 외부 링크 규칙, 파일 이름 정리, AI Agent 링크 |
 | 로컬 저장소 | 그룹 CRUD, 대화방 나가기·고정, 공감 토글, 공지, 책갈피, 시드 정합성 |
 | 서버 모드 저장소 | 서버 대역을 끼워 전송 중 → 완료·실패, 재연결 따라잡기, 실패 시 되돌리기, 파일 내려받기 |
-| 서버 저장소 | 실제 PostgreSQL 쿼리로 방·읽음·공감·회수·투표·그룹 규칙 |
-| 기능 테스트 | 앱의 실제 REST·WebSocket 코드로 진짜 서버에 붙어 로그인·대화방·대화·읽음·공감/회수/공지/책갈피·파일·투표·그룹·초대·AI 와 화면 7곳(대화방·대화함·로그인·투표·초대·내 그룹·프로필) ViewModel 의 상태를 끝에서 끝까지. 주소를 줬을 때만 돈다 |
-| 서버 경로 | HTTP 와 WebSocket 을 거쳐 인증·권한·알림·푸시 대상 |
+| 서버 저장소 | 실제 PostgreSQL 쿼리로 방·읽음·공감·회수·투표·그룹 규칙, 마이그레이션 백필 |
+| 기능 테스트 | 앱의 실제 REST·WebSocket 코드로 진짜 서버에 붙어 로그인·대화방·대화·읽음·공감/회수/공지/책갈피·파일·투표·전달·그룹·초대·AI 와 화면 7곳(대화방·대화함·로그인·투표·초대·내 그룹·프로필) ViewModel 의 상태를 끝에서 끝까지. 주소를 줬을 때만 돈다 |
+| 서버 경로 | HTTP 와 WebSocket 을 거쳐 인증·권한·알림·푸시 대상·전달, 로그인 잠금·AI 한도·시연 계정 |
+| 플랫폼(Android JVM) | Android 키 봉투 암호화(가짜 Keystore 로), 받은 링크를 저절로 불러오지 않는지·업데이트 설치 열기가 정해진 화면에서만 불리는지, 문자열 리소스 이스케이프, 실화면 흐름 testTag |
 | 실화면 흐름 | Maestro 로 Android 에뮬레이터·iOS 시뮬레이터에서 로그인 실패·대화 주고받기와 공감·투표 만들고 참여하고 마감·방 나가기·문서 파일의 AI 요약 메뉴, AI 키가 있으면 번역·다듬기까지 실제로 누른다. 상대는 REST 스크립트가 움직이고, 화면에서 한 일이 서버에 남았는지도 확인한다 |
 
 화면 하나씩 그려 보는 Compose UI 테스트는 넣지 않았습니다. **화면 로직은 ViewModel 을 진짜 서버에 붙여**
@@ -304,7 +350,7 @@ TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:verifyAll -Pfun
 5. **Maestro** — 위 표의 명령으로 설치하고, PATH 가 반영되도록 터미널을 새로 엽니다.
 6. **`local.properties`** — 검증에 쓸 기기를 아래처럼 적습니다.
 7. **첫 실행** — 실행 구성 `검증 - 전체 (실화면 포함)`. 처음에는 Gradle 의존성, 내장 PostgreSQL, iOS 패키지(Firebase)를
-   내려받느라 평소(8분쯤)보다 오래 걸립니다.
+   내려받느라 평소(9분쯤)보다 오래 걸립니다.
 
 기기는 꺼져 있으면 켜서 씁니다. 적지 않으면 실화면 흐름은 켜져 있는 에뮬레이터·iPhone 시뮬레이터 중 첫 번째를,
 iOS 테스트는 Kotlin 이 고른 시뮬레이터를 씁니다. 실기기는 고르지 않습니다.
@@ -330,7 +376,7 @@ Android Studio 의 실행 구성(`.run/`)을 고르고 실행합니다.
 | 테스트 (서버 없이) | 앱·서버 테스트 | 서버 없이 빠르게 |
 | 기능테스트 (실 서버) | 기능 테스트(JVM) | 서버와의 계약을 건드렸을 때 |
 | 검증 - 빠르게 (JVM) | 서버 테스트 + 앱·기능 테스트 | 고칠 때마다 |
-| 검증 - 전체 (실화면 포함) | 아래 순서 전부 (8분쯤) | 머지 전 |
+| 검증 - 전체 (실화면 포함) | 아래 순서 전부 (9분쯤) | 머지 전 |
 
 ```mermaid
 flowchart LR
@@ -341,8 +387,9 @@ flowchart LR
 - 하나가 깨져도 끝까지 돌고, 깨진 단계를 마지막에 모아 보여 줍니다(`--continue`).
 - 기능 테스트가 꺼져 있거나 앱이 로컬 서버가 아닌 주소로 빌드되면, 오래 돈 뒤가 아니라 시작하자마자 이유와 함께 멈춥니다.
 - **AI 까지 확인하려면** 서버를 띄우는 환경에 `GEMINI_API_KEY` 를 두고 `-PrequireAi=true` 를 더합니다. AI 를 쓸 수 없어 건너뛰던
-  단계를 실패로 세고, 실화면 흐름에 번역·다듬기 흐름(`ai` 이름표)이 더해집니다. 키는 저장소나 실행 구성 파일에 넣지 않습니다
-  (Android Studio 에서는 실행 구성의 환경변수에 로컬로만 넣습니다).
+  단계를 실패로 세고, 실화면 흐름에 번역·다듬기 흐름(`ai` 이름표)이 더해집니다. 키는 저장소에도, 저장소에 들어 있는
+  실행 구성(`.run/`)에도 넣지 않습니다 — 셸 환경변수로 주거나, Android Studio 에서는 실행 구성을 복사해 "Store as project file" 을
+  끈 개인 구성에만 넣습니다.
 
 | 결과 | 보는 곳 |
 |---|---|
@@ -376,8 +423,9 @@ flowchart LR
 - 상대(test2·test3)는 `.maestro/scripts/peer.js` 가 REST 로 움직입니다. 흐름마다 새 방을 만들어 말을 걸고, 화면에서
   한 일(답장·공감·표·마감·나가기)이 서버에 남았는지 확인하고, 끝나면 모두 나갑니다.
 - 기기 고르기·켜기·앱 설치·`adb reverse`·Maestro 실행은 `.maestro/run.sh` 가 합니다.
-- 배포한 서버에도 같은 흐름을 돌릴 수 있습니다. `TALK_SERVER_BASE_URL=https://<도메인> .maestro/run.sh android <apk>`(또는 `ios`)로
-  앱과 상대 스크립트가 함께 그 서버에 붙습니다. 기능 테스트는 `-PfunctionalTestUrl=https://<도메인>` 입니다.
+- 흐름과 기능 테스트는 로컬 서버의 시연용 비밀번호로 로그인합니다. 주소는 `TALK_SERVER_BASE_URL`(흐름)과
+  `-PfunctionalTest=true -PfunctionalTestUrl=<주소>`(기능 테스트)로 바꿀 수 있지만, 배포한 서버는 `SEED_PASSWORD` 를 쓰므로
+  비밀번호를 넘기는 방법이 생기기 전에는 그대로 돌지 않습니다.
 - 플랫폼 차이는 흐름 안에서 갈랐습니다. iOS 는 첫 실행의 알림 권한 팝업을 누르고, 키보드는 Android 는 뒤로 가기로,
   iOS 는 return 으로 내립니다.
 
@@ -393,6 +441,7 @@ flowchart LR
 - iOS 한글 입력 — 실화면 흐름의 입력은 영문·숫자로 합니다.
 - AI 의 답·번역·다듬기 — Gemini 키가 없는 환경에서는 건너뜁니다. 키를 두고 `-PrequireAi=true` 로 돌려야 확인됩니다.
 - AI 요약의 결과 — Talk 는 AI Agent 를 여는 데까지만 봅니다. 요약 대화가 만들어지는지는 AI Agent 저장소의 검증이 봅니다.
+- iOS 기기 저장 암호화(Keychain) — 테스트 실행 파일에서는 Keychain 을 쓸 수 없어 손으로 확인합니다.
 
 ---
 
@@ -429,11 +478,14 @@ server.baseUrl=http://10.0.2.2:8090
 | `test1` ~ `test10` | `1234` (로컬 모드·로컬 서버) |
 
 로컬 모드는 기기 안 계정으로, 서버 모드는 로컬 서버(`:server:runLocal`)가 만들어 둔 같은 계정으로 로그인합니다.
-배포한 서버에는 이 비밀번호가 없습니다 — `.env` 의 `SEED_DEMO_ACCOUNTS=true` 와 `SEED_PASSWORD` 로 정한 비밀번호를 씁니다([배포](#배포)).
+배포용 진입점에는 기본 비밀번호가 없습니다 — `.env` 의 `SEED_DEMO_ACCOUNTS=true` 와 `SEED_PASSWORD` 로 정한 비밀번호를 씁니다.
+이미 만든 계정의 비밀번호는 두 값을 넣고 다시 띄울 때 바뀝니다([배포](#배포)).
 
 로컬 서버는 이 PC 안(`127.0.0.1`)에서만 받습니다. 에뮬레이터·시뮬레이터는 그대로 붙고, 실기기는 `adb reverse tcp:8090 tcp:8090`
 뒤 `http://localhost:8090` 으로 붙입니다. 같은 Wi-Fi 로 붙여야 하면 `HOST=0.0.0.0 ./gradlew :server:runLocal` 로 띄웁니다.
 이때는 같은 망의 누구나 위 비밀번호로 들어올 수 있어 서버가 운영 한도(방 만들기·파일 횟수)를 쓰고, 뜰 때 경고를 찍습니다.
+평문 HTTP 라 같은 망에서 대화와 토큰도 보이므로, 믿을 수 있는 망에서 잠깐만 쓰고 끝나면 내립니다(`SEED_PASSWORD` 를 주고 띄우면
+그 비밀번호를 씁니다).
 
 ---
 
@@ -445,13 +497,14 @@ server.baseUrl=http://10.0.2.2:8090
 후자는 테스트에서 Fake 로 대체할 수 있어 저장소 테스트가 가능해집니다.
 
 ### 2. 키보드와 이모티콘 패널의 높이 동기화
-OS 키보드와 이모티콘 패널이 번갈아 뜰 때 하단바가 흔들리거나 잘리는 문제를,
-`stableImeHeight` 하나가 맡던 세 가지 역할을 **단일 애니메이션 타깃 + `reserved` 래칫**으로
-분리해 해결했습니다. 실기기 프레임 단위 측정으로 확인했습니다.
+OS 키보드와 이모티콘 패널이 번갈아 뜰 때 하단바가 흔들리거나 잘리는 문제를, 화면 맨 아래 `KeyBoardPane` 이
+**목표 높이 하나를 애니메이션**으로 따라가게 하고, 키보드가 높이를 넘겨받기 직전의 높이를 **붙들었다가**(`holdHeight`)
+키보드가 따라잡거나 내려가면 놓는 방식으로 해결했습니다. iOS 에서 패널 → 키보드로 바뀔 때 하단바가 내려갔다 올라오던 것이
+없어졌고, 실기기 프레임 단위 측정으로 확인했습니다.
 
 ### 3. 리컴포지션 범위 좁히기
-도메인 모델을 `@Immutable` 로 안정화해 리스트 아이템이 skip 되게 하고,
-스크롤·IME 같은 **프레임 단위 상태를 `snapshotFlow` · `derivedStateOf` · `Modifier.offset{}`** 으로
+도메인 모델은 Compose 를 모르므로 어노테이션 대신 `compose-stability.conf` 에 `domain.model.*` 를 안정 타입으로 등록해
+리스트 아이템이 skip 되게 하고, 스크롤·IME 같은 **프레임 단위 상태를 `snapshotFlow` · `derivedStateOf` · `Modifier.offset{}`** 으로
 내려 화면 전체가 매 프레임 재구성되지 않도록 정리했습니다.
 
 ### 4. 양 플랫폼에서 도는 DB 통합 테스트
@@ -460,8 +513,14 @@ OS 키보드와 이모티콘 패널이 번갈아 뜰 때 하단바가 흔들리�
 
 ### 5. 대화방 화면 분해
 1,480줄 / 단일 함수 973줄이던 대화방 화면을 상단바 · 하단바 · 목록 ·
-**스크롤 컨트롤러**(진입 마커 배치, 검색 포커스, 전송 후 이동 등 5개 이펙트) ·
+**스크롤 컨트롤러**(진입 마커 배치, 검색 포커스, 전송 후 이동 등 7개 이펙트) ·
 액션 메뉴로 나눠 각 조각을 독립적으로 볼 수 있게 했습니다.
+
+### 6. 기기 저장 암호화
+로그인 토큰과 기기 DB 의 대화 본문·대화방 정보·그룹 사람 정보를 잠가 저장합니다(공지·책갈피·투표 테이블은 아직 평문). Android 는
+AES-256 데이터 키를 Keystore 키로 감싸 두는 봉투 방식(값은 AES-GCM), iOS 는 Keychain 키를 씁니다. 잠근 값에는 `enc1:` 접두어를 붙이고,
+접두어가 없는 예전 평문은 그대로 읽습니다(다시 저장될 때 잠기며, 예전 행을 한꺼번에 잠그지는 않습니다) — 그래서 기기 DB 스키마를
+올리지 않고(기존 대화를 지우지 않고) 켰습니다.
 
 ---
 
@@ -469,10 +528,10 @@ OS 키보드와 이모티콘 패널이 번갈아 뜰 때 하단바가 흔들리�
 
 | 항목 | 값 |
 |---|---|
-| Kotlin 파일 | 570개 (앱 517 · 공유 3 · 서버 50, 테스트 포함) |
-| 코드 라인 | 56,044줄 |
-| Repository 인터페이스 / UseCase | 15 / 57 |
-| ViewModel / Actions | 10 / 9 |
-| 기기 DB 테이블 / 서버 DB 테이블 | 11개 / 18개 |
-| 문자열 리소스 | 406개 (ko · en) |
-| 테스트 | 323개 (앱 211 · 서버 112) + 기능 테스트 22묶음 + 실화면 흐름 5개 |
+| Kotlin 파일 | 617개 (앱 552 · 공유 3 · 서버 62, 테스트 포함) |
+| 코드 라인 | 62,280줄 |
+| domain/repository 인터페이스 / UseCase | 28 / 136 |
+| ViewModel / Actions | 18 / 18 |
+| 기기 DB 테이블 / 서버 DB 테이블 | 11개 / 18개 (서버 마이그레이션 11개) |
+| 문자열 리소스 | 422개 (ko · en) |
+| 테스트 | 484개 (앱 312 · 서버 172) + 기능 테스트 23묶음 + 실화면 흐름 6개 |
