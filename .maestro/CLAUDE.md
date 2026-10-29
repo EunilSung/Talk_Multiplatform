@@ -5,6 +5,9 @@
 - **기기 고르기·켜기·앱 설치·Maestro 실행은 `.maestro/run.sh` 가 한다.** Gradle 작업은 APK 를 만들고 로컬 서버를 띄운 뒤
   이 스크립트를 부른다. 서버가 떠 있으면 스크립트만 따로 돌려도 된다(`.maestro/run.sh android <apk>`, `.maestro/run.sh ios`).
   결과는 `build/maestro/<플랫폼>/report.xml`(JUnit)과 같은 폴더의 스크린샷·로그다.
+- **Android 는 `e2e.androidAvd` 로 이름을 준 에뮬레이터에만 깐다.** 켜져 있는 첫 에뮬레이터를 고르지 않는다 — 같은 PC 의 다른 작업이
+  쓰는 기기일 수 있다. 켤 때는 `e2e.androidPort`(또는 `TALK_ANDROID_PORT`)의 포트를 쓰고, 그 포트를 다른 에뮬레이터가 쓰고 있으면 멈춘다.
+  스크립트의 `adb` 는 모두 `-s <기기>` 로 대상을 붙이고, adb 서버를 다시 띄우지 않는다(다른 작업의 연결도 끊긴다).
 - **앱은 로컬 서버 주소(`http://localhost:8090`)로 빌드한다.** `adb reverse` 를 걸면 Android 도 같은 주소를 쓰므로
   플랫폼마다 `local.properties` 를 바꿔 가며 빌드하지 않아도 된다. `TALK_SERVER_BASE_URL` 이 `server.baseUrl` 보다 먼저라
   평소 설정을 건드리지 않는다. 기기는 지정해서 설치한다(`installDebug` 금지).

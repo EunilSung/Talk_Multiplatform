@@ -229,6 +229,8 @@ Talk 서버·`:shared` 계약은 바뀌지 않는다(AI Agent 쪽이 사용자 �
    server.baseUrl=http://10.0.2.2:8090
    # 전체 검증(verifyAll)이 쓸 이 PC 의 기기. 다른 작업과 겹치지 않는 것을 고른다. 꺼져 있으면 켠다
    e2e.androidAvd=<에뮬레이터 이름>
+   # (선택) 그 에뮬레이터를 켤 때 쓸 포트. 이 PC 의 다른 에뮬레이터와 겹치지 않게 고정한다
+   e2e.androidPort=<포트>
    e2e.iosDevice=<시뮬레이터 UDID 또는 이름>
    ```
 3. **Firebase 서비스 계정 키** — 서버가 푸시를 보낼 때만 필요하다. 저장소에 없으니 Firebase 콘솔
@@ -339,7 +341,8 @@ TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:verifyAll -Pfun
 3. 띄운 서버는 끝나면 내려간다. 하나가 깨져도 끝까지 돌고(`--continue`), 깨진 단계가 마지막에 모여 나온다.
 
 - **기기는 `local.properties` 의 `e2e.androidAvd`·`e2e.iosDevice` 로 고른다.** iOS 기능 테스트도 같은 시뮬레이터에서 돈다.
-  없으면 켜져 있는 에뮬레이터·iPhone 시뮬레이터 중 첫 번째를 쓰고, 실기기는 고르지 않는다.
+  `e2e.androidAvd` 가 없으면 Android 실화면 흐름은 시작하지 않는다 — 켜져 있는 아무 에뮬레이터나 고르면 다른 작업의 기기에
+  앱을 깔 수 있다. iOS 는 없으면 켜져 있는 iPhone 시뮬레이터 중 첫 번째를 쓰고, 실기기는 고르지 않는다.
 - **설정이 맞지 않으면 시작하자마자 멈춘다.** 기능 테스트가 꺼져 있거나(`-PfunctionalTest=true` 없음) 앱이 로컬 서버가
   아닌 주소로 빌드되면, 오래 돈 뒤가 아니라 처음에 이유를 알려 준다.
 - **자동으로 확인하지 못하는 것** — 푸시의 실제 도착, 핀치줌 같은 멀티터치, 카메라, iOS 한글 입력. AI 단계는 키가 없는

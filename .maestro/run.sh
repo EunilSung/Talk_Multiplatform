@@ -4,10 +4,12 @@
 #   .maestro/run.sh android <apk 경로>
 #   .maestro/run.sh ios
 #
-# 기기는 환경변수나 local.properties 로 고른다. 없으면 켜져 있는 에뮬레이터·iPhone 시뮬레이터 중 첫 번째를 쓴다.
-# 실기기는 고르지 않는다.
-#   TALK_ANDROID_AVD / e2e.androidAvd  에뮬레이터 이름. 꺼져 있으면 켠다
-#   TALK_IOS_DEVICE  / e2e.iosDevice   시뮬레이터 UDID 또는 이름. 꺼져 있으면 켠다
+# 기기는 환경변수나 local.properties 로 고른다. 실기기는 고르지 않는다.
+# Android 는 에뮬레이터 이름이 꼭 있어야 한다 — 켜져 있는 아무 에뮬레이터나 고르면 다른 작업의 기기에 앱을 깔 수 있다.
+# iOS 는 없으면 켜져 있는 iPhone 시뮬레이터 중 첫 번째를 쓴다.
+#   TALK_ANDROID_AVD  / e2e.androidAvd   에뮬레이터 이름. 꺼져 있으면 켠다
+#   TALK_ANDROID_PORT / e2e.androidPort  (선택) 켤 때 쓸 콘솔 포트. 다른 작업의 에뮬레이터와 겹치지 않게 고정한다
+#   TALK_IOS_DEVICE   / e2e.iosDevice    시뮬레이터 UDID 또는 이름. 꺼져 있으면 켠다
 # 앱은 TALK_SERVER_BASE_URL(기본 http://localhost:8090)의 서버에 붙게 빌드되고, 그 서버가 떠 있어야 한다.
 # `ai` 이름표가 붙은 흐름은 TALK_E2E_AI=true 일 때만 돈다(AI 키가 있는 서버에서만 뜻이 있다).
 # AI 요약 흐름은 기기에 AI Agent 앱(com.eunilsung.aiagent…)이 있는지 보고 확인할 것을 고른다 — 없으면 설치 안내,
@@ -52,19 +54,21 @@ running_emulators() { "$ADB" devices | awk '/^emulator-[0-9]+\tdevice$/ {print $
 
 find_android_device() {
     local avd=$1 serial
-    if [ -z "$avd" ]; then
-        running_emulators | head -1
-        return
-    fi
     for serial in $(running_emulators); do
         [ "$(android_avd_of "$serial")" = "$avd" ] && { echo "$serial"; return; }
     done
 }
 
 boot_android() {
-    local avd=$1 serial waited=0
-    log "에뮬레이터 $avd 를 켠다"
-    nohup "$SDK/emulator/emulator" -avd "$avd" -no-snapshot-save -no-boot-anim >/dev/null 2>&1 &
+    local avd=$1 port=$2 serial waited=0 port_args=()
+    if [ -n "$port" ]; then
+        local owner
+        owner=$(android_avd_of "emulator-$port")
+        [ -z "$owner" ] || fail "포트 $port 는 다른 에뮬레이터($owner)가 쓰고 있다. e2e.androidPort 를 비어 있는 포트로 바꾼다"
+        port_args=(-port "$port")
+    fi
+    log "에뮬레이터 $avd 를 켠다${port:+ (포트 $port)}"
+    nohup "$SDK/emulator/emulator" -avd "$avd" ${port_args[@]+"${port_args[@]}"} -no-snapshot-save -no-boot-anim >/dev/null 2>&1 &
     until serial=$(find_android_device "$avd") && [ -n "$serial" ] &&
         [ "$("$ADB" -s "$serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; do
         sleep 3
@@ -82,12 +86,11 @@ run_android() {
     [ -x "$ADB" ] || fail "adb 를 찾지 못했다. local.properties 의 sdk.dir 을 확인한다"
 
     local avd=${TALK_ANDROID_AVD:-$(local_property e2e.androidAvd)}
+    local port=${TALK_ANDROID_PORT:-$(local_property e2e.androidPort)}
+    [ -n "$avd" ] || fail "쓸 에뮬레이터가 정해지지 않았다. local.properties 의 e2e.androidAvd(또는 TALK_ANDROID_AVD)에 이 작업 전용 AVD 이름을 준다"
     local serial
     serial=$(find_android_device "$avd" || true)
-    if [ -z "$serial" ]; then
-        [ -n "$avd" ] || fail "켜져 있는 에뮬레이터가 없다. e2e.androidAvd 를 주면 켜서 쓴다"
-        serial=$(boot_android "$avd")
-    fi
+    [ -n "$serial" ] || serial=$(boot_android "$avd" "$port")
 
     log "$serial 에 설치한다"
     "$ADB" -s "$serial" install -r "$apk" >/dev/null
