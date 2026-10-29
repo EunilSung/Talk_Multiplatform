@@ -383,13 +383,16 @@ TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:verifyAll -Pfun
 7. **첫 실행** — 실행 구성 `검증 - 전체 (실화면 포함)`. 처음에는 Gradle 의존성, 내장 PostgreSQL, iOS 패키지(Firebase)를
    내려받느라 평소(9분쯤)보다 오래 걸립니다.
 
-기기는 꺼져 있으면 켜서 씁니다. 적지 않으면 실화면 흐름은 켜져 있는 에뮬레이터·iPhone 시뮬레이터 중 첫 번째를,
-iOS 테스트는 Kotlin 이 고른 시뮬레이터를 씁니다. 실기기는 고르지 않습니다.
+기기는 꺼져 있으면 켜서 씁니다. Android 에뮬레이터 이름은 꼭 적어야 합니다 — 켜져 있는 아무 에뮬레이터나 고르면 다른 작업의
+기기에 앱을 깔 수 있어, 없으면 실화면 흐름이 시작하지 않습니다. iOS 는 적지 않으면 실화면 흐름이 켜져 있는 iPhone 시뮬레이터 중
+첫 번째를, iOS 테스트는 Kotlin 이 고른 시뮬레이터를 씁니다. 실기기는 고르지 않습니다.
 
 ```properties
 sdk.dir=<Android SDK 경로>
 # 실화면 흐름이 쓸 에뮬레이터 이름 (예: A35_API35)
 e2e.androidAvd=<에뮬레이터 이름>
+# (선택) 그 에뮬레이터를 켤 때 쓸 포트. 다른 에뮬레이터와 겹치지 않게 고정한다 (예: 5562)
+e2e.androidPort=<포트>
 # 실화면 흐름과 iOS 테스트가 쓸 시뮬레이터
 e2e.iosDevice=<시뮬레이터 UDID 또는 이름>
 ```
