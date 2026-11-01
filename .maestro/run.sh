@@ -26,6 +26,24 @@ OUT=$ROOT/build/maestro/$PLATFORM
 fail() { echo "[e2e] $*" >&2; exit 1; }
 log() { echo "[e2e] $*" >&2; }
 
+# 이 스크립트가 켠 기기는 끝나면(실패해도) 끈다 — 에뮬레이터·시뮬레이터는 한 대에 수 GB 를 잡고, 같은 PC 에서 다른
+# 프로젝트의 기기도 돈다. 처음부터 켜져 있던 기기는 그대로 둔다. TALK_E2E_KEEP_DEVICE=true 면 끄지 않는다
+# (흐름을 고치며 여러 번 돌릴 때).
+STARTED_EMULATOR=
+STARTED_SIMULATOR=
+shutdown_started_devices() {
+    if [ "${TALK_E2E_KEEP_DEVICE:-}" = true ]; then return 0; fi
+    if [ -n "$STARTED_EMULATOR" ]; then
+        log "켰던 에뮬레이터 $STARTED_EMULATOR 를 끈다"
+        "$ADB" -s "$STARTED_EMULATOR" emu kill >/dev/null 2>&1 || true
+    fi
+    if [ -n "$STARTED_SIMULATOR" ]; then
+        log "켰던 시뮬레이터 $STARTED_SIMULATOR 를 끈다"
+        xcrun simctl shutdown "$STARTED_SIMULATOR" >/dev/null 2>&1 || true
+    fi
+}
+trap shutdown_started_devices EXIT
+
 local_property() {
     [ -f "$ROOT/local.properties" ] || return 0
     sed -n "s/^$1=//p" "$ROOT/local.properties" | tail -1 | tr -d '[:space:]'
@@ -90,7 +108,10 @@ run_android() {
     [ -n "$avd" ] || fail "쓸 에뮬레이터가 정해지지 않았다. local.properties 의 e2e.androidAvd(또는 TALK_ANDROID_AVD)에 이 작업 전용 AVD 이름을 준다"
     local serial
     serial=$(find_android_device "$avd" || true)
-    [ -n "$serial" ] || serial=$(boot_android "$avd" "$port")
+    if [ -z "$serial" ]; then
+        serial=$(boot_android "$avd" "$port")
+        STARTED_EMULATOR=$serial
+    fi
 
     log "$serial 에 설치한다"
     "$ADB" -s "$serial" install -r "$apk" >/dev/null
@@ -122,7 +143,10 @@ run_ios() {
     local udid
     udid=$(find_ios_device "$want")
     [ -n "$udid" ] || fail "쓸 시뮬레이터가 없다. e2e.iosDevice 에 UDID 나 이름을 준다"
-    xcrun simctl boot "$udid" 2>/dev/null || true
+    if ! xcrun simctl list devices | grep -q "$udid) (Booted)"; then
+        xcrun simctl boot "$udid" 2>/dev/null || true
+        STARTED_SIMULATOR=$udid
+    fi
     xcrun simctl bootstatus "$udid" -b >/dev/null
 
     mkdir -p "$ROOT/build/maestro"
