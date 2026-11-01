@@ -9,11 +9,11 @@ DEPLOY_HOST=<SSH 사용자>@<테스트 서버 공인 IP> DEPLOY_KEY=~/.ssh/<키 
 ```
 
 - **실제 주소·SSH 사용자·키 파일 이름은 저장소에 적지 않는다.** 이 저장소는 공개라 문서에 적힌 값은 누구나 본다.
-  실제 값은 저장소 밖 노트(`../Talk_info/테스트서버.md`)에 있다. 이 문서와 명령에는 `<테스트 서버 주소>` 같은 자리표시만 쓴다.
+  실제 값은 저장소 밖 노트(`../Info/Talk_info/테스트서버.md`)에 있다. 이 문서와 명령에는 `<테스트 서버 주소>` 같은 자리표시만 쓴다.
   주소는 앱과 인증서 기록으로도 드러나는 값이라 숨기는 것을 막는 수단으로 보지 않는다. 계정·한도로 막는다.
 - **테스트 서버** — Oracle Cloud Always Free 인스턴스(`VM.Standard.E2.1.Micro`, Ubuntu 24.04 Minimal) 하나다.
   주소는 `https://<테스트 서버 주소>`(도메인이 없어 `<공인 IP>.sslip.io`). 같은 클라우드 계정의 다른 인스턴스는 다른 프로젝트의
-  것이니 건드리지 않는다(이름은 `../Talk_info/테스트서버.md`).
+  것이니 건드리지 않는다(이름은 `../Info/Talk_info/테스트서버.md`).
 - **Gradle 빌드는 배포하는 PC 에서 한다.** 인스턴스 메모리가 1GB 라 서버에서는 실행본(`installDist`)을 담은 이미지만
   만든다. JVM 힙(256MB)·DB 커넥션(5)·Postgres 메모리를 작게 잡았고 스왑 2GB 를 둔다. 메모리가 모자라면 JVM 이 끝나고
   (`-XX:+ExitOnOutOfMemoryError`) compose 가 다시 띄운다.
@@ -30,7 +30,7 @@ DEPLOY_HOST=<SSH 사용자>@<테스트 서버 공인 IP> DEPLOY_KEY=~/.ssh/<키 
   값은 `server/.../limits/ServerLimits.kt` 에 있다.
 - **GitHub Actions 도 같은 `deploy.sh` 로 배포한다.** `v*` 태그 → `Release`(릴리스 파일: `DEPLOY_STAGE_ONLY=1` 로 만든 서버 묶음) →
   `Deploy`(그 묶음을 받아 `DEPLOY_STAGE`·`DEPLOY_HOST_KEY_CHECK=yes` 로 올린다). 접속 정보는 `test-server` 환경 비밀값에만 두고,
-  넣는 순서와 실제 값은 `../Talk_info/CI_설정.md` 에 있다. 서버 `.env` 의 값은 CI 에 넣지 않는다.
+  넣는 순서와 실제 값은 `../Info/Talk_info/CI_설정.md` 에 있다. 서버 `.env` 의 값은 CI 에 넣지 않는다.
 - **새 인스턴스는 한 번 준비한다** — `sudo bash setup-host.sh`(스왑, Docker, iptables 80·443, DB 백업 cron).
   OCI 의 Ubuntu 이미지는 iptables 가 22 번 말고 모두 막는다. VCN 보안 목록에도 80·443 이 열려 있어야 한다.
 - **DB 백업** — 매일 03:30(UTC) `~/backups` 에 7개까지 남는다.
@@ -38,4 +38,4 @@ DEPLOY_HOST=<SSH 사용자>@<테스트 서버 공인 IP> DEPLOY_KEY=~/.ssh/<키 
 - 서버는 1/8 OCPU 라 뜨는 데 40초쯤 걸린다(시연용 계정을 켜면 비밀번호 확인 10번만큼 더 걸린다). 그동안 Caddy 는 502 를 준다.
 - **배포한 서버 확인** — 기능 테스트는 `-PfunctionalTestUrl=https://<테스트 서버 주소>`, 실화면 흐름은 앱을 그 주소로
   빌드해 `TALK_SERVER_BASE_URL=<주소> .maestro/run.sh android <apk>`(또는 `ios`). `peer.js` 도 같은 주소로 움직인다.
-  배포한 서버의 시연용 비밀번호는 `SEED_PASSWORD` 라 로컬용 비밀번호로는 로그인되지 않는다. 실제 명령은 `../Talk_info/테스트서버.md` 에 있다.
+  배포한 서버의 시연용 비밀번호는 `SEED_PASSWORD` 라 로컬용 비밀번호로는 로그인되지 않는다. 실제 명령은 `../Info/Talk_info/테스트서버.md` 에 있다.

@@ -1,6 +1,31 @@
 # 실화면 흐름(Maestro) — Talk_Multiplatform
 
-루트 `CLAUDE.md` 의 "실화면 흐름" 절에 이어지는 세부다. 루트의 규칙이 먼저다. 경로는 저장소 루트 기준이다.
+루트 `CLAUDE.md` 의 규칙이 먼저다. 경로는 저장소 루트 기준이다.
+
+기능 테스트가 비워 둔 "버튼과 액션의 연결"을 에뮬레이터·시뮬레이터에서 실제로 눌러 본다. 같은 흐름 파일을 Android 와 iOS 에 그대로 돌린다.
+
+```bash
+TALK_SERVER_BASE_URL=http://localhost:8090 ./gradlew :composeApp:e2eAndroid   # 또는 :composeApp:e2eIos
+```
+
+## 요소 찾기
+
+- **요소는 `TestTags`(`ui/uikit/TestTags.kt`)의 이름을 `id` 로 찾는다.** 화면 문구는 기기 언어마다 다르고 같은 문구가 여러 곳에 나온다.
+  흐름이 누르는 요소를 새로 만들면 태그를 붙이고 흐름 파일에도 같은 이름을 쓴다. 상대가 보낸 말·방 이름처럼 흐름이 만든 영문 글자는 글자로 찾아도 된다.
+- **다이얼로그는 Surface 에 `exposeTestTags()` 를 붙인다.** Android 는 다이얼로그가 창이 따로라 앱 루트의 설정이 닿지 않는다. iOS 는 testTag 가 그대로 접근성 식별자로 나간다.
+- **흐름이 확인하는 토스트는 `ToastManager.show(…, testTag = TestTags.X)` 로 띄운다.** 토스트 문구도 앱 문자열이라 글자로 찾지 않는다. 안내가 여럿이면 태그를 따로 둔다.
+
+## 전체 검증
+
+`verifyAll` 의 순서: 서버 테스트 → 로컬 서버 띄우기 → 앱 테스트와 기능 테스트(JVM) → 기능 테스트(iOS 시뮬레이터) → Android 앱 빌드·설치·실화면 흐름 → iOS 앱 빌드·설치·실화면 흐름.
+띄운 서버는 끝나면 내려간다. 하나가 깨져도 끝까지 돌고(`--continue`), 깨진 단계가 마지막에 모여 나온다.
+
+- **기기는 `local.properties` 의 `e2e.androidAvd`·`e2e.iosDevice` 로 고른다.** iOS 기능 테스트도 같은 시뮬레이터에서 돈다.
+  iOS 는 없으면 켜져 있는 iPhone 시뮬레이터 중 첫 번째를 쓰고, 실기기는 고르지 않는다.
+- **설정이 맞지 않으면 시작하자마자 멈춘다.** 기능 테스트가 꺼져 있거나(`-PfunctionalTest=true` 없음) 앱이 로컬 서버가 아닌 주소로 빌드되면 처음에 이유를 알려 준다.
+- 처음 iOS 앱을 빌드할 때는 패키지를 받느라 더 걸린다.
+
+## 실행 세부
 
 - **기기 고르기·켜기·앱 설치·Maestro 실행은 `.maestro/run.sh` 가 한다.** Gradle 작업은 APK 를 만들고 로컬 서버를 띄운 뒤
   이 스크립트를 부른다. 서버가 떠 있으면 스크립트만 따로 돌려도 된다(`.maestro/run.sh android <apk>`, `.maestro/run.sh ios`).
